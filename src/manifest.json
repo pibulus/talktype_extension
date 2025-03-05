@@ -37,7 +37,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["permission.html"],
+      "resources": ["permission.html", "permission-dialog.js"],
       "matches": ["<all_urls>"]
     }
   ]

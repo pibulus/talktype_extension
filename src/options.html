@@ -33,6 +33,7 @@
       padding: 8px 16px;
       border-radius: 4px;
       cursor: pointer;
+      margin-right: 10px;
     }
     button:hover {
       background-color: #3367d6;
@@ -57,25 +58,70 @@
       border-radius: 4px;
       font-size: 0.9em;
     }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .card-header {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .permission-status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+      background-color: #f8f9fa;
+    }
+    .granted {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .denied {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .unknown {
+      background-color: #fff3cd;
+      color: #856404;
+    }
   </style>
 </head>
 <body>
   <h1>Audio to Text - Options</h1>
   
-  <div class="form-group">
-    <label for="apiKey">Gemini API Key:</label>
-    <input type="text" id="apiKey" placeholder="Enter your Gemini API key">
-    <small>You can get an API key from <a href="https://ai.google.dev/" target="_blank">Google AI Studio</a></small>
+  <div class="card">
+    <div class="card-header">API Configuration</div>
+    <div class="form-group">
+      <label for="apiKey">Gemini API Key:</label>
+      <input type="text" id="apiKey" placeholder="Enter your Gemini API key">
+      <small>You can get an API key from <a href="https://ai.google.dev/" target="_blank">Google AI Studio</a></small>
+    </div>
+    
+    <button id="save">Save</button>
+    
+    <div id="status" class="status" style="display: none;"></div>
   </div>
   
-  <button id="save">Save</button>
-  
-  <div id="status" class="status" style="display: none;"></div>
+  <div class="card">
+    <div class="card-header">Microphone Permission</div>
+    <p>The extension requires microphone access to record audio for transcription.</p>
+    
+    <div id="permissionStatus" class="permission-status unknown">
+      Checking permission status...
+    </div>
+    
+    <div style="margin-top: 15px;">
+      <button id="requestPermission">Check/Request Microphone Access</button>
+    </div>
+  </div>
   
   <div class="info">
     <p><strong>How to use:</strong></p>
     <ol>
       <li>Enter your Gemini API key above and save.</li>
+      <li>Grant microphone access using the button above.</li>
       <li>Navigate to any website with text inputs.</li>
       <li>Click on the microphone icon that appears next to text inputs.</li>
       <li>Speak your text and it will be transcribed into the input field.</li>

@@ -41,10 +41,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   if (message.action === 'requestMicrophonePermission') {
-    // This will open a new tab where permission can be requested more reliably
-    chrome.tabs.create({ url: chrome.runtime.getURL('permission.html') }, (tab) => {
-      // Tab created, we'll handle the permission request in that page
-      sendResponse({ tabId: tab.id });
+    // Let's try a simpler approach by just opening the options page
+    // instead of a custom permission page
+    chrome.runtime.openOptionsPage(() => {
+      sendResponse({ success: true });
     });
     return true; // Indicates async response
   }
