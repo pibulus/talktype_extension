@@ -113,7 +113,19 @@
     </div>
     
     <div style="margin-top: 15px;">
-      <button id="requestPermission">Check/Request Microphone Access</button>
+      <button id="openChromeSettings">Open Chrome Microphone Settings</button>
+      <button id="requestPermission" style="margin-left: 10px;">Test Microphone Access</button>
+    </div>
+    
+    <div style="margin-top: 15px; background-color: #f8f9fa; padding: 12px; border-radius: 4px; font-size: 0.9em;">
+      <p><strong>Important:</strong> For Chrome security reasons, extensions cannot automatically set microphone permissions to "Allow". Please follow these steps:</p>
+      <ol style="margin-left: 20px; margin-top: 10px;">
+        <li>Click "Open Chrome Microphone Settings" above</li>
+        <li>Find the entry for this extension (chrome-extension://[extension-id])</li>
+        <li>Change the setting from "Ask" or "Block" to "Allow"</li>
+        <li>Return to this page and click "Test Microphone Access"</li>
+      </ol>
+      <p style="margin-top: 10px;"><strong>For Mac users:</strong> You must also allow Chrome in System Preferences &gt; Security &amp; Privacy &gt; Privacy &gt; Microphone</p>
     </div>
   </div>
   
