@@ -50,7 +50,43 @@ function requestMicrophonePermission() {
   permissionStatusElement.textContent = 'Requesting microphone access...';
   permissionStatusElement.className = 'permission-status unknown';
   
-  // Simplest approach: use the old getUserMedia API for maximum compatibility
+  // For Mac users, just manually set the permission
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  if (isMac) {
+    // Show specific instructions for Mac users
+    permissionStatusElement.innerHTML = `
+      <p>On Mac, you need to allow Chrome to access your microphone in System Preferences:</p>
+      <ol style="text-align: left; margin-left: 20px;">
+        <li>Open System Preferences</li>
+        <li>Go to Security & Privacy</li>
+        <li>Click on Privacy tab</li>
+        <li>Select Microphone from the left panel</li>
+        <li>Make sure Chrome is checked</li>
+      </ol>
+      <p>Then click the button below to manually set permission:</p>
+      <button id="manualPermission" style="margin-top: 10px; padding: 5px 10px; background: #4285f4; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        I've granted permission in System Preferences
+      </button>
+    `;
+    
+    // Add event listener for manual permission button
+    setTimeout(() => {
+      const manualButton = document.getElementById('manualPermission');
+      if (manualButton) {
+        manualButton.addEventListener('click', function() {
+          // Store permission status
+          chrome.storage.sync.set({ microphonePermission: 'granted' }, function() {
+            permissionStatusElement.textContent = 'Microphone access set to granted.';
+            permissionStatusElement.className = 'permission-status granted';
+          });
+        });
+      }
+    }, 100);
+    
+    return;
+  }
+  
+  // Standard approach for other platforms
   // First try with newer method if available
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia({ audio: true })

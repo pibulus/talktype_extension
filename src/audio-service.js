@@ -124,22 +124,67 @@ class AudioRecordingService {
    */
   async startRecording() {
     try {
+      // Check if we're on Mac
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      
       // Check if we already have permission
       const hasPermission = await this.checkMicrophonePermission();
       
-      // If no permission, request it with our custom dialog
-      if (!hasPermission && !this.permissionGranted) {
+      // If no permission, request it - unless we're on Mac where we'll rely on manual steps
+      if (!hasPermission && !this.permissionGranted && !isMac) {
         const permissionGranted = await this.requestMicrophonePermission();
         if (!permissionGranted) {
           throw new Error('Microphone permission denied');
         }
       }
       
-      // Request microphone access
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // For Mac, we'll still try to access the microphone even if permission wasn't explicitly granted,
+      // as the user might have already granted permission in System Preferences
       
-      // Create media recorder
-      this.mediaRecorder = new MediaRecorder(this.stream);
+      // Request microphone access with more thorough error handling
+      try {
+        // Try different methods to improve compatibility
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          this.stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: true,
+            video: false // Explicitly exclude video to avoid confusion
+          });
+        } else if (navigator.getUserMedia) {
+          this.stream = await new Promise((resolve, reject) => {
+            navigator.getUserMedia({ audio: true, video: false }, resolve, reject);
+          });
+        } else if (navigator.webkitGetUserMedia) {
+          this.stream = await new Promise((resolve, reject) => {
+            navigator.webkitGetUserMedia({ audio: true, video: false }, resolve, reject);
+          });
+        } else {
+          throw new Error('getUserMedia not supported in this browser');
+        }
+      } catch (mediaError) {
+        console.error('Media access error:', mediaError);
+        
+        // For Mac users, give specific guidance
+        if (isMac) {
+          throw new Error('Microphone access denied. Please ensure Chrome has permission to use your microphone in System Preferences > Security & Privacy > Privacy > Microphone.');
+        } else {
+          throw mediaError;
+        }
+      }
+      
+      // Create media recorder with fallbacks for different browser implementations
+      try {
+        this.mediaRecorder = new MediaRecorder(this.stream);
+      } catch (recorderError) {
+        console.error('MediaRecorder error:', recorderError);
+        
+        // Clean up stream if media recorder creation fails
+        if (this.stream) {
+          this.stream.getTracks().forEach(track => track.stop());
+        }
+        
+        throw new Error('Could not create audio recorder. Your browser may not support this feature.');
+      }
+      
       this.audioChunks = [];
       
       // Set up event handlers
@@ -147,11 +192,22 @@ class AudioRecordingService {
         this.audioChunks.push(event.data);
       });
       
-      // Start recording
-      this.mediaRecorder.start();
-      console.log('Recording started');
+      // Start recording with error handling
+      try {
+        this.mediaRecorder.start();
+        console.log('Recording started');
+      } catch (startError) {
+        console.error('Error starting recording:', startError);
+        
+        // Clean up resources
+        if (this.stream) {
+          this.stream.getTracks().forEach(track => track.stop());
+        }
+        
+        throw new Error('Failed to start recording: ' + startError.message);
+      }
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error('Error in startRecording:', error);
       throw error;
     }
   }
