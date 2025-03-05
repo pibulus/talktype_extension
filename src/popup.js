@@ -41,9 +41,25 @@ async function testMicrophone() {
       statusElement.textContent = 'Ready to transcribe audio to text';
     }, 2000);
   } catch (error) {
-    // Show error message
-    statusElement.textContent = `Error: ${error.message}`;
     console.error('Microphone access error:', error);
+    
+    // Handle different error types
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      statusElement.innerHTML = `
+        <span style="color: #721c24">Microphone permission denied</span><br>
+        <small>To fix this:</small>
+        <ol style="font-size: 12px; text-align: left; margin-top: 5px;">
+          <li>Click the lock/site settings icon in the Chrome address bar</li>
+          <li>Find "Microphone" in the site permissions</li>
+          <li>Change it to "Allow"</li>
+          <li>Refresh this page and try again</li>
+        </ol>
+      `;
+    } else if (error.name === 'NotFoundError') {
+      statusElement.textContent = 'Error: No microphone found on your device';
+    } else {
+      statusElement.textContent = `Error: ${error.message}`;
+    }
   }
 }
 

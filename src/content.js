@@ -10,16 +10,26 @@ let activeInput = null;
 let apiKey = ''; // This should be set through extension options
 
 // Initialize services when the page is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  // Initialize services
-  audioService = new AudioRecordingService();
-  apiService = new GeminiApiService(apiKey);
-  
-  // Check for recorded inputs
-  initializeInputDetection();
-  
-  // Add observer to detect dynamically added inputs
-  observeDynamicInputs();
+document.addEventListener('DOMContentLoaded', async () => {
+  // Get API key from storage
+  try {
+    const response = await chrome.runtime.sendMessage({action: 'getApiKey'});
+    apiKey = response.apiKey;
+    
+    // Initialize services
+    audioService = new AudioRecordingService();
+    apiService = new GeminiApiService(apiKey);
+    
+    // Check for recorded inputs
+    initializeInputDetection();
+    
+    // Add observer to detect dynamically added inputs
+    observeDynamicInputs();
+    
+    console.log('Audio to Text extension initialized');
+  } catch (error) {
+    console.error('Failed to initialize Audio to Text extension:', error);
+  }
 });
 
 // Function to initialize input detection
@@ -161,7 +171,22 @@ async function startRecording(targetInput, indicator) {
     console.log('Recording started for', targetInput);
   } catch (error) {
     console.error('Failed to start recording:', error);
-    alert(`Failed to start recording: ${error.message}`);
+    
+    // Handle different error types
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      const permissionMessage = `
+        Microphone permission denied. 
+        
+        Please allow microphone access in your browser settings:
+        1. Click the lock icon in the address bar
+        2. Find "Microphone" in the site permissions
+        3. Change it to "Allow"
+        4. Refresh the page and try again
+      `;
+      alert(permissionMessage);
+    } else {
+      alert(`Failed to start recording: ${error.message}`);
+    }
     
     // Reset state
     isRecording = false;
