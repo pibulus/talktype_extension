@@ -24,30 +24,57 @@ function saveOptions() {
 async function checkMicrophonePermission() {
   const permissionStatusElement = document.getElementById('permissionStatus');
   
-  try {
-    // Try to query current permission status
-    const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-    
-    // Update UI based on permission state
-    if (permissionStatus.state === 'granted') {
-      permissionStatusElement.textContent = 'Microphone access is granted.';
-      permissionStatusElement.className = 'permission-status granted';
-      chrome.storage.sync.set({ microphonePermission: 'granted' });
-    } else if (permissionStatus.state === 'denied') {
-      permissionStatusElement.textContent = 'Microphone access is denied. You need to allow it in your browser settings.';
-      permissionStatusElement.className = 'permission-status denied';
-      chrome.storage.sync.set({ microphonePermission: 'denied' });
-    } else {
-      permissionStatusElement.textContent = 'Microphone permission status is prompt. Click the button below to request access.';
-      permissionStatusElement.className = 'permission-status unknown';
+  // First check if the browser supports the necessary APIs
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    permissionStatusElement.textContent = 'Your browser does not support audio recording.';
+    permissionStatusElement.className = 'permission-status denied';
+    return;
+  }
+  
+  // Check if permissions API is supported
+  if (navigator.permissions && navigator.permissions.query) {
+    try {
+      // Try to query current permission status
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+      
+      // Update UI based on permission state
+      if (permissionStatus.state === 'granted') {
+        permissionStatusElement.textContent = 'Microphone access is granted.';
+        permissionStatusElement.className = 'permission-status granted';
+        chrome.storage.sync.set({ microphonePermission: 'granted' });
+      } else if (permissionStatus.state === 'denied') {
+        permissionStatusElement.textContent = 'Microphone access is denied. You need to allow it in your browser settings.';
+        permissionStatusElement.className = 'permission-status denied';
+        chrome.storage.sync.set({ microphonePermission: 'denied' });
+      } else {
+        permissionStatusElement.textContent = 'Microphone permission status is prompt. Click the button below to request access.';
+        permissionStatusElement.className = 'permission-status unknown';
+      }
+      
+      // Listen for permission changes
+      permissionStatus.onchange = function() {
+        checkMicrophonePermission();
+      };
+      return;
+    } catch (error) {
+      console.log('Permission query failed:', error);
+      // Continue to fallback methods
     }
+  }
+  
+  // If permissions API is not supported or failed, try a direct approach
+  // We'll try to directly request and then immediately release
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     
-    // Listen for permission changes
-    permissionStatus.onchange = function() {
-      checkMicrophonePermission();
-    };
+    // If we get here, permission was granted
+    stream.getTracks().forEach(track => track.stop());
+    
+    permissionStatusElement.textContent = 'Microphone access is granted.';
+    permissionStatusElement.className = 'permission-status granted';
+    chrome.storage.sync.set({ microphonePermission: 'granted' });
   } catch (error) {
-    console.log('Permission query not supported:', error);
+    console.log('Direct permission check failed:', error);
     
     // Fall back to checking stored permission
     chrome.storage.sync.get(['microphonePermission'], (result) => {
@@ -55,7 +82,7 @@ async function checkMicrophonePermission() {
         permissionStatusElement.textContent = 'Microphone access was previously granted.';
         permissionStatusElement.className = 'permission-status granted';
       } else {
-        permissionStatusElement.textContent = 'Unable to determine microphone permission status. Click the button below to request access.';
+        permissionStatusElement.textContent = 'Click the button below to request microphone access.';
         permissionStatusElement.className = 'permission-status unknown';
       }
     });
@@ -68,6 +95,13 @@ async function requestMicrophonePermission() {
   
   permissionStatusElement.textContent = 'Requesting microphone access...';
   permissionStatusElement.className = 'permission-status unknown';
+  
+  // First check if getUserMedia is supported
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    permissionStatusElement.textContent = 'Error: Your browser does not support audio recording.';
+    permissionStatusElement.className = 'permission-status denied';
+    return;
+  }
   
   try {
     // Actually request browser permission
