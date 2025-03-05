@@ -4,8 +4,10 @@ class GeminiApiService {
   constructor(apiKey) {
     this.apiKey = apiKey;
     // Gemini API endpoints
-    this.uploadEndpoint = 'https://generativelanguage.googleapis.com/upload/v1beta/files';
-    this.generateEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+    this.uploadEndpoint =
+      "https://generativelanguage.googleapis.com/upload/v1beta/files";
+    this.generateEndpoint =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
   }
 
   /**
@@ -18,13 +20,13 @@ class GeminiApiService {
       // Step 1: Upload the audio file to Gemini
       const fileUri = await this.uploadAudioFile(audioBlob);
       if (!fileUri) {
-        throw new Error('Failed to upload audio file');
+        throw new Error("Failed to upload audio file");
       }
-      
+
       // Step 2: Generate content using the uploaded file
       return await this.generateContentFromAudio(fileUri);
     } catch (error) {
-      console.error('Transcription error:', error);
+      console.error("Transcription error:", error);
       throw error;
     }
   }
@@ -37,57 +39,64 @@ class GeminiApiService {
   async uploadAudioFile(audioBlob) {
     try {
       // Step 1: Get the audio file details
-      const mimeType = audioBlob.type || 'audio/webm';
+      const mimeType = audioBlob.type || "audio/webm";
       const numBytes = audioBlob.size;
-      const displayName = 'AUDIO';
-      
+      const displayName = "AUDIO";
+
       // Step 2: Initial resumable request to define metadata
-      const uploadUrlResponse = await fetch(`${this.uploadEndpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'X-Goog-Upload-Protocol': 'resumable',
-          'X-Goog-Upload-Command': 'start',
-          'X-Goog-Upload-Header-Content-Length': numBytes.toString(),
-          'X-Goog-Upload-Header-Content-Type': mimeType,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file: { display_name: displayName } })
-      });
-      
+      const uploadUrlResponse = await fetch(
+        `${this.uploadEndpoint}?key=${this.apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "X-Goog-Upload-Protocol": "resumable",
+            "X-Goog-Upload-Command": "start",
+            "X-Goog-Upload-Header-Content-Length": numBytes.toString(),
+            "X-Goog-Upload-Header-Content-Type": mimeType,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ file: { display_name: displayName } }),
+        }
+      );
+
       if (!uploadUrlResponse.ok) {
         const errorText = await uploadUrlResponse.text();
-        throw new Error(`Failed to initiate upload: ${uploadUrlResponse.status} - ${errorText}`);
+        throw new Error(
+          `Failed to initiate upload: ${uploadUrlResponse.status} - ${errorText}`
+        );
       }
-      
+
       // Get the upload URL from the response headers
-      const uploadUrl = uploadUrlResponse.headers.get('X-Goog-Upload-URL');
+      const uploadUrl = uploadUrlResponse.headers.get("X-Goog-Upload-URL");
       if (!uploadUrl) {
-        throw new Error('No upload URL received from Gemini API');
+        throw new Error("No upload URL received from Gemini API");
       }
-      
+
       // Step 3: Upload the actual bytes
       const uploadResponse = await fetch(uploadUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Length': numBytes.toString(),
-          'X-Goog-Upload-Offset': '0',
-          'X-Goog-Upload-Command': 'upload, finalize'
+          "Content-Length": numBytes.toString(),
+          "X-Goog-Upload-Offset": "0",
+          "X-Goog-Upload-Command": "upload, finalize",
         },
-        body: audioBlob
+        body: audioBlob,
       });
-      
+
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
-        throw new Error(`Failed to upload file: ${uploadResponse.status} - ${errorText}`);
+        throw new Error(
+          `Failed to upload file: ${uploadResponse.status} - ${errorText}`
+        );
       }
-      
+
       // Get the file info from the response
       const fileInfo = await uploadResponse.json();
-      
+
       // Return the file URI
       return fileInfo.file?.uri;
     } catch (error) {
-      console.error('Error uploading audio:', error);
+      console.error("Error uploading audio:", error);
       throw error;
     }
   }
@@ -100,39 +109,51 @@ class GeminiApiService {
   async generateContentFromAudio(fileUri) {
     try {
       // Call Gemini API to process the audio file
-      const response = await fetch(`${this.generateEndpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: "Transcribe this audio clip" },
-              { file_data: { mime_type: "audio/webm", file_uri: fileUri } }
-            ]
-          }]
-        })
-      });
-      
+      const response = await fetch(
+        `${this.generateEndpoint}?key=${this.apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: "Transcribe this audio clip" },
+                  { file_data: { mime_type: "audio/webm", file_uri: fileUri } },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Gemini API request failed with status ${response.status}: ${errorData.error?.message || ''}`);
+        throw new Error(
+          `Gemini API request failed with status ${response.status}: ${
+            errorData.error?.message || ""
+          }`
+        );
       }
-      
+
       const data = await response.json();
-      
+
       // Extract the transcription from the response
-      if (data.candidates && data.candidates.length > 0 && 
-          data.candidates[0].content && 
-          data.candidates[0].content.parts && 
-          data.candidates[0].content.parts.length > 0) {
+      if (
+        data.candidates &&
+        data.candidates.length > 0 &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts &&
+        data.candidates[0].content.parts.length > 0
+      ) {
         return data.candidates[0].content.parts[0].text;
       } else {
-        throw new Error('Unexpected response format from Gemini API');
+        throw new Error("Unexpected response format from Gemini API");
       }
     } catch (error) {
-      console.error('Error generating content from audio:', error);
+      console.error("Error generating content from audio:", error);
       throw error;
     }
   }
@@ -144,15 +165,17 @@ class GeminiApiService {
   async verifyApiKey() {
     try {
       // Make a simple request to verify the API key
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`
+      );
       if (response.ok) {
         return true;
       } else {
-        console.error('API key verification failed:', await response.text());
+        console.error("API key verification failed:", await response.text());
         return false;
       }
     } catch (error) {
-      console.error('API key verification error:', error);
+      console.error("API key verification error:", error);
       return false;
     }
   }
