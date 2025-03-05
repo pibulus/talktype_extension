@@ -61,16 +61,9 @@ async function testMicrophone() {
         // Check if we're on Mac
         const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
         
-        // Check for previously granted permission
-        const permResult = await chrome.storage.sync.get(['microphonePermission']);
-        if (!permResult.microphonePermission && isMac) {
-          recordingStatus.innerHTML = `
-            <span style="color:#721c24">
-              Please grant microphone permission in Options page first.
-            </span>
-          `;
-          return;
-        }
+        // Even if we have previously granted permission in our storage,
+        // Chrome might still have it set to "Ask" rather than "Allow"
+        // So we'll just try to get the stream directly regardless of stored permission
         
         // Request microphone access
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -102,11 +95,39 @@ async function testMicrophone() {
         console.error('Error starting recording:', error);
         
         if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-          recordingStatus.innerHTML = `
-            <span style="color:#721c24">
-              Microphone access denied. Please go to Options page to grant permission.
-            </span>
-          `;
+          // For Mac users, show OS-level instructions
+          const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+          
+          if (isMac) {
+            recordingStatus.innerHTML = `
+              <span style="color:#721c24">
+                Microphone access denied. Please check both places:
+                <ol style="text-align:left; margin-top:5px; margin-bottom:5px">
+                  <li>Chrome site settings (click shield/lock icon in address bar)</li>
+                  <li>macOS System Preferences > Security & Privacy > Privacy > Microphone</li>
+                </ol>
+              </span>
+            `;
+          } else {
+            recordingStatus.innerHTML = `
+              <span style="color:#721c24">
+                Microphone access denied. Click the lock/shield icon in the address bar and allow microphone access.
+              </span>
+            `;
+          }
+          
+          // Add a direct link to Chrome's content settings
+          const settingsButton = document.createElement('button');
+          settingsButton.textContent = 'Open Chrome Settings';
+          settingsButton.style.marginTop = '10px';
+          settingsButton.style.marginRight = '5px';
+          settingsButton.style.padding = '5px 10px';
+          settingsButton.addEventListener('click', () => {
+            chrome.tabs.create({
+              url: 'chrome://settings/content/microphone'
+            });
+          });
+          recordingStatus.appendChild(settingsButton);
           
           // Add button to open options
           const optionsButton = document.createElement('button');
