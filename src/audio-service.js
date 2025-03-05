@@ -30,36 +30,73 @@ class AudioRecordingService {
    */
   requestMicrophonePermission() {
     return new Promise((resolve) => {
-      // Create dialog if needed
-      if (!this.permissionDialog) {
-        this.permissionDialog = new PermissionDialog();
-      }
-      
-      // Show custom permission dialog
-      this.permissionDialog.showDialog(
-        // On Allow
-        async () => {
-          try {
-            // Actually request browser permission
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            
-            // Stop the stream right away, we just needed permission
-            stream.getTracks().forEach(track => track.stop());
-            
-            this.permissionGranted = true;
-            resolve(true);
-          } catch (error) {
-            console.error('Permission request failed:', error);
-            resolve(false);
-          }
-        },
-        // On Deny
-        () => {
-          this.permissionGranted = false;
+      // First check storage for existing permission
+      chrome.storage.sync.get(['microphonePermission'], async (result) => {
+        if (result.microphonePermission === 'granted') {
+          this.permissionGranted = true;
+          resolve(true);
+          return;
+        }
+        
+        // No permission stored, try to request using dialog
+        // Create dialog if needed
+        if (!this.permissionDialog) {
+          this.permissionDialog = new PermissionDialog();
+        }
+        
+        // Try the dedicated permission page approach if dialog doesn't show
+        try {
+          // Show custom permission dialog
+          this.permissionDialog.showDialog(
+            // On Allow
+            async () => {
+              try {
+                // Actually request browser permission
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // Stop the stream right away, we just needed permission
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Store permission status
+                chrome.storage.sync.set({ microphonePermission: 'granted' });
+                
+                this.permissionGranted = true;
+                resolve(true);
+              } catch (error) {
+                console.error('Permission request failed:', error);
+                
+                // If permission denied, open dedicated page
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                  this.openPermissionPage();
+                }
+                
+                resolve(false);
+              }
+            },
+            // On Deny
+            () => {
+              // On deny, offer the dedicated page
+              this.openPermissionPage();
+              
+              this.permissionGranted = false;
+              resolve(false);
+            }
+          );
+        } catch (e) {
+          console.error('Error showing dialog:', e);
+          // Fallback to native permission request
+          this.openPermissionPage();
           resolve(false);
         }
-      );
+      });
     });
+  }
+  
+  /**
+   * Open the dedicated permission page
+   */
+  openPermissionPage() {
+    chrome.runtime.sendMessage({ action: 'requestMicrophonePermission' });
   }
 
   /**

@@ -39,4 +39,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true; // Indicates async response
   }
+  
+  if (message.action === 'requestMicrophonePermission') {
+    // This will open a new tab where permission can be requested more reliably
+    chrome.tabs.create({ url: chrome.runtime.getURL('permission.html') }, (tab) => {
+      // Tab created, we'll handle the permission request in that page
+      sendResponse({ tabId: tab.id });
+    });
+    return true; // Indicates async response
+  }
 });

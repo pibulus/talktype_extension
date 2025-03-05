@@ -40,6 +40,39 @@ class PermissionDialog {
       if (onDeny) onDeny();
     });
     
+    // In popup environment, we need to attach dialog to the document root
+    // and make sure it's positioned properly
+    try {
+      // For popup, use a different approach
+      if (window.innerWidth < 400) { // Likely a popup
+        // Position for small popup
+        this.dialogElement.style.width = '90%';
+        this.dialogElement.style.position = 'fixed';
+        this.dialogElement.style.top = '50%';
+        this.dialogElement.style.left = '50%';
+        this.dialogElement.style.transform = 'translate(-50%, -50%)';
+        this.dialogElement.style.maxHeight = '80vh';
+        this.dialogElement.style.overflow = 'auto';
+        this.dialogElement.style.zIndex = '2147483647'; // Max z-index
+        
+        // Create a backdrop
+        const backdrop = document.createElement('div');
+        backdrop.style.position = 'fixed';
+        backdrop.style.top = '0';
+        backdrop.style.left = '0';
+        backdrop.style.width = '100%';
+        backdrop.style.height = '100%';
+        backdrop.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        backdrop.style.zIndex = '2147483646'; // One less than dialog
+        backdrop.className = 'audio-to-text-permission-backdrop';
+        
+        // Add backdrop first
+        document.body.appendChild(backdrop);
+      }
+    } catch (e) {
+      console.error('Error setting up dialog position:', e);
+    }
+    
     // Show dialog
     document.body.appendChild(this.dialogElement);
     this.isShowing = true;
@@ -59,11 +92,24 @@ class PermissionDialog {
     // Animate out
     this.dialogElement.style.opacity = '0';
     
+    // Remove backdrop if it exists
+    const backdrop = document.querySelector('.audio-to-text-permission-backdrop');
+    if (backdrop) {
+      backdrop.style.opacity = '0';
+    }
+    
     // Remove after animation
     setTimeout(() => {
+      // Remove dialog
       if (this.dialogElement && this.dialogElement.parentNode) {
         this.dialogElement.parentNode.removeChild(this.dialogElement);
       }
+      
+      // Remove backdrop
+      if (backdrop && backdrop.parentNode) {
+        backdrop.parentNode.removeChild(backdrop);
+      }
+      
       this.isShowing = false;
     }, 300);
   }

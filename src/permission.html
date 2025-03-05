@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Microphone Permission - Audio to Text</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .permission-container {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    .button-container {
+      margin-top: 30px;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 0 10px;
+    }
+    button:hover {
+      background-color: #3367d6;
+    }
+    .secondary {
+      background-color: #f1f1f1;
+      color: #333;
+    }
+    .secondary:hover {
+      background-color: #e5e5e5;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <h1>Microphone Permission</h1>
+  
+  <div class="permission-container">
+    <div class="icon">🎤</div>
+    <p>Audio to Text needs permission to use your microphone for voice transcription.</p>
+    <p>Click the button below to grant permission, then you can close this tab.</p>
+    
+    <div class="button-container">
+      <button id="requestPermission">Grant Microphone Access</button>
+      <button id="close" class="secondary">Close</button>
+    </div>
+  </div>
+  
+  <div id="status" class="status" style="display: none;"></div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const statusElement = document.getElementById('status');
+      const requestButton = document.getElementById('requestPermission');
+      const closeButton = document.getElementById('close');
+      
+      // Request permission button
+      requestButton.addEventListener('click', async () => {
+        statusElement.style.display = 'block';
+        statusElement.textContent = 'Requesting microphone access...';
+        
+        try {
+          // Request microphone access
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          
+          // Show success message
+          statusElement.className = 'status success';
+          statusElement.textContent = 'Microphone access granted! You can now close this tab.';
+          
+          // Stop all tracks
+          stream.getTracks().forEach(track => track.stop());
+          
+          // Store permission status
+          chrome.storage.sync.set({ microphonePermission: 'granted' });
+          
+          // Disable request button
+          requestButton.disabled = true;
+        } catch (error) {
+          // Show error message
+          statusElement.className = 'status error';
+          
+          if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+            statusElement.textContent = 'Microphone access denied. Please click the button again to retry.';
+          } else if (error.name === 'NotFoundError') {
+            statusElement.textContent = 'No microphone found on your device.';
+          } else {
+            statusElement.textContent = `Error: ${error.message}`;
+          }
+          
+          console.error('Microphone permission error:', error);
+        }
+      });
+      
+      // Close button
+      closeButton.addEventListener('click', () => {
+        window.close();
+      });
+    });
+  </script>
+</body>
+</html>

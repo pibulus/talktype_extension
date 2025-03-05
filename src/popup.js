@@ -25,38 +25,48 @@ function openOptions() {
 // Test microphone access
 async function testMicrophone() {
   const statusElement = document.getElementById('status');
-  const permissionDialog = new PermissionDialog();
   
-  statusElement.textContent = 'Requesting microphone access...';
-  
-  // Show custom permission dialog first
-  permissionDialog.showDialog(
-    // On Allow
-    async () => {
-      try {
-        // Actually request browser permission
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        // Show success message
-        statusElement.textContent = 'Microphone access granted!';
-        
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
-        
-        // Reset status after 2 seconds
-        setTimeout(() => {
-          statusElement.textContent = 'Ready to transcribe audio to text';
-        }, 2000);
-      } catch (error) {
-        console.error('Microphone access error:', error);
-        handleMicrophoneError(error, statusElement);
-      }
-    },
-    // On Deny
-    () => {
-      statusElement.textContent = 'Microphone access denied by user';
+  // First check if we already have permission
+  try {
+    const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+    
+    if (permissionStatus.state === 'granted') {
+      // We already have permission, just verify it works
+      statusElement.textContent = 'Checking microphone...';
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Show success message
+      statusElement.textContent = 'Microphone access granted!';
+      
+      // Stop all tracks
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Reset status after 2 seconds
+      setTimeout(() => {
+        statusElement.textContent = 'Ready to transcribe audio to text';
+      }, 2000);
+      
+      return;
     }
-  );
+  } catch (error) {
+    console.log('Permission query not supported or failed:', error);
+    // Continue to request permission anyway
+  }
+  
+  // Open the dedicated permission page in a new tab
+  statusElement.textContent = 'Opening permission page...';
+  
+  chrome.runtime.sendMessage({ action: 'requestMicrophonePermission' }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.error('Error opening permission page:', chrome.runtime.lastError);
+      statusElement.textContent = 'Error opening permission page';
+      return;
+    }
+    
+    if (response && response.tabId) {
+      statusElement.textContent = 'Permission page opened. Please grant access there.';
+    }
+  });
 }
 
 // Handle microphone errors
