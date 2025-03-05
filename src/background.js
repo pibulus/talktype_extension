@@ -22,9 +22,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'getApiKey') {
     // Get API key from storage
     chrome.storage.sync.get(['apiKey'], (result) => {
+      console.log('Sending API key to content script:', result.apiKey ? 'API key found' : 'No API key');
       sendResponse({ apiKey: result.apiKey || '' });
     });
-    return true; // Indicates async response
+    return true; // Indicates async response is coming
   }
   
   if (message.action === 'checkSiteEnabled') {

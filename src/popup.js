@@ -182,21 +182,13 @@ async function testMicrophone() {
                 throw new Error('Invalid API key. Please check your key in Options.');
               }
               
-              // Get the transcription (simulated)
+              // Get the transcription using Gemini API
               const transcription = await apiService.transcribeAudio(audioBlob);
               
               // Show the result
               transcriptionElement.textContent = transcription || 'No speech detected.';
-              recordingStatus.textContent = 'Transcription complete! (Simulated for demo)';
+              recordingStatus.textContent = 'Transcription complete!';
               recordingStatus.style.color = '#155724';
-              
-              // Add note about simulation
-              const note = document.createElement('div');
-              note.style.fontSize = '11px';
-              note.style.marginTop = '5px';
-              note.style.fontStyle = 'italic';
-              note.textContent = 'Note: This is a simulated response for demonstration purposes.';
-              recordingStatus.appendChild(note);
             } catch (apiError) {
               console.error('API error:', apiError);
               transcriptionElement.textContent = `Error: ${apiError.message}`;

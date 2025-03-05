@@ -3,58 +3,26 @@
 class GeminiApiService {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    // OpenAI Whisper endpoint
-    this.apiEndpoint = 'https://api.openai.com/v1/audio/transcriptions';
+    // Gemini API endpoints
+    this.uploadEndpoint = 'https://generativelanguage.googleapis.com/upload/v1beta/files';
+    this.generateEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   }
 
   /**
-   * Transcribe audio data using OpenAI Whisper API
+   * Transcribe audio data using Gemini API
    * @param {Blob} audioBlob - The recorded audio as a Blob
    * @returns {Promise<string>} - The transcribed text
    */
   async transcribeAudio(audioBlob) {
     try {
-      // For demonstration purposes, we'll use a mockup response
-      // since we can't actually call the OpenAI API without a valid key
-      // and the user provided a Gemini key, not an OpenAI key.
-      
-      // In a real implementation, we would:
-      // 1. Check if the provided API key is valid
-      // 2. Create a FormData object with the audio file
-      // 3. Send it to the OpenAI Whisper API
-      // 4. Parse the response
-      
-      // Mock implementation - simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Return a mock transcription
-      return "This is a simulated transcription. In a real implementation, this would be the text transcribed from your audio by an AI service. To use real transcription, the extension would need to be configured with an OpenAI API key.";
-      
-      /* 
-      // Real implementation would look like this:
-      // Create form data for the audio file
-      const formData = new FormData();
-      formData.append('file', audioBlob, 'recording.webm');
-      formData.append('model', 'whisper-1');
-      formData.append('response_format', 'json');
-      
-      // Call OpenAI API
-      const response = await fetch(this.apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`API request failed with status ${response.status}: ${errorData.error?.message || ''}`);
+      // Step 1: Upload the audio file to Gemini
+      const fileUri = await this.uploadAudioFile(audioBlob);
+      if (!fileUri) {
+        throw new Error('Failed to upload audio file');
       }
-
-      const data = await response.json();
-      return data.text;
-      */
+      
+      // Step 2: Generate content using the uploaded file
+      return await this.generateContentFromAudio(fileUri);
     } catch (error) {
       console.error('Transcription error:', error);
       throw error;
@@ -62,13 +30,131 @@ class GeminiApiService {
   }
 
   /**
-   * This method simulates verifying an API key - in a real implementation,
-   * it would check if the key is valid for the service being used.
+   * Upload audio file to Gemini API
+   * @param {Blob} audioBlob - The recorded audio blob
+   * @returns {Promise<string>} - The file URI for the uploaded file
+   */
+  async uploadAudioFile(audioBlob) {
+    try {
+      // Step 1: Get the audio file details
+      const mimeType = audioBlob.type || 'audio/webm';
+      const numBytes = audioBlob.size;
+      const displayName = 'AUDIO';
+      
+      // Step 2: Initial resumable request to define metadata
+      const uploadUrlResponse = await fetch(`${this.uploadEndpoint}?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: {
+          'X-Goog-Upload-Protocol': 'resumable',
+          'X-Goog-Upload-Command': 'start',
+          'X-Goog-Upload-Header-Content-Length': numBytes.toString(),
+          'X-Goog-Upload-Header-Content-Type': mimeType,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ file: { display_name: displayName } })
+      });
+      
+      if (!uploadUrlResponse.ok) {
+        const errorText = await uploadUrlResponse.text();
+        throw new Error(`Failed to initiate upload: ${uploadUrlResponse.status} - ${errorText}`);
+      }
+      
+      // Get the upload URL from the response headers
+      const uploadUrl = uploadUrlResponse.headers.get('X-Goog-Upload-URL');
+      if (!uploadUrl) {
+        throw new Error('No upload URL received from Gemini API');
+      }
+      
+      // Step 3: Upload the actual bytes
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Length': numBytes.toString(),
+          'X-Goog-Upload-Offset': '0',
+          'X-Goog-Upload-Command': 'upload, finalize'
+        },
+        body: audioBlob
+      });
+      
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Failed to upload file: ${uploadResponse.status} - ${errorText}`);
+      }
+      
+      // Get the file info from the response
+      const fileInfo = await uploadResponse.json();
+      
+      // Return the file URI
+      return fileInfo.file?.uri;
+    } catch (error) {
+      console.error('Error uploading audio:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate content from an audio file using Gemini API
+   * @param {string} fileUri - The URI of the uploaded audio file
+   * @returns {Promise<string>} - The transcribed text
+   */
+  async generateContentFromAudio(fileUri) {
+    try {
+      // Call Gemini API to process the audio file
+      const response = await fetch(`${this.generateEndpoint}?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: "Transcribe this audio clip" },
+              { file_data: { mime_type: "audio/webm", file_uri: fileUri } }
+            ]
+          }]
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Gemini API request failed with status ${response.status}: ${errorData.error?.message || ''}`);
+      }
+      
+      const data = await response.json();
+      
+      // Extract the transcription from the response
+      if (data.candidates && data.candidates.length > 0 && 
+          data.candidates[0].content && 
+          data.candidates[0].content.parts && 
+          data.candidates[0].content.parts.length > 0) {
+        return data.candidates[0].content.parts[0].text;
+      } else {
+        throw new Error('Unexpected response format from Gemini API');
+      }
+    } catch (error) {
+      console.error('Error generating content from audio:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verify that the API key is valid
    * @returns {Promise<boolean>} - Whether the key is valid
    */
   async verifyApiKey() {
-    // For demonstration, we'll just check if a key exists
-    return !!this.apiKey && this.apiKey.length > 5;
+    try {
+      // Make a simple request to verify the API key
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
+      if (response.ok) {
+        return true;
+      } else {
+        console.error('API key verification failed:', await response.text());
+        return false;
+      }
+    } catch (error) {
+      console.error('API key verification error:', error);
+      return false;
+    }
   }
 
   /**
