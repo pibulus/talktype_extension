@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Audio to Text - Options</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      min-width: 300px;
+    }
+    h1 {
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #3367d6;
+    }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .info {
+      margin-top: 20px;
+      background-color: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Audio to Text - Options</h1>
+  
+  <div class="form-group">
+    <label for="apiKey">Gemini API Key:</label>
+    <input type="text" id="apiKey" placeholder="Enter your Gemini API key">
+    <small>You can get an API key from <a href="https://ai.google.dev/" target="_blank">Google AI Studio</a></small>
+  </div>
+  
+  <button id="save">Save</button>
+  
+  <div id="status" class="status" style="display: none;"></div>
+  
+  <div class="info">
+    <p><strong>How to use:</strong></p>
+    <ol>
+      <li>Enter your Gemini API key above and save.</li>
+      <li>Navigate to any website with text inputs.</li>
+      <li>Click on the microphone icon that appears next to text inputs.</li>
+      <li>Speak your text and it will be transcribed into the input field.</li>
+    </ol>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html>

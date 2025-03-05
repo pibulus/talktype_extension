@@ -1,0 +1,48 @@
+/* Styles for Audio to Text extension */
+
+.audio-to-text-mic-button {
+  position: absolute;
+  z-index: 9999;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.audio-to-text-mic-button:hover {
+  transform: translateY(-50%) scale(1.2);
+}
+
+.audio-to-text-mic-button:active {
+  transform: translateY(-50%) scale(0.9);
+}
+
+.audio-to-text-recording-indicator {
+  display: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: red;
+  position: absolute;
+  top: 0;
+  right: 0;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+  }
+}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Audio to Text</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      width: 250px;
+      padding: 15px;
+    }
+    h1 {
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .status {
+      margin-bottom: 15px;
+      padding: 8px;
+      border-radius: 4px;
+      background-color: #f8f9fa;
+      text-align: center;
+    }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #3367d6;
+    }
+    .disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .disabled:hover {
+      background-color: #ccc;
+    }
+    .error {
+      color: #721c24;
+      background-color: #f8d7da;
+      padding: 8px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Audio to Text</h1>
+  
+  <div id="apiKeyError" class="error" style="display: none;">
+    Please set your Gemini API key in the options.
+  </div>
+  
+  <div id="status" class="status">
+    Ready to transcribe audio to text
+  </div>
+  
+  <div class="buttons">
+    <button id="options">Options</button>
+    <button id="testMic">Test Microphone</button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
