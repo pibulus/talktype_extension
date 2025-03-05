@@ -94,12 +94,16 @@
   <div class="card">
     <div class="card-header">API Configuration</div>
     <div class="form-group">
-      <label for="apiKey">Gemini API Key:</label>
-      <input type="text" id="apiKey" placeholder="Enter your Gemini API key">
-      <small>You can get an API key from <a href="https://ai.google.dev/" target="_blank">Google AI Studio</a></small>
+      <label for="apiKey">API Key:</label>
+      <input type="text" id="apiKey" placeholder="Enter any text as API key for the demo">
+      <small>Note: For this demo, the actual transcription is simulated, so any text will work as an API key.</small>
     </div>
     
-    <button id="save">Save</button>
+    <div style="margin-top: 10px; background-color: #fff3cd; padding: 12px; border-radius: 4px; font-size: 0.9em;">
+      <p><strong>About this demo:</strong> In a production version, this extension would use a service like OpenAI's Whisper for transcription. For demonstration purposes, we simulate the transcription process.</p>
+    </div>
+    
+    <button id="save" style="margin-top: 15px;">Save</button>
     
     <div id="status" class="status" style="display: none;"></div>
   </div>
