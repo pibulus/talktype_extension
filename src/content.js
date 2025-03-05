@@ -366,6 +366,9 @@ async function startRecording(targetInput, indicator) {
       indicator.style.display = 'block';
     }
     
+    // Show listening notification immediately
+    showStatusNotification('🎤 Listening... Click microphone again to finish', 'recording');
+    
     // Start recording
     await audioService.startRecording();
     
@@ -418,6 +421,13 @@ async function stopRecording() {
       indicator.style.display = 'none';
     });
     
+    // Remove any recording notifications
+    document.querySelectorAll('.audio-to-text-notification-recording').forEach(notification => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    });
+    
     // Process the audio data
     await processAudioData(audioBlob);
   } catch (error) {
@@ -432,6 +442,13 @@ async function stopRecording() {
     document.querySelectorAll('.audio-to-text-recording-indicator').forEach(indicator => {
       indicator.style.display = 'none';
     });
+    
+    // Also remove any recording notifications on error
+    document.querySelectorAll('.audio-to-text-notification-recording').forEach(notification => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    });
   }
 }
 
@@ -445,11 +462,53 @@ async function processAudioData(audioBlob) {
     // Show processing indicator
     activeInput.classList.add('audio-to-text-processing');
     
-    // Create status notification
-    showStatusNotification('Processing audio...', 'info');
+    // Create status notification with fun processing messages
+    const processingNotification = showStatusNotification('🔄 Reticulating splines...', 'processing');
+    
+    // Cycle through fun processing messages
+    const processingMessages = [
+      '🔄 Reticulating splines...',
+      '🔊 Enhancing audio clarity...',
+      '🔍 Analyzing speech patterns...',
+      '🧠 Activating neural networks...',
+      '💬 Processing language context...',
+      '🌐 Running advanced Gemini model...',
+      '📊 Optimizing text accuracy...',
+      '📝 Finalizing your transcription...'
+    ];
+    
+    let messageIndex = 0;
+    const messageInterval = setInterval(() => {
+      messageIndex = (messageIndex + 1) % processingMessages.length;
+      if (processingNotification && document.body.contains(processingNotification)) {
+        processingNotification.textContent = processingMessages[messageIndex];
+        
+        // Keep the close button
+        const closeButton = document.createElement('button');
+        closeButton.innerHTML = '&times;';
+        closeButton.style.background = 'transparent';
+        closeButton.style.border = 'none';
+        closeButton.style.color = 'white';
+        closeButton.style.marginLeft = '10px';
+        closeButton.style.cursor = 'pointer';
+        closeButton.style.float = 'right';
+        closeButton.style.fontSize = '18px';
+        closeButton.style.lineHeight = '14px';
+        closeButton.onclick = () => {
+          if (document.body.contains(processingNotification)) {
+            document.body.removeChild(processingNotification);
+          }
+          clearInterval(messageInterval);
+        };
+        processingNotification.prepend(closeButton);
+      }
+    }, 400);
     
     // Send audio to API for transcription
     const transcription = await apiService.transcribeAudio(audioBlob);
+    
+    // Clear the message interval
+    clearInterval(messageInterval);
     
     // Insert transcribed text based on element type
     if (activeInput.isContentEditable) {
@@ -498,15 +557,15 @@ async function processAudioData(audioBlob) {
       }
     }
     
-    // Show success notification
-    showStatusNotification('Transcription complete', 'success');
+    // Show success notification with satisfying completion message
+    showStatusNotification('✅ Transcription complete!', 'success');
     
     console.log('Transcription complete:', transcription);
   } catch (error) {
     console.error('Transcription failed:', error);
     
     // Show error notification instead of alert
-    showStatusNotification(`Transcription failed: ${error.message}`, 'error');
+    showStatusNotification(`❌ Transcription failed: ${error.message}`, 'error');
   } finally {
     // Remove processing indicator
     activeInput.classList.remove('audio-to-text-processing');
@@ -523,17 +582,26 @@ function showStatusNotification(message, type = 'info') {
     return;
   }
   
+  // Remove any existing notifications of the same type
+  const existingNotifications = document.querySelectorAll(`.audio-to-text-notification-${type}`);
+  existingNotifications.forEach(notification => {
+    if (document.body.contains(notification)) {
+      document.body.removeChild(notification);
+    }
+  });
+  
   // Create notification element
   const notification = document.createElement('div');
-  notification.className = 'audio-to-text-notification';
+  notification.className = `audio-to-text-notification audio-to-text-notification-${type}`;
   notification.style.position = 'fixed';
   notification.style.bottom = '20px';
   notification.style.right = '20px';
   notification.style.padding = '12px 16px';
-  notification.style.borderRadius = '4px';
-  notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+  notification.style.borderRadius = '8px';
+  notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
   notification.style.zIndex = '10000';
-  notification.style.fontSize = '14px';
+  notification.style.fontSize = '15px';
+  notification.style.fontWeight = 'bold';
   notification.style.maxWidth = '300px';
   notification.style.opacity = '0';
   notification.style.transform = 'translateY(10px)';
@@ -545,6 +613,24 @@ function showStatusNotification(message, type = 'info') {
     notification.style.color = 'white';
   } else if (type === 'success') {
     notification.style.backgroundColor = '#4caf50';
+    notification.style.color = 'white';
+  } else if (type === 'recording') {
+    notification.style.backgroundColor = '#ff5722';
+    notification.style.color = 'white';
+    notification.style.animation = 'pulse-recording 1.5s infinite';
+    
+    // Add pulse animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse-recording {
+        0% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(255, 87, 34, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0); }
+      }
+    `;
+    document.head.appendChild(style);
+  } else if (type === 'processing') {
+    notification.style.backgroundColor = '#ff9800';
     notification.style.color = 'white';
   } else {
     notification.style.backgroundColor = '#2196f3';
@@ -566,7 +652,9 @@ function showStatusNotification(message, type = 'info') {
   closeButton.style.fontSize = '18px';
   closeButton.style.lineHeight = '14px';
   closeButton.onclick = () => {
-    document.body.removeChild(notification);
+    if (document.body.contains(notification)) {
+      document.body.removeChild(notification);
+    }
   };
   notification.prepend(closeButton);
   
@@ -579,20 +667,22 @@ function showStatusNotification(message, type = 'info') {
     notification.style.transform = 'translateY(0)';
   }, 10);
   
-  // Remove after 5 seconds
-  setTimeout(() => {
-    if (document.body.contains(notification)) {
-      notification.style.opacity = '0';
-      notification.style.transform = 'translateY(10px)';
-      
-      // Remove from DOM after transition
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 300);
-    }
-  }, 5000);
+  // Auto-remove after timeout (except for recording notifications)
+  if (type !== 'recording') {
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(10px)';
+        
+        // Remove from DOM after transition
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 300);
+      }
+    }, 5000);
+  }
   
   return notification;
 }

@@ -13,18 +13,29 @@ class GeminiApiService {
   /**
    * Transcribe audio data using Gemini API
    * @param {Blob} audioBlob - The recorded audio as a Blob
+   * @param {Function} progressCallback - Optional callback function to report progress
    * @returns {Promise<string>} - The transcribed text
    */
-  async transcribeAudio(audioBlob) {
+  async transcribeAudio(audioBlob, progressCallback = null) {
     try {
       // Step 1: Upload the audio file to Gemini
-      const fileUri = await this.uploadAudioFile(audioBlob);
+      if (progressCallback) progressCallback('upload-start', 0);
+      
+      const fileUri = await this.uploadAudioFile(audioBlob, progressCallback);
       if (!fileUri) {
         throw new Error("Failed to upload audio file");
       }
+      
+      if (progressCallback) progressCallback('upload-complete', 50);
 
       // Step 2: Generate content using the uploaded file
-      return await this.generateContentFromAudio(fileUri);
+      if (progressCallback) progressCallback('transcription-start', 50);
+      
+      const result = await this.generateContentFromAudio(fileUri);
+      
+      if (progressCallback) progressCallback('transcription-complete', 100);
+      
+      return result;
     } catch (error) {
       console.error("Transcription error:", error);
       throw error;
@@ -34,14 +45,17 @@ class GeminiApiService {
   /**
    * Upload audio file to Gemini API
    * @param {Blob} audioBlob - The recorded audio blob
+   * @param {Function} progressCallback - Optional callback function to report progress
    * @returns {Promise<string>} - The file URI for the uploaded file
    */
-  async uploadAudioFile(audioBlob) {
+  async uploadAudioFile(audioBlob, progressCallback = null) {
     try {
       // Step 1: Get the audio file details
       const mimeType = audioBlob.type || "audio/webm";
       const numBytes = audioBlob.size;
       const displayName = "AUDIO";
+
+      if (progressCallback) progressCallback('preparing-metadata', 5);
 
       // Step 2: Initial resumable request to define metadata
       const uploadUrlResponse = await fetch(
@@ -66,11 +80,15 @@ class GeminiApiService {
         );
       }
 
+      if (progressCallback) progressCallback('initial-request-complete', 20);
+
       // Get the upload URL from the response headers
       const uploadUrl = uploadUrlResponse.headers.get("X-Goog-Upload-URL");
       if (!uploadUrl) {
         throw new Error("No upload URL received from Gemini API");
       }
+
+      if (progressCallback) progressCallback('starting-file-upload', 25);
 
       // Step 3: Upload the actual bytes
       const uploadResponse = await fetch(uploadUrl, {
@@ -90,6 +108,8 @@ class GeminiApiService {
         );
       }
 
+      if (progressCallback) progressCallback('file-upload-complete', 45);
+
       // Get the file info from the response
       const fileInfo = await uploadResponse.json();
 
@@ -104,10 +124,13 @@ class GeminiApiService {
   /**
    * Generate content from an audio file using Gemini API
    * @param {string} fileUri - The URI of the uploaded audio file
+   * @param {Function} progressCallback - Optional callback function to report progress
    * @returns {Promise<string>} - The transcribed text
    */
-  async generateContentFromAudio(fileUri) {
+  async generateContentFromAudio(fileUri, progressCallback = null) {
     try {
+      if (progressCallback) progressCallback('sending-transcription-request', 55);
+      
       // Call Gemini API to process the audio file
       const response = await fetch(
         `${this.generateEndpoint}?key=${this.apiKey}`,
@@ -129,6 +152,8 @@ class GeminiApiService {
         }
       );
 
+      if (progressCallback) progressCallback('transcription-response-received', 75);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
@@ -139,6 +164,8 @@ class GeminiApiService {
       }
 
       const data = await response.json();
+      
+      if (progressCallback) progressCallback('processing-response', 90);
 
       // Extract the transcription from the response
       if (
