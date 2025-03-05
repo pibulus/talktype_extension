@@ -5,6 +5,61 @@ class AudioRecordingService {
     this.mediaRecorder = null;
     this.audioChunks = [];
     this.stream = null;
+    this.permissionDialog = null;
+    this.permissionGranted = false;
+  }
+
+  /**
+   * Check if microphone permission has been granted
+   * @returns {Promise<boolean>}
+   */
+  async checkMicrophonePermission() {
+    try {
+      // Try to get current permission status
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+      return permissionStatus.state === 'granted';
+    } catch (error) {
+      console.warn('Could not query microphone permission status:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Request microphone permission with a custom dialog
+   * @returns {Promise<boolean>}
+   */
+  requestMicrophonePermission() {
+    return new Promise((resolve) => {
+      // Create dialog if needed
+      if (!this.permissionDialog) {
+        this.permissionDialog = new PermissionDialog();
+      }
+      
+      // Show custom permission dialog
+      this.permissionDialog.showDialog(
+        // On Allow
+        async () => {
+          try {
+            // Actually request browser permission
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // Stop the stream right away, we just needed permission
+            stream.getTracks().forEach(track => track.stop());
+            
+            this.permissionGranted = true;
+            resolve(true);
+          } catch (error) {
+            console.error('Permission request failed:', error);
+            resolve(false);
+          }
+        },
+        // On Deny
+        () => {
+          this.permissionGranted = false;
+          resolve(false);
+        }
+      );
+    });
   }
 
   /**
@@ -13,6 +68,17 @@ class AudioRecordingService {
    */
   async startRecording() {
     try {
+      // Check if we already have permission
+      const hasPermission = await this.checkMicrophonePermission();
+      
+      // If no permission, request it with our custom dialog
+      if (!hasPermission && !this.permissionGranted) {
+        const permissionGranted = await this.requestMicrophonePermission();
+        if (!permissionGranted) {
+          throw new Error('Microphone permission denied');
+        }
+      }
+      
       // Request microphone access
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
