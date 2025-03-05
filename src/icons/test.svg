@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Background -->
+  <rect x="0" y="0" width="128" height="128" rx="24" fill="#121212"/>
+  
+  <!-- Vibrant Mexican-inspired color gradients -->
+  <defs>
+    <linearGradient id="mexicanGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF0099"/>
+      <stop offset="50%" stop-color="#FF9900"/>
+      <stop offset="100%" stop-color="#FFCC00"/>
+    </linearGradient>
+    <linearGradient id="mexicanGradient2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00CCFF"/>
+      <stop offset="50%" stop-color="#0066FF"/>
+      <stop offset="100%" stop-color="#3300FF"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  
+  <!-- Graffiti-style speech bubble background -->
+  <path d="M15,40 C12,25 25,15 45,18 C65,12 85,15 100,25 C115,38 120,55 115,70 C110,85 100,95 85,100 C75,103 65,103 60,107 L50,118 L52,102 C35,100 20,90 15,75 C10,60 18,50 15,40 Z" 
+        fill="url(#mexicanGradient1)" stroke="#FF00CC" stroke-width="3"/>
+  
+  <!-- Stylized dynamic microphone -->
+  <g transform="translate(64, 55) rotate(15) scale(0.9)">
+    <!-- Mic body -->
+    <path d="M-15,-5 L15,-5 L20,0 L20,25 L15,30 L-15,30 L-20,25 L-20,0 Z" fill="url(#mexicanGradient2)" stroke="#00FFCC" stroke-width="3"/>
+    <!-- Mic grille -->
+    <rect x="-12" y="0" width="24" height="20" rx="5" fill="#121212" stroke="#00FFFF" stroke-width="1"/>
+    <line x1="-10" y1="4" x2="10" y2="4" stroke="#00FFFF" stroke-width="2"/>
+    <line x1="-10" y1="9" x2="10" y2="9" stroke="#00FFFF" stroke-width="2"/>
+    <line x1="-10" y1="14" x2="10" y2="14" stroke="#00FFFF" stroke-width="2"/>
+    <!-- Mic stand -->
+    <rect x="-3" y="30" width="6" height="10" fill="#00CCFF" stroke="#00FFFF" stroke-width="1"/>
+    <ellipse cx="0" cy="43" rx="12" ry="4" fill="#00CCFF" stroke="#00FFFF" stroke-width="2"/>
+  </g>
+  
+  <!-- Stylized sound waves with glow effect -->
+  <g filter="url(#glow)">
+    <path d="M35,30 Q25,50 35,70 Q45,90 35,110" stroke="#FF9900" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M25,25 Q10,50 25,70 Q40,90 25,115" stroke="#FF00CC" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M93,30 Q103,50 93,70 Q83,90 93,110" stroke="#00FFCC" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M103,25 Q118,50 103,70 Q88,90 103,115" stroke="#00CCFF" stroke-width="4" stroke-linecap="round" fill="none"/>
+  </g>
+  
+  <!-- Text graffiti style -->
+  <g transform="translate(64, 97) rotate(-5)">
+    <path d="M-35,0 L35,0" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+    <path d="M-30,10 L30,10" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+    <path d="M-25,20 L25,20" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Small decorative elements -->
+  <circle cx="110" cy="30" r="8" fill="#FF00CC"/>
+  <circle cx="18" cy="40" r="6" fill="#00FFCC"/>
+  <circle cx="95" cy="100" r="5" fill="#FFCC00"/>
+  <path d="M115,52 L123,58 L115,64" fill="none" stroke="#FF9900" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13,85 L5,91 L13,97" fill="none" stroke="#00CCFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Accent stars -->
+  <path d="M85,25 L88,32 L95,33 L90,38 L91,45 L85,42 L79,45 L80,38 L75,33 L82,32 Z" fill="#FFCC00" stroke="#FF9900" stroke-width="1"/>
+  <path d="M35,85 L37,90 L42,90 L38,93 L39,98 L35,95 L31,98 L32,93 L28,90 L33,90 Z" fill="#00FFCC" stroke="#00CCFF" stroke-width="1"/>
+</svg>
