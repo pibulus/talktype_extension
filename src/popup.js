@@ -40,11 +40,11 @@ async function testMicrophone() {
   // Initialize test recording UI
   statusElement.innerHTML = `
     <div style="text-align:center">
-      <button id="startStop" style="background:#4285f4; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; margin-bottom:10px">
+      <button id="startStop" style="background:#4285f4; color:white; border:none; padding:10px 18px; border-radius:6px; cursor:pointer; margin-bottom:12px; font-weight:500; box-shadow:0 2px 5px rgba(66,133,244,0.3); transition:all 0.2s ease;">
         Start Recording
       </button>
-      <div id="recordingStatus" style="font-size:12px; margin-bottom:10px"></div>
-      <div id="transcription" style="margin-top:10px; padding:10px; border-radius:4px; background:#f8f9fa; min-height:40px; text-align:left"></div>
+      <div id="recordingStatus" style="font-size:13px; margin-bottom:12px; color:#555;"></div>
+      <div id="transcription" style="margin-top:12px; padding:15px; border-radius:8px; background:#fff; min-height:50px; text-align:left; box-shadow:0 1px 3px rgba(0,0,0,0.08);"></div>
     </div>
   `;
   
@@ -84,12 +84,16 @@ async function testMicrophone() {
         recordingStatus.textContent = 'Recording... (speak now)';
         recordingStatus.style.color = '#721c24';
         
-        // Auto-stop after 10 seconds
+        // Show recording animation
+        const recordingAnimation = document.getElementById('recording-animation');
+        recordingAnimation.style.display = 'block';
+        
+        // Auto-stop after 15 seconds
         setTimeout(() => {
           if (recording) {
             startStopButton.click();
           }
-        }, 10000);
+        }, 15000);
         
       } catch (error) {
         console.error('Error starting recording:', error);
@@ -147,6 +151,10 @@ async function testMicrophone() {
         recording = false;
         startStopButton.textContent = 'Start Recording';
         recordingStatus.textContent = 'Processing...';
+        
+        // Hide recording animation
+        const recordingAnimation = document.getElementById('recording-animation');
+        recordingAnimation.style.display = 'none';
         
         // Process the recording after it stops
         mediaRecorder.addEventListener('stop', async () => {
@@ -369,6 +377,72 @@ function handleMicrophoneError(error, statusElement) {
   }
 }
 
+// Handle microphone permission directly in the popup
+function openPermissionFix() {
+  // Show the permission dialog with smooth animation
+  const permissionDialog = document.getElementById('permissionDialog');
+  permissionDialog.style.display = 'flex';
+  
+  // Force reflow before adding show class to ensure animation works
+  permissionDialog.offsetHeight;
+  permissionDialog.classList.add('show');
+  
+  // Setup permission button
+  const permissionBtn = document.getElementById('permissionBtn');
+  const permissionStatus = document.getElementById('permission-status');
+  
+  // Add click handler for permission button
+  permissionBtn.onclick = async () => {
+    try {
+      // Request microphone access directly
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Stop the stream right away, we just needed permission
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Store permission status
+      chrome.storage.sync.set({ microphonePermission: 'granted' });
+      
+      // Show success message
+      permissionStatus.textContent = 'Microphone access granted!';
+      permissionStatus.style.color = '#a0ff9d';
+      
+      permissionBtn.textContent = 'Access Granted';
+      permissionBtn.disabled = true;
+      permissionBtn.style.backgroundColor = 'rgba(76, 175, 80, 0.7)';
+      
+      // Close the dialog after a short delay
+      setTimeout(() => {
+        permissionDialog.style.display = 'none';
+        // Refresh the status message
+        document.getElementById('status').textContent = 'Ready to transcribe! Microphone access granted.';
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error requesting microphone permission:', error);
+      
+      // Show detailed error message
+      permissionStatus.innerHTML = `
+        <span style="color: #ff88a9;">Microphone access denied.</span><br>
+        <span style="font-size: 14px;">Please check your browser settings:</span>
+        <ol style="font-size: 13px; margin-top: 5px; text-align: left;">
+          <li>Click the lock/shield icon in the address bar</li>
+          <li>Ensure Microphone is set to "Allow"</li>
+          <li>If using macOS, also check System Preferences > Security & Privacy > Microphone</li>
+        </ol>
+      `;
+    }
+  };
+  
+  // Setup close button with smooth animation
+  document.getElementById('closeDialog').onclick = () => {
+    permissionDialog.classList.remove('show');
+    setTimeout(() => {
+      permissionDialog.style.display = 'none';
+    }, 200); // Matches transition time
+  };
+}
+
 // Initialize the popup
 document.addEventListener('DOMContentLoaded', async () => {
   // Check API key
@@ -377,4 +451,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Add event listeners
   document.getElementById('options').addEventListener('click', openOptions);
   document.getElementById('testMic').addEventListener('click', testMicrophone);
+  
+  // Add permission fix button
+  const permButton = document.createElement('button');
+  permButton.id = 'fixPermissions';
+  permButton.textContent = 'Fix Microphone Access';
+  permButton.style.marginTop = '10px';
+  permButton.style.backgroundColor = '#FF7A45';
+  permButton.style.color = 'white';
+  permButton.style.border = 'none';
+  permButton.style.padding = '8px 12px';
+  permButton.style.borderRadius = '4px';
+  permButton.style.cursor = 'pointer';
+  permButton.style.fontSize = '14px';
+  permButton.style.display = 'block';
+  permButton.style.width = '100%';
+  
+  // Add click event
+  permButton.addEventListener('click', openPermissionFix);
+  
+  // Add button to buttons div
+  document.querySelector('.buttons').appendChild(permButton);
 });

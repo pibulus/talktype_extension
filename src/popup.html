@@ -4,75 +4,305 @@
   <meta charset="utf-8">
   <title>Audio to Text</title>
   <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
+      --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --glass-border: rgba(255, 255, 255, 0.4);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --text-primary: rgba(255, 255, 255, 0.95);
+      --text-secondary: rgba(255, 255, 255, 0.85);
+    }
+    
     body {
-      font-family: Arial, sans-serif;
-      width: 250px;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      width: 300px;
+      padding: 20px;
+      margin: 0;
+      background: linear-gradient(225deg, #4568DC, #7474BF, #348AC7, #56CCF2);
+      background-size: 400% 400%;
+      animation: gradientBG 12s ease infinite;
+      border-radius: 14px;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+    }
+    
+    /* Animated gradient background */
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    /* Light glass effect */
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 14px;
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
       padding: 15px;
+      transition: all 0.2s ease;
+      margin-bottom: 18px;
     }
+    
+    /* Light beams effect */
+    body::before {
+      content: '';
+      position: absolute;
+      width: 150%;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.1);
+      transform: rotate(-45deg);
+      top: -40px;
+      left: -20%;
+      animation: beam 8s linear infinite;
+      z-index: 0;
+    }
+    
+    @keyframes beam {
+      0% { transform: rotate(-45deg) translateX(-100%); }
+      100% { transform: rotate(-45deg) translateX(200%); }
+    }
+    
     h1 {
-      font-size: 16px;
+      font-size: 22px;
       margin-top: 0;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
       text-align: center;
+      color: var(--text-primary);
+      font-weight: 600;
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
+    
     .status {
-      margin-bottom: 15px;
-      padding: 8px;
-      border-radius: 4px;
-      background-color: #f8f9fa;
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 10px;
       text-align: center;
+      transition: all 0.3s ease;
+      color: var(--text-primary);
+      position: relative;
+      z-index: 1;
     }
+    
     .buttons {
       display: flex;
-      justify-content: center;
-      gap: 10px;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
     }
+    
     button {
-      background-color: #4285f4;
+      background: var(--primary-gradient);
       color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 4px;
+      border: 1px solid var(--glass-border);
+      padding: 12px 15px;
+      border-radius: 10px;
       cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
     }
+    
+    button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: all 0.6s ease;
+    }
+    
     button:hover {
-      background-color: #3367d6;
+      background: var(--hover-gradient);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
     }
+    
+    button:hover::before {
+      left: 100%;
+    }
+    
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+    
     .disabled {
-      background-color: #ccc;
+      background: rgba(100, 100, 100, 0.5);
       cursor: not-allowed;
+      box-shadow: none;
     }
+    
     .disabled:hover {
-      background-color: #ccc;
+      background: rgba(100, 100, 100, 0.5);
+      transform: none;
+      box-shadow: none;
     }
+    
     .error {
-      color: #721c24;
-      background-color: #f8d7da;
-      padding: 8px;
-      border-radius: 4px;
+      color: #ff88a9;
+      background: rgba(255, 0, 80, 0.15);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      padding: 12px;
+      border-radius: 8px;
       margin-bottom: 15px;
       text-align: center;
+      border: 1px solid rgba(255, 0, 80, 0.2);
+    }
+    
+    .recording-animation {
+      display: none;
+      margin: 20px auto;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      position: relative;
+      z-index: 1;
+    }
+    
+    .recording-animation::before {
+      content: '';
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      top: 5px;
+      left: 5px;
+      background: linear-gradient(135deg, #ff79cd, #b168df);
+      border-radius: 50%;
+      animation: pulse-record 2s infinite;
+    }
+    
+    @keyframes pulse-record {
+      0% {
+        box-shadow: 0 0 0 0 rgba(187, 85, 255, 0.7);
+        transform: scale(0.95);
+      }
+      70% {
+        box-shadow: 0 0 0 15px rgba(187, 85, 255, 0);
+        transform: scale(1);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(187, 85, 255, 0);
+        transform: scale(0.95);
+      }
+    }
+    
+    .mic-icon {
+      width: 38px;
+      height: 38px;
+      margin: 0 auto 20px;
+      display: block;
+      filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.2));
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* For the permission dialog */
+    #permissionDialog {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    
+    #permissionDialog.show {
+      opacity: 1;
+    }
+    
+    .dialog-content {
+      background: var(--primary-gradient);
+      padding: 25px;
+      border-radius: 16px;
+      max-width: 85%;
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      color: white;
+      text-align: center;
+      transform: scale(0.95);
+      opacity: 0;
+      transition: all 0.2s ease-out;
+    }
+    
+    #permissionDialog.show .dialog-content {
+      transform: scale(1);
+      opacity: 1;
+    }
+    
+    .close-dialog {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
+  <img src="icons/mic.svg" alt="Microphone" class="mic-icon" aria-hidden="true">
   <h1>Audio to Text</h1>
   
   <div id="apiKeyError" class="error" style="display: none;">
-    Please set your Gemini API key in the options.
+    Please set your Gemini API key in the options
   </div>
   
-  <div id="status" class="status">
+  <div id="recording-animation" class="recording-animation"></div>
+  
+  <div id="status" class="status glass" role="status">
     Ready to transcribe audio to text
   </div>
   
   <div class="buttons">
-    <button id="options">Options</button>
-    <button id="testMic">Test Microphone</button>
+    <button id="testMic" aria-label="Record and transcribe audio">Record & Transcribe</button>
+    <button id="options" aria-label="Open options page">Options</button>
+  </div>
+  
+  <!-- Permission Dialog -->
+  <div id="permissionDialog">
+    <div class="dialog-content">
+      <h2>Microphone Access</h2>
+      <p>This extension needs microphone access to transcribe your voice to text.</p>
+      <div id="permission-status">Click the button below to grant microphone access</div>
+      <button id="permissionBtn" class="permButton">Grant Access</button>
+      <button class="close-dialog" id="closeDialog">&times;</button>
+    </div>
   </div>
   
   <script src="permission-dialog.js"></script>
   <script src="api-service.js"></script>
+  <script src="audio-service.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

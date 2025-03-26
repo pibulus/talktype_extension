@@ -95,6 +95,32 @@ function initializeInputDetection() {
   editableElements.forEach(element => {
     addMicrophoneToInput(element);
   });
+  
+  // Special handling for common sites (Reddit, Facebook, etc.)
+  
+  // Reddit comment boxes
+  const redditCommentBoxes = document.querySelectorAll('.public-DraftEditor-content, .RichTextJSON-root');
+  redditCommentBoxes.forEach(element => {
+    if (!element.dataset.hasMicButton) {
+      addMicrophoneToInput(element);
+    }
+  });
+  
+  // Facebook comment boxes
+  const facebookCommentBoxes = document.querySelectorAll('[role="textbox"], [data-testid="post-composer"] div[contenteditable]');
+  facebookCommentBoxes.forEach(element => {
+    if (!element.dataset.hasMicButton) {
+      addMicrophoneToInput(element);
+    }
+  });
+  
+  // Generic rich text editors
+  const richTextEditors = document.querySelectorAll('.ql-editor, .jodit-wysiwyg, .ce-paragraph, .ProseMirror, [role="textbox"]');
+  richTextEditors.forEach(element => {
+    if (!element.dataset.hasMicButton) {
+      addMicrophoneToInput(element);
+    }
+  });
 }
 
 // Function to observe for dynamically added inputs
@@ -148,6 +174,31 @@ function observeDynamicInputs() {
             editableElements.forEach(element => {
               addMicrophoneToInput(element);
             });
+            
+            // Special handling for common sites - check for social media inputs
+            // Reddit
+            const redditCommentBoxes = node.querySelectorAll('.public-DraftEditor-content, .RichTextJSON-root');
+            redditCommentBoxes.forEach(element => {
+              if (!element.dataset.hasMicButton) {
+                addMicrophoneToInput(element);
+              }
+            });
+            
+            // Facebook
+            const facebookCommentBoxes = node.querySelectorAll('[role="textbox"], [data-testid="post-composer"] div[contenteditable]');
+            facebookCommentBoxes.forEach(element => {
+              if (!element.dataset.hasMicButton) {
+                addMicrophoneToInput(element);
+              }
+            });
+            
+            // Generic rich text editors
+            const richTextEditors = node.querySelectorAll('.ql-editor, .jodit-wysiwyg, .ce-paragraph, .ProseMirror, [role="textbox"]');
+            richTextEditors.forEach(element => {
+              if (!element.dataset.hasMicButton) {
+                addMicrophoneToInput(element);
+              }
+            });
           }
         });
       }
@@ -177,42 +228,101 @@ function addMicrophoneToInput(inputElement) {
   micButton.title = 'Click to dictate';
   micButton.style.position = 'absolute';
   micButton.style.zIndex = '9999';
-  micButton.style.background = 'transparent';
-  micButton.style.border = 'none';
+  micButton.style.background = 'rgba(255, 255, 255, 0.05)';
+  micButton.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+  micButton.style.borderRadius = '50%';
   micButton.style.cursor = 'pointer';
   micButton.style.width = '24px';
   micButton.style.height = '24px';
-  micButton.style.padding = '0';
-  micButton.style.opacity = '0.7';
-  micButton.style.transition = 'opacity 0.2s ease';
+  micButton.style.padding = '2px';
+  micButton.style.opacity = '0';
+  micButton.style.transform = 'scale(0.85)';
+  micButton.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s ease, background 0.2s ease';
+  micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+  micButton.style.backdropFilter = 'blur(2px)';
+  micButton.style.webkitBackdropFilter = 'blur(2px)';
   
   // Create mic icon image
   const micIcon = document.createElement('img');
   micIcon.src = micIconUrl;
   micIcon.style.width = '100%';
   micIcon.style.height = '100%';
+  micIcon.style.transition = 'transform 0.2s ease';
   micButton.appendChild(micIcon);
   
-  // Add recording indicator
+  // Add recording indicator with vaporwave style
   const recordingIndicator = document.createElement('span');
   recordingIndicator.className = 'audio-to-text-recording-indicator';
   recordingIndicator.style.display = 'none';
   recordingIndicator.style.width = '10px';
   recordingIndicator.style.height = '10px';
   recordingIndicator.style.borderRadius = '50%';
-  recordingIndicator.style.backgroundColor = 'red';
+  recordingIndicator.style.background = 'linear-gradient(135deg, #9c27b0, #673ab7)'; // Purple vaporwave colors
   recordingIndicator.style.position = 'absolute';
-  recordingIndicator.style.top = '0';
-  recordingIndicator.style.right = '0';
+  recordingIndicator.style.top = '-3px';
+  recordingIndicator.style.right = '-3px';
+  recordingIndicator.style.boxShadow = '0 0 5px rgba(156, 39, 176, 0.7)';
+  recordingIndicator.style.animation = 'pulse-mic 1.5s infinite';
+  recordingIndicator.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+  
+  // Add pulse animation for recording indicator
+  if (!document.getElementById('audio-to-text-animations')) {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'audio-to-text-animations';
+    styleEl.textContent = `
+      @keyframes pulse-mic {
+        0% {
+          box-shadow: 0 0 0 0 rgba(156, 39, 176, 0.7);
+          opacity: 1;
+        }
+        50% {
+          box-shadow: 0 0 10px 3px rgba(156, 39, 176, 0.4);
+          opacity: 0.9;
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(156, 39, 176, 0);
+          opacity: 1;
+        }
+      }
+      
+      @keyframes wiggle-mic {
+        0% { transform: rotate(-3deg) scale(1); }
+        25% { transform: rotate(3deg) scale(1.05); }
+        50% { transform: rotate(-2deg) scale(1.02); }
+        75% { transform: rotate(2deg) scale(1.05); }
+        100% { transform: rotate(0deg) scale(1); }
+      }
+    `;
+    document.head.appendChild(styleEl);
+  }
+  
   micButton.appendChild(recordingIndicator);
   
-  // Add hover effect
+  // Add subtle tactile hover effects
   micButton.addEventListener('mouseenter', () => {
     micButton.style.opacity = '1';
+    micButton.style.transform = 'scale(1.1)';
+    micButton.style.boxShadow = '0 2px 8px rgba(50, 120, 255, 0.15)';
+    micButton.style.background = 'rgba(255, 255, 255, 0.25)';
+    micButton.style.border = '1px solid rgba(255, 255, 255, 0.4)';
   });
   
   micButton.addEventListener('mouseleave', () => {
-    micButton.style.opacity = '0.7';
+    micButton.style.opacity = '0.8';
+    micButton.style.transform = 'scale(1)';
+    micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+    micButton.style.background = 'rgba(255, 255, 255, 0.05)';
+    micButton.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+  });
+  
+  micButton.addEventListener('mousedown', () => {
+    micButton.style.transform = 'scale(0.95)';
+    micButton.style.boxShadow = '0 0 2px rgba(0,0,0,0.1)';
+  });
+  
+  micButton.addEventListener('mouseup', () => {
+    micButton.style.transform = 'scale(1.1)';
+    micButton.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
   });
   
   // Add click event to microphone button
@@ -311,14 +421,24 @@ function positionMicButton(inputElement, micButton) {
   // For different element types, position differently
   let top, left;
   
+  // Calculate position to ensure mic is always inside the input
+  const padding = 8; // Minimum padding from edge
+  
   if (isLargeElement) {
-    // For large elements, position at top right with a small margin
-    top = inputRect.top + scrollTop + 5;
-    left = inputRect.right + scrollLeft - 30; // 30px from the right edge
+    // For large elements (textareas, contenteditable)
+    top = inputRect.top + scrollTop + padding;
+    left = inputRect.right + scrollLeft - 24 - padding; // Keep inside by padding amount
   } else {
-    // For standard inputs, position vertically centered at the right edge
+    // For standard inputs, position vertically centered
     top = inputRect.top + scrollTop + (inputRect.height - 24) / 2;
-    left = inputRect.right + scrollLeft - 30;
+    
+    // Ensure it's always inside the input field, not outside
+    left = inputRect.left + scrollLeft + inputRect.width - 24 - padding;
+    
+    // If input is too small, adjust position
+    if (inputRect.height < 24) {
+      top = inputRect.top + scrollTop + (inputRect.height - 20) / 2;
+    }
   }
   
   // Make sure the button doesn't go off-screen
@@ -327,19 +447,31 @@ function positionMicButton(inputElement, micButton) {
     left = rightEdge - 30;
   }
   
-  // Set position
+  // Extra safety - ensure we're never outside the input boundaries
+  const inputRight = inputRect.left + inputRect.width;
+  if (left + 24 > inputRight + scrollLeft) {
+    left = inputRight + scrollLeft - 24;
+  }
+  
+  // Set position first, before showing
   micButton.style.top = `${top}px`;
   micButton.style.left = `${left}px`;
+  
+  // Delay showing slightly to ensure position is set first
+  setTimeout(() => {
+    micButton.style.opacity = '0.8';
+    micButton.style.transform = 'scale(1)';
+  }, 10);
   
   // Only adjust padding for standard input elements
   if (elementType === 'input' || elementType === 'textarea') {
     // If input has a right padding of less than 30px, add padding to make room for the button
     const rightPadding = parseInt(computedStyle.paddingRight, 10) || 0;
     
-    if (rightPadding < 30 && !inputElement.dataset.originalPadding) {
+    if (rightPadding < 25 && !inputElement.dataset.originalPadding) {
       // Store original padding
       inputElement.dataset.originalPadding = rightPadding;
-      inputElement.style.paddingRight = '30px';
+      inputElement.style.paddingRight = '25px';
     }
   }
 }
@@ -361,13 +493,29 @@ async function startRecording(targetInput, indicator) {
     isRecording = true;
     activeInput = targetInput;
     
-    // Show recording indicator
+    // Show recording indicator with animations
     if (indicator) {
       indicator.style.display = 'block';
+      
+      // Find the mic button (parent of the indicator)
+      const micButton = indicator.parentElement;
+      if (micButton) {
+        // Add wiggle animation to the mic icon
+        const micIcon = micButton.querySelector('img');
+        if (micIcon) {
+          micIcon.style.animation = 'wiggle-mic 0.5s ease';
+          setTimeout(() => {
+            micIcon.style.animation = ''; // Remove animation after it completes
+          }, 500);
+        }
+        
+        // Add a subtle highlight for recording state
+        micButton.style.opacity = '1';
+      }
     }
     
-    // Show listening notification immediately
-    showStatusNotification('🎤 Listening... Click microphone again to finish', 'recording');
+    // Show simple listening notification
+    showStatusNotification('Listening...', 'recording');
     
     // Start recording
     await audioService.startRecording();
@@ -416,9 +564,28 @@ async function stopRecording() {
     // Update recording state
     isRecording = false;
     
-    // Hide all recording indicators
+    // Hide all recording indicators and reset button styling
     document.querySelectorAll('.audio-to-text-recording-indicator').forEach(indicator => {
       indicator.style.display = 'none';
+      
+      // Reset the parent button styling with smooth transition
+      const micButton = indicator.parentElement;
+      if (micButton) {
+        micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+        micButton.style.transform = 'scale(1)';
+        micButton.style.opacity = '0.7';
+        micButton.style.background = 'rgba(255, 255, 255, 0.05)';
+        micButton.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+        
+        // Add a modern finish animation
+        const micIcon = micButton.querySelector('img');
+        if (micIcon) {
+          micIcon.style.animation = 'wiggle-mic 0.3s ease reverse';
+          setTimeout(() => {
+            micIcon.style.animation = '';
+          }, 300);
+        }
+      }
     });
     
     // Remove any recording notifications
@@ -462,53 +629,11 @@ async function processAudioData(audioBlob) {
     // Show processing indicator
     activeInput.classList.add('audio-to-text-processing');
     
-    // Create status notification with fun processing messages
-    const processingNotification = showStatusNotification('🔄 Reticulating splines...', 'processing');
-    
-    // Cycle through fun processing messages
-    const processingMessages = [
-      '🔄 Reticulating splines...',
-      '🔊 Enhancing audio clarity...',
-      '🔍 Analyzing speech patterns...',
-      '🧠 Activating neural networks...',
-      '💬 Processing language context...',
-      '🌐 Running advanced Gemini model...',
-      '📊 Optimizing text accuracy...',
-      '📝 Finalizing your transcription...'
-    ];
-    
-    let messageIndex = 0;
-    const messageInterval = setInterval(() => {
-      messageIndex = (messageIndex + 1) % processingMessages.length;
-      if (processingNotification && document.body.contains(processingNotification)) {
-        processingNotification.textContent = processingMessages[messageIndex];
-        
-        // Keep the close button
-        const closeButton = document.createElement('button');
-        closeButton.innerHTML = '&times;';
-        closeButton.style.background = 'transparent';
-        closeButton.style.border = 'none';
-        closeButton.style.color = 'white';
-        closeButton.style.marginLeft = '10px';
-        closeButton.style.cursor = 'pointer';
-        closeButton.style.float = 'right';
-        closeButton.style.fontSize = '18px';
-        closeButton.style.lineHeight = '14px';
-        closeButton.onclick = () => {
-          if (document.body.contains(processingNotification)) {
-            document.body.removeChild(processingNotification);
-          }
-          clearInterval(messageInterval);
-        };
-        processingNotification.prepend(closeButton);
-      }
-    }, 400);
+    // Create a vaporwave processing notification with glass morphism
+    const processingNotification = showStatusNotification('Transcribing...', 'processing');
     
     // Send audio to API for transcription
     const transcription = await apiService.transcribeAudio(audioBlob);
-    
-    // Clear the message interval
-    clearInterval(messageInterval);
     
     // Insert transcribed text based on element type
     if (activeInput.isContentEditable) {
@@ -557,8 +682,8 @@ async function processAudioData(audioBlob) {
       }
     }
     
-    // Show success notification with satisfying completion message
-    showStatusNotification('✅ Transcription complete!', 'success');
+    // Show simple success notification
+    showStatusNotification('Transcription complete', 'success');
     
     console.log('Transcription complete:', transcription);
   } catch (error) {
@@ -590,51 +715,82 @@ function showStatusNotification(message, type = 'info') {
     }
   });
   
-  // Create notification element
+  // Create notification element with glass morphism style
   const notification = document.createElement('div');
   notification.className = `audio-to-text-notification audio-to-text-notification-${type}`;
   notification.style.position = 'fixed';
   notification.style.bottom = '20px';
   notification.style.right = '20px';
-  notification.style.padding = '12px 16px';
-  notification.style.borderRadius = '8px';
-  notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+  notification.style.padding = '15px 20px';
+  notification.style.borderRadius = '12px';
+  notification.style.boxShadow = '0 8px 32px rgba(31, 38, 135, 0.2)';
   notification.style.zIndex = '10000';
   notification.style.fontSize = '15px';
-  notification.style.fontWeight = 'bold';
+  notification.style.fontWeight = '500';
   notification.style.maxWidth = '300px';
   notification.style.opacity = '0';
-  notification.style.transform = 'translateY(10px)';
-  notification.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  notification.style.transform = 'translateY(20px) scale(0.98)';
+  notification.style.transition = 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+  notification.style.backdropFilter = 'blur(12px)';
+  notification.style.webkitBackdropFilter = 'blur(12px)';
+  notification.style.border = '1px solid rgba(255, 255, 255, 0.18)';
   
-  // Set styles based on notification type
+  // Set styles based on notification type with lighter glass aesthetics
   if (type === 'error') {
-    notification.style.backgroundColor = '#f44336';
+    notification.style.background = 'linear-gradient(135deg, rgba(244, 67, 54, 0.75), rgba(255, 87, 34, 0.7))';
     notification.style.color = 'white';
+    notification.style.border = '1px solid rgba(255, 255, 255, 0.4)';
   } else if (type === 'success') {
-    notification.style.backgroundColor = '#4caf50';
+    notification.style.background = 'linear-gradient(135deg, rgba(76, 175, 80, 0.75), rgba(105, 220, 155, 0.7))';
     notification.style.color = 'white';
+    notification.style.border = '1px solid rgba(255, 255, 255, 0.4)';
   } else if (type === 'recording') {
-    notification.style.backgroundColor = '#ff5722';
+    notification.style.background = 'linear-gradient(135deg, rgba(111, 66, 193, 0.75), rgba(70, 174, 247, 0.7))';
     notification.style.color = 'white';
-    notification.style.animation = 'pulse-recording 1.5s infinite';
+    notification.style.border = '1px solid rgba(255, 255, 255, 0.4)';
     
-    // Add pulse animation
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes pulse-recording {
-        0% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(255, 87, 34, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0); }
-      }
-    `;
-    document.head.appendChild(style);
+    // Add gentle pulse animation
+    if (!document.getElementById('pulse-recording-style')) {
+      const style = document.createElement('style');
+      style.id = 'pulse-recording-style';
+      style.textContent = `
+        @keyframes gentle-pulse {
+          0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
+          50% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.5); border-color: rgba(255, 255, 255, 0.5); }
+          100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    notification.style.animation = 'gentle-pulse 2s infinite';
   } else if (type === 'processing') {
-    notification.style.backgroundColor = '#ff9800';
+    // Create modern gradient animation for processing
+    if (!document.getElementById('gradient-notification-styles')) {
+      const gradientStyle = document.createElement('style');
+      gradientStyle.id = 'gradient-notification-styles';
+      gradientStyle.textContent = `
+        @keyframes gradientBg {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .gradient-notification {
+          background: linear-gradient(90deg, #4568DC, #7474BF, #348AC7, #56CCF2);
+          background-size: 300% 100%;
+          animation: gradientBg 3s ease infinite;
+        }
+      `;
+      document.head.appendChild(gradientStyle);
+    }
+    
+    notification.classList.add('gradient-notification');
     notification.style.color = 'white';
+    notification.style.border = '1px solid rgba(255, 255, 255, 0.4)';
   } else {
-    notification.style.backgroundColor = '#2196f3';
+    notification.style.background = 'linear-gradient(135deg, rgba(33, 150, 243, 0.75), rgba(3, 169, 244, 0.7))';
     notification.style.color = 'white';
+    notification.style.border = '1px solid rgba(255, 255, 255, 0.4)';
   }
   
   // Set content
@@ -661,10 +817,10 @@ function showStatusNotification(message, type = 'info') {
   // Add to DOM
   document.body.appendChild(notification);
   
-  // Trigger animation
+  // Trigger animation with more flair
   setTimeout(() => {
     notification.style.opacity = '1';
-    notification.style.transform = 'translateY(0)';
+    notification.style.transform = 'translateY(0) scale(1)';
   }, 10);
   
   // Auto-remove after timeout (except for recording notifications)

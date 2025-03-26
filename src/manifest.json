@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Audio to Text Input",
-  "version": "1.0",
-  "description": "Add microphone functionality to text inputs for voice transcription",
+  "version": "1.1",
+  "description": "Add cute microphone functionality to text inputs for easy voice transcription",
   "permissions": ["activeTab", "scripting", "storage", "tabCapture"],
   "host_permissions": ["<all_urls>"],
   "action": {
@@ -38,7 +38,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["permission.html", "permission-dialog.js", "icons/mic.svg"],
+      "resources": ["permission.html", "permission-dialog.js", "icons/mic.svg", "permission-fix.html", "permission-fix.js"],
       "matches": ["<all_urls>"]
     }
   ]

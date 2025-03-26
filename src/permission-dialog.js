@@ -125,30 +125,34 @@ class PermissionDialog {
     this.dialogElement.style.top = '20%';
     this.dialogElement.style.left = '50%';
     this.dialogElement.style.transform = 'translateX(-50%)';
-    this.dialogElement.style.backgroundColor = 'white';
-    this.dialogElement.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    this.dialogElement.style.borderRadius = '8px';
-    this.dialogElement.style.padding = '20px';
+    // Glass morphism style
+    this.dialogElement.style.background = 'linear-gradient(135deg, rgba(125, 46, 185, 0.85), rgba(173, 69, 255, 0.75))';
+    this.dialogElement.style.backdropFilter = 'blur(10px)';
+    this.dialogElement.style.webkitBackdropFilter = 'blur(10px)';
+    this.dialogElement.style.boxShadow = '0 8px 32px rgba(31, 38, 135, 0.3)';
+    this.dialogElement.style.borderRadius = '12px';
+    this.dialogElement.style.border = '1px solid rgba(255, 255, 255, 0.18)';
+    this.dialogElement.style.padding = '25px';
     this.dialogElement.style.zIndex = '999999';
     this.dialogElement.style.width = '350px';
     this.dialogElement.style.opacity = '0';
-    this.dialogElement.style.transition = 'opacity 0.3s ease';
+    this.dialogElement.style.transition = 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
     
-    // Add content
+    // Add glass morphism content
     this.dialogElement.innerHTML = `
       <div style="text-align: center; margin-bottom: 20px;">
-        <div style="font-size: 24px; margin-bottom: 10px; color: #444;">🎤</div>
-        <h3 style="margin: 0 0 10px; font-size: 18px; color: #333;">Microphone Access Required</h3>
-        <p style="margin: 0; color: #666; font-size: 14px;">
-          Audio to Text needs permission to use your microphone for voice transcription.
+        <div style="font-size: 32px; margin-bottom: 15px; text-shadow: 0 2px 10px rgba(255,255,255,0.5);">🎤</div>
+        <h3 style="margin: 0 0 15px; font-size: 20px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Microphone Access</h3>
+        <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 15px; line-height: 1.5;">
+          Allow microphone access to convert your voice to text.
         </p>
       </div>
-      <div style="display: flex; justify-content: space-around; margin-top: 20px;">
-        <button class="permission-deny" style="padding: 8px 16px; background: #f1f1f1; border: none; border-radius: 4px; cursor: pointer; color: #666; font-weight: bold;">
-          Deny
+      <div style="display: flex; justify-content: space-around; margin-top: 25px;">
+        <button class="permission-deny" style="padding: 10px 18px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer; color: white; font-weight: 500; backdrop-filter: blur(5px); transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          Later
         </button>
-        <button class="permission-allow" style="padding: 8px 16px; background: #4285f4; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold;">
-          Allow
+        <button class="permission-allow" style="padding: 10px 18px; background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.15)); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer; color: white; font-weight: 500; backdrop-filter: blur(5px); transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          Allow Access
         </button>
       </div>
     `;

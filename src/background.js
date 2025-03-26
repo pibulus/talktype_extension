@@ -42,9 +42,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   if (message.action === 'requestMicrophonePermission') {
-    // Let's try a simpler approach by just opening the options page
-    // instead of a custom permission page
-    chrome.runtime.openOptionsPage(() => {
+    // Open our dedicated permission fix page instead of the options page
+    chrome.windows.create({
+      url: chrome.runtime.getURL('permission-fix.html'),
+      type: 'popup',
+      width: 400,
+      height: 420
+    }, () => {
       sendResponse({ success: true });
     });
     return true; // Indicates async response
