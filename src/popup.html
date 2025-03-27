@@ -19,16 +19,18 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       width: 320px;
-      padding: 20px;
+      padding: 18px;
       margin: 0;
       background: linear-gradient(225deg, rgba(255, 255, 255, 0.9), rgba(240, 245, 255, 0.95));
-      border-radius: 14px;
+      border-radius: 20px; /* Curvier corners */
       box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
       box-sizing: border-box;
       position: relative;
       overflow: hidden;
-      border: 1px solid var(--glass-border);
+      border: 2px solid var(--glass-border); /* Thicker border */
       color: #333;
+      height: auto !important; /* Prevent height issues */
+      max-height: 100vh;
     }
     
     /* Particle background */
@@ -63,8 +65,8 @@
       background: var(--glass-bg);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border-radius: 14px;
-      border: 1px solid var(--glass-border);
+      border-radius: 18px; /* Curvier corners */
+      border: 2px solid var(--glass-border); /* Thicker border */
       box-shadow: var(--glass-shadow);
       padding: 12px;
       transition: all 0.2s ease;
@@ -91,25 +93,26 @@
       100% { transform: rotate(-45deg) translateX(200%); }
     }
     
+    .header-container {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      z-index: 1;
+    }
+    
     h1 {
       font-size: 20px;
-      margin-top: 0;
-      margin-bottom: 16px;
-      text-align: center;
+      margin: 0;
+      padding: 0;
+      text-align: left;
       color: var(--text-primary);
       font-weight: 600;
       position: relative;
       z-index: 1;
       display: flex;
       align-items: center;
-      justify-content: center;
-    }
-    
-    .header-container {
-      position: relative;
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 16px;
     }
     
     .status-pill {
@@ -185,9 +188,9 @@
     button {
       background: var(--primary-gradient);
       color: white;
-      border: 1px solid var(--glass-border);
+      border: 2px solid var(--glass-border); /* Thicker border */
       padding: 10px 15px;
-      border-radius: 10px;
+      border-radius: 16px; /* Curvier corners */
       cursor: pointer;
       font-weight: 500;
       transition: all 0.2s ease;
@@ -356,8 +359,8 @@
       background: transparent;
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 18px; /* Curvier corners */
+      border: 2px solid rgba(255, 255, 255, 0.3); /* Thicker border */
       padding: 16px;
       margin-top: 15px;
       min-height: 80px;
@@ -413,21 +416,11 @@
   </style>
 </head>
 <body>
-  <h1>
-    <svg class="mic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
-      <path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path>
-      <path fill="currentColor" d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"></path>
-    </svg>
-    TalkType
-  </h1>
-  
-  <div id="apiKeyError" class="error" style="display: none;">
-    Please set your API key in the options
-  </div>
-  
-  <div id="recording-animation" class="recording-animation"></div>
-  
   <div class="header-container">
+    <h1>
+      <img src="icons/favicon-32x32.png" alt="TalkType" width="24" height="24" style="margin-right: 8px;">
+      TalkType
+    </h1>
     <div id="status" class="status-pill" role="status">
       <div class="status-indicator">
         <span class="pulse-dot"></span>
@@ -435,6 +428,12 @@
       </div>
     </div>
   </div>
+  
+  <div id="apiKeyError" class="error" style="display: none;">
+    Please set your API key in the options
+  </div>
+  
+  <div id="recording-animation" class="recording-animation"></div>
   
   <div class="buttons">
     <button id="startRecording">
