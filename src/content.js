@@ -235,13 +235,13 @@ function addMicrophoneToInput(inputElement) {
   micButton.style.width = '24px';
   micButton.style.height = '24px';
   micButton.style.padding = '2px';
-  micButton.style.opacity = '0';
+  micButton.style.opacity = '0.8'; // Always visible
   micButton.style.transform = 'scale(0.85)';
-  micButton.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s ease, background 0.2s ease';
+  micButton.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s ease, background 0.2s ease, box-shadow 0.2s ease';
   micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
   micButton.style.backdropFilter = 'blur(2px)';
   micButton.style.webkitBackdropFilter = 'blur(2px)';
-  micButton.style.display = 'none'; // Initially hidden until focused
+  micButton.style.display = 'block'; // Always visible
   
   // Create mic icon image
   const micIcon = document.createElement('img');
@@ -303,9 +303,9 @@ function addMicrophoneToInput(inputElement) {
   micButton.addEventListener('mouseenter', () => {
     micButton.style.opacity = '1';
     micButton.style.transform = 'scale(1.1)';
-    micButton.style.boxShadow = '0 2px 8px rgba(50, 120, 255, 0.15)';
-    micButton.style.background = 'rgba(255, 255, 255, 0.25)';
-    micButton.style.border = '1px solid rgba(255, 255, 255, 0.4)';
+    micButton.style.boxShadow = '0 2px 8px rgba(111, 66, 193, 0.35)';
+    micButton.style.background = 'rgba(111, 66, 193, 0.2)';
+    micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
   });
   
   micButton.addEventListener('mouseleave', () => {
@@ -316,11 +316,7 @@ function addMicrophoneToInput(inputElement) {
       micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
       micButton.style.background = 'rgba(255, 255, 255, 0.05)';
       micButton.style.border = '1px solid rgba(255, 255, 255, 0.1)';
-      
-      // If not the active element, hide the button
-      if (document.activeElement !== inputElement) {
-        micButton.style.display = 'none';
-      }
+      // We keep the button visible at all times
     }
   });
   
@@ -346,25 +342,12 @@ function addMicrophoneToInput(inputElement) {
     }
   });
   
-  // Show mic button when input is focused
+  // Always show mic button, but update position on focus
   inputElement.addEventListener('focus', () => {
-    micButton.style.display = 'block';
-    micButton.style.opacity = '0.8';
     positionMicButton(inputElement, micButton);
   });
   
-  // Hide mic button when input loses focus
-  inputElement.addEventListener('blur', () => {
-    // Only hide if not recording
-    if (!isRecording) {
-      // Add slight delay to allow clicking the mic button
-      setTimeout(() => {
-        if (document.activeElement !== micButton && !isRecording) {
-          micButton.style.display = 'none';
-        }
-      }, 150);
-    }
-  });
+  // No need to hide on blur anymore, we keep it visible
   
   // Position the button appropriately based on the input element
   positionMicButton(inputElement, micButton);
@@ -372,25 +355,19 @@ function addMicrophoneToInput(inputElement) {
   // Listen for input resize (if ResizeObserver is available)
   if (window.ResizeObserver) {
     const resizeObserver = new ResizeObserver(() => {
-      if (document.activeElement === inputElement || isRecording) {
-        positionMicButton(inputElement, micButton);
-      }
+      positionMicButton(inputElement, micButton);
     });
     resizeObserver.observe(inputElement);
   }
   
   // Listen for input position changes
   window.addEventListener('resize', () => {
-    if (document.activeElement === inputElement || isRecording) {
-      positionMicButton(inputElement, micButton);
-    }
+    positionMicButton(inputElement, micButton);
   });
   
   // Update position when input changes visibility
   const observer = new MutationObserver(() => {
-    if (document.activeElement === inputElement || isRecording) {
-      positionMicButton(inputElement, micButton);
-    }
+    positionMicButton(inputElement, micButton);
   });
   observer.observe(inputElement, { attributes: true, attributeFilter: ['style', 'class'] });
 }
@@ -461,18 +438,18 @@ function positionMicButton(inputElement, micButton) {
   
   if (isLargeElement) {
     // For large elements (textareas, contenteditable)
-    top = inputRect.top + scrollTop + padding;
+    top = inputRect.top + scrollTop + padding - 3; // Position slightly higher
     left = inputRect.right + scrollLeft - 24 - padding; // Keep inside by padding amount
   } else {
-    // For standard inputs, position vertically centered
-    top = inputRect.top + scrollTop + (inputRect.height - 24) / 2;
+    // For standard inputs, position vertically centered but slightly higher
+    top = inputRect.top + scrollTop + (inputRect.height - 24) / 2 - 3;
     
     // Ensure it's always inside the input field, not outside
     left = inputRect.left + scrollLeft + inputRect.width - 24 - padding;
     
     // If input is too small, adjust position
     if (inputRect.height < 24) {
-      top = inputRect.top + scrollTop + (inputRect.height - 20) / 2;
+      top = inputRect.top + scrollTop + (inputRect.height - 20) / 2 - 3;
     }
   }
   
