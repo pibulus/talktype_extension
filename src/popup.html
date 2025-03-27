@@ -8,13 +8,18 @@
     body {
       display: block !important;
       opacity: 1 !important;
-      transform: none !important;
       width: 320px;
       height: fit-content !important; /* Only as tall as needed */
       max-height: 400px;
       margin: 0;
       padding: 16px 18px 14px;
       box-sizing: border-box;
+      animation: smooth-appear 0.25s cubic-bezier(0.23, 1, 0.32, 1) forwards !important;
+    }
+    
+    @keyframes smooth-appear {
+      0% { opacity: 0.6 !important; transform: scale(0.97) !important; }
+      100% { opacity: 1 !important; transform: scale(1) !important; }
     }
   </style>
   <style>
@@ -136,6 +141,16 @@
       z-index: 1;
       display: flex;
       align-items: center;
+      animation: header-appear 0.5s ease-out forwards;
+    }
+    
+    @keyframes header-appear {
+      0% { opacity: 0; transform: translateY(-3px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    h1 img:hover {
+      transform: scale(1.08) rotate(3deg);
     }
     
     .status-pill {
@@ -151,6 +166,13 @@
       color: var(--text-primary);
       position: relative;
       z-index: 1;
+      animation: status-appear 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    }
+    
+    @keyframes status-appear {
+      0% { opacity: 0; transform: translateY(-8px); }
+      40% { opacity: 0; }
+      100% { opacity: 1; transform: translateY(0); }
     }
     
     .status-indicator {
@@ -239,10 +261,31 @@
       transition: all 0.6s ease;
     }
     
+    button {
+      animation: button-appear 0.5s cubic-bezier(0.23, 1, 0.32, 1) backwards;
+    }
+    
+    button:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+    
+    button:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    
+    button:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+    
+    @keyframes button-appear {
+      0% { opacity: 0; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    
     button:hover {
       background: var(--hover-gradient);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px) scale(1.02);
+      box-shadow: 0 8px 20px rgba(111, 66, 193, 0.18);
     }
     
     button:hover::before {
@@ -250,7 +293,7 @@
     }
     
     button:active {
-      transform: translateY(1px);
+      transform: translateY(1px) scale(0.98);
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
     }
     
@@ -334,7 +377,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.4);
+      background: var(--primary-gradient);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       z-index: 100;
@@ -342,6 +385,7 @@
       justify-content: center;
       opacity: 0;
       transition: opacity 0.15s ease;
+      border-radius: 20px; /* Match body border radius */
     }
     
     #permissionDialog.show {
@@ -349,12 +393,8 @@
     }
     
     .dialog-content {
-      background: var(--primary-gradient);
-      padding: 25px;
-      border-radius: 16px;
+      padding: 28px 25px;
       max-width: 85%;
-      border: 1px solid var(--glass-border);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
       color: white;
       text-align: center;
       transform: scale(0.95);
@@ -365,6 +405,16 @@
     #permissionDialog.show .dialog-content {
       transform: scale(1);
       opacity: 1;
+    }
+    
+    .dialog-content p {
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    
+    #permission-status {
+      margin-bottom: 24px; /* More space before button */
+      font-size: 15px;
     }
     
     .close-dialog {
@@ -442,7 +492,7 @@
 <body>
   <div class="header-container">
     <h1>
-      <img src="icons/favicon-32x32.png" alt="TalkType" width="24" height="24" style="margin-right: 8px;">
+      <img src="icons/icon_white/favicon-32x32.png" alt="TalkType" width="24" height="24" style="margin-right: 8px; filter: drop-shadow(0 1px 3px rgba(111, 66, 193, 0.3)); transition: transform 0.3s ease;">
       TalkType
     </h1>
     <div id="status" class="status-pill" role="status">
@@ -482,10 +532,10 @@
   <!-- Permission Dialog (positioned with absolute to not affect layout) -->
   <div id="permissionDialog" style="position: absolute; top: 0; left: 0;">
     <div class="dialog-content">
-      <h2>Microphone Access</h2>
+      <h2 style="margin-top: 5px; margin-bottom: 20px;">Microphone Access</h2>
       <p>This extension needs microphone access to transcribe your voice to text.</p>
       <div id="permission-status">Click the button below to grant microphone access</div>
-      <button id="permissionBtn" class="permButton">Grant Access</button>
+      <button id="permissionBtn" style="width: 80%; margin: 0 auto; padding: 12px;" class="permButton">Grant Access</button>
       <button class="close-dialog" id="closeDialog">&times;</button>
     </div>
   </div>

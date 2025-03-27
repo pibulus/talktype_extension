@@ -501,7 +501,10 @@ function handleRecordingError(error) {
     }
     
     // Make sure permission button is visible
-    document.getElementById('fixPermissions').style.display = 'block';
+    const permButton = document.getElementById('fixPermissions');
+    if (permButton) {
+      permButton.style.display = 'block';
+    }
   } else {
     // Show other errors
     statusElement.innerHTML = `
@@ -674,7 +677,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   
-  // Add permission fix button - ALWAYS VISIBLE as requested
+  // Create permission fix button but only show when needed
   const permButton = document.createElement('button');
   permButton.id = 'fixPermissions';
   permButton.innerHTML = `
@@ -685,13 +688,59 @@ document.addEventListener('DOMContentLoaded', async () => {
   `;
   permButton.style.marginTop = '12px';
   permButton.style.backgroundColor = 'rgba(255, 122, 69, 0.85)';
-  // Always visible as requested
+  permButton.style.display = 'none'; // Hidden by default, show only when needed
   
   // Add click event
   permButton.addEventListener('click', openPermissionFix);
   
   // Add button to buttons div
   document.querySelector('.buttons').appendChild(permButton);
+  
+  // Check microphone permission status and show button if needed
+  async function checkMicPermissionAndUpdateButton() {
+    try {
+      // Try to get mic permission status from storage
+      const { microphonePermission } = await chrome.storage.sync.get(['microphonePermission']);
+      
+      if (microphonePermission === 'granted') {
+        permButton.style.display = 'none';
+        return;
+      }
+      
+      // If not found in storage, try to check permission state directly
+      if (navigator.permissions && navigator.permissions.query) {
+        const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+        
+        if (permissionStatus.state === 'granted') {
+          permButton.style.display = 'none';
+          // Save status to storage
+          chrome.storage.sync.set({ microphonePermission: 'granted' });
+        } else {
+          permButton.style.display = 'block';
+        }
+        
+        // Listen for permission changes
+        permissionStatus.onchange = () => {
+          permButton.style.display = 
+            permissionStatus.state === 'granted' ? 'none' : 'block';
+          
+          if (permissionStatus.state === 'granted') {
+            chrome.storage.sync.set({ microphonePermission: 'granted' });
+          }
+        };
+      } else {
+        // Fallback for browsers that don't support permissions API
+        permButton.style.display = 'block';
+      }
+    } catch (error) {
+      console.error('Error checking mic permission:', error);
+      // Show button on error as fallback
+      permButton.style.display = 'block';
+    }
+  }
+  
+  // Run the check when popup opens
+  checkMicPermissionAndUpdateButton();
   
   // Add the settings popup styling
   const style = document.createElement('style');
