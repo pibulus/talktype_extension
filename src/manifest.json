@@ -7,13 +7,13 @@
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_icon": {
-      "16": "icons/favicon-16x16.png",
-      "32": "icons/favicon-32x32.png",
-      "48": "icons/android-icon-48x48.png",
-      "96": "icons/favicon-96x96.png",
-      "128": "icons/icon128.png",
-      "144": "icons/android-icon-144x144.png",
-      "192": "icons/android-icon-192x192.png"
+      "16": "icons/icon_white/favicon-16x16.png",
+      "32": "icons/icon_white/favicon-32x32.png",
+      "48": "icons/icon_white/android-icon-48x48.png",
+      "96": "icons/icon_white/favicon-96x96.png",
+      "128": "icons/icon_white/android-icon-192x192.png",
+      "144": "icons/icon_white/android-icon-144x144.png",
+      "192": "icons/icon_white/android-icon-192x192.png"
     },
     "default_title": "TalkType",
     "default_popup": "popup.html"
@@ -30,14 +30,14 @@
     "service_worker": "background.js"
   },
   "icons": {
-    "16": "icons/favicon-16x16.png",
-    "32": "icons/favicon-32x32.png",
-    "48": "icons/android-icon-48x48.png",
-    "72": "icons/android-icon-72x72.png",
-    "96": "icons/favicon-96x96.png",
-    "128": "icons/icon128.png",
-    "144": "icons/android-icon-144x144.png",
-    "192": "icons/android-icon-192x192.png"
+    "16": "icons/icon_white/favicon-16x16.png",
+    "32": "icons/icon_white/favicon-32x32.png",
+    "48": "icons/icon_white/android-icon-48x48.png",
+    "72": "icons/icon_white/android-icon-72x72.png",
+    "96": "icons/icon_white/favicon-96x96.png",
+    "128": "icons/icon_white/android-icon-192x192.png",
+    "144": "icons/icon_white/android-icon-144x144.png",
+    "192": "icons/icon_white/android-icon-192x192.png"
   },
   "options_ui": {
     "page": "options.html",

@@ -1,5 +1,38 @@
 // Background script for Audio to Text extension
 
+// Function to set the icon based on system theme
+const setIconBasedOnTheme = () => {
+  // Check if system is using dark mode
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  // Set appropriate icon paths based on theme
+  const iconPath = isDark
+    ? {
+        16: "icons/icon_white/favicon-16x16.png",
+        32: "icons/icon_white/favicon-32x32.png",
+        48: "icons/icon_white/android-icon-48x48.png",
+        96: "icons/icon_white/favicon-96x96.png",
+        128: "icons/icon_white/android-icon-192x192.png",
+        144: "icons/icon_white/android-icon-144x144.png",
+        192: "icons/icon_white/android-icon-192x192.png"
+      }
+    : {
+        16: "icons/icon_black/favicon-16x16.png",
+        32: "icons/icon_black/favicon-32x32.png",
+        48: "icons/icon_black/android-icon-48x48.png",
+        96: "icons/icon_black/favicon-96x96.png",
+        128: "icons/icon_black/android-icon-192x192.png",
+        144: "icons/icon_black/android-icon-144x144.png",
+        192: "icons/icon_black/android-icon-192x192.png"
+      };
+
+  // Update the icon
+  chrome.action.setIcon({ path: iconPath });
+};
+
+// Listen for changes in color scheme
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', setIconBasedOnTheme);
+
 // Pre-load popup resources
 function preloadPopupResources() {
   // Pre-load the popup page to keep it in the cache
@@ -28,6 +61,9 @@ function preloadPopupResources() {
 // Initialize extension when installed
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('TalkType extension installed');
+  
+  // Set icon based on current system theme
+  setIconBasedOnTheme();
   
   // Preload resources for faster popup display
   preloadPopupResources();
@@ -85,6 +121,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Preload popup when browser starts
 chrome.runtime.onStartup.addListener(() => {
+  // Set icon based on current system theme
+  setIconBasedOnTheme();
+  
   // Delay preloading slightly to prioritize browser startup
   setTimeout(preloadPopupResources, 1000);
 });
