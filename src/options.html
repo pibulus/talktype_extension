@@ -2,146 +2,358 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Audio to Text - Options</title>
+  <title>TalkType - Options</title>
   <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
+      --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --glass-border: rgba(255, 255, 255, 0.4);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --text-primary: rgba(255, 255, 255, 0.95);
+      --text-secondary: rgba(255, 255, 255, 0.85);
+      --accent: rgba(64, 112, 244, 1);
+    }
+    
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      min-width: 300px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-attachment: fixed;
+      background: linear-gradient(225deg, #4568DC, #7474BF, #348AC7, #56CCF2);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
     }
-    h1 {
-      font-size: 18px;
-      margin-bottom: 20px;
+    
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    input[type="text"] {
+    
+    .container {
+      max-width: 600px;
       width: 100%;
-      padding: 8px;
+      padding: 0 20px;
       box-sizing: border-box;
     }
-    button {
-      background-color: #4285f4;
+    
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      text-align: center;
+      margin: 40px 0 30px;
       color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 16px;
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      padding: 25px;
+      margin-bottom: 20px;
+      transition: all 0.2s ease;
+    }
+    
+    .card-header {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 20px;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+    }
+    
+    .card-header svg {
       margin-right: 10px;
     }
-    button:hover {
-      background-color: #3367d6;
-    }
-    .status {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 4px;
-    }
-    .success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-    .error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-    .info {
-      margin-top: 20px;
-      background-color: #f8f9fa;
-      padding: 10px;
-      border-radius: 4px;
-      font-size: 0.9em;
-    }
-    .card {
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 15px;
+    
+    .form-group {
       margin-bottom: 20px;
     }
-    .card-header {
-      font-weight: bold;
-      margin-bottom: 10px;
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: white;
     }
+    
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.07);
+      color: white;
+      font-size: 15px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+    }
+    
+    input[type="text"]:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+    }
+    
+    button {
+      background: var(--primary-gradient);
+      color: white;
+      border: 1px solid var(--glass-border);
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: all 0.6s ease;
+    }
+    
+    button:hover {
+      background: var(--hover-gradient);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+    }
+    
+    button:hover::before {
+      left: 100%;
+    }
+    
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+    
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 1px solid var(--glass-border);
+      display: none;
+    }
+    
+    .success {
+      background-color: rgba(76, 175, 80, 0.2);
+      color: rgba(255, 255, 255, 0.9);
+      border-color: rgba(76, 175, 80, 0.3);
+    }
+    
+    .error {
+      background-color: rgba(244, 67, 54, 0.2);
+      color: rgba(255, 255, 255, 0.9);
+      border-color: rgba(244, 67, 54, 0.3);
+    }
+    
+    .info {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 12px;
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      padding: 20px;
+      margin-bottom: 40px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    
+    .info ol {
+      margin-left: 20px;
+      padding-left: 0;
+    }
+    
+    .info li {
+      margin-bottom: 8px;
+    }
+    
     .permission-status {
-      margin-top: 20px;
-      padding: 10px;
-      border-radius: 4px;
-      background-color: #f8f9fa;
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 10px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
     }
+    
     .granted {
-      background-color: #d4edda;
-      color: #155724;
+      background-color: rgba(76, 175, 80, 0.2);
+      color: rgba(255, 255, 255, 0.9);
+      border-color: rgba(76, 175, 80, 0.3);
     }
+    
     .denied {
-      background-color: #f8d7da;
-      color: #721c24;
+      background-color: rgba(244, 67, 54, 0.2);
+      color: rgba(255, 255, 255, 0.9);
+      border-color: rgba(244, 67, 54, 0.3);
     }
+    
     .unknown {
-      background-color: #fff3cd;
-      color: #856404;
+      background-color: rgba(255, 152, 0, 0.2);
+      color: rgba(255, 255, 255, 0.9);
+      border-color: rgba(255, 152, 0, 0.3);
+    }
+    
+    .note {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 8px;
+      border: 1px solid var(--glass-border);
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .footer {
+      text-align: center;
+      margin: 30px 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+      opacity: 0.8;
+    }
+    
+    /* Icon styles */
+    .icon {
+      display: inline-block;
+      vertical-align: middle;
+      width: 24px;
+      height: 24px;
+      fill: white;
+      margin-right: 6px;
     }
   </style>
 </head>
 <body>
-  <h1>Audio to Text - Options</h1>
-  
-  <div class="card">
-    <div class="card-header">API Configuration</div>
-    <div class="form-group">
-      <label for="apiKey">API Key:</label>
-      <input type="text" id="apiKey" placeholder="Enter any text as API key for the demo">
-      <small>Note: For this demo, the actual transcription is simulated, so any text will work as an API key.</small>
+  <div class="container">
+    <h1>
+      <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28">
+        <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" x2="12" y1="19" y2="23" stroke="currentColor" stroke-width="2"></line>
+        <line x1="8" x2="16" y1="23" y2="23" stroke="currentColor" stroke-width="2"></line>
+      </svg>
+      TalkType Settings
+    </h1>
+    
+    <div class="card">
+      <div class="card-header">
+        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="currentColor" d="M12 10a2 2 0 0 1 2 2c0 .74-.4 1.38-1 1.72V16a1 1 0 0 1-2 0v-2.28c-.6-.34-1-.98-1-1.72a2 2 0 0 1 2-2zm10 2c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10zm-2 0c0-4.42-3.58-8-8-8s-8 3.58-8 8 3.58 8 8 8 8-3.58 8-8z"/>
+        </svg>
+        API Configuration
+      </div>
+      
+      <div class="form-group">
+        <label for="apiKey">API Key</label>
+        <input type="text" id="apiKey" placeholder="Enter any text as API key for the demo">
+      </div>
+      
+      <div class="note">
+        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1s1 .45 1 1v4c0 .55-.45 1-1 1zm1-8h-2V7h2v2z"/>
+        </svg>
+        <span>For this demo, the transcription is simulated so any text will work as an API key.</span>
+      </div>
+      
+      <button id="save" class="primary">Save Settings</button>
+      <div id="status" class="status"></div>
     </div>
     
-    <div style="margin-top: 10px; background-color: #fff3cd; padding: 12px; border-radius: 4px; font-size: 0.9em;">
-      <p><strong>About this demo:</strong> In a production version, this extension would use a service like OpenAI's Whisper for transcription. For demonstration purposes, we simulate the transcription process.</p>
+    <div class="card">
+      <div class="card-header">
+        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" x2="12" y1="19" y2="23" stroke="currentColor" stroke-width="2"></line>
+          <line x1="8" x2="16" y1="23" y2="23" stroke="currentColor" stroke-width="2"></line>
+        </svg>
+        Microphone Access
+      </div>
+      
+      <p>TalkType needs microphone access to convert your speech to text.</p>
+      
+      <div id="permissionStatus" class="permission-status unknown">
+        Checking permission status...
+      </div>
+      
+      <div class="btn-group">
+        <button id="requestPermission">
+          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          </svg>
+          Test Microphone
+        </button>
+        
+        <button id="openChromeSettings">
+          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+          </svg>
+          Chrome Settings
+        </button>
+      </div>
     </div>
     
-    <button id="save" style="margin-top: 15px;">Save</button>
-    
-    <div id="status" class="status" style="display: none;"></div>
-  </div>
-  
-  <div class="card">
-    <div class="card-header">Microphone Permission</div>
-    <p>The extension requires microphone access to record audio for transcription.</p>
-    
-    <div id="permissionStatus" class="permission-status unknown">
-      Checking permission status...
-    </div>
-    
-    <div style="margin-top: 15px;">
-      <button id="openChromeSettings">Open Chrome Microphone Settings</button>
-      <button id="requestPermission" style="margin-left: 10px;">Test Microphone Access</button>
-    </div>
-    
-    <div style="margin-top: 15px; background-color: #f8f9fa; padding: 12px; border-radius: 4px; font-size: 0.9em;">
-      <p><strong>Important:</strong> For Chrome security reasons, extensions cannot automatically set microphone permissions to "Allow". Please follow these steps:</p>
-      <ol style="margin-left: 20px; margin-top: 10px;">
-        <li>Click "Open Chrome Microphone Settings" above</li>
-        <li>Find the entry for this extension (chrome-extension://[extension-id])</li>
-        <li>Change the setting from "Ask" or "Block" to "Allow"</li>
-        <li>Return to this page and click "Test Microphone Access"</li>
+    <div class="info">
+      <div class="card-header" style="margin-bottom: 10px;">
+        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-4h2v2h-2zm1.61-9.96c-2.06-.3-3.88.97-4.43 2.79-.18.58.26 1.17.87 1.17.43 0 .82-.27.94-.68.32-1.03 1.37-1.74 2.49-1.54 1.31.26 2.21 1.73 1.87 3.03-.34 1.29-1.49 1.7-2.59 2.4-.3.19-.48.51-.48.85V16c0 .55.45 1 1 1s1-.45 1-1v-.35c1.3-.65 2.9-1.29 3.41-3.14.82-2.96-1.07-5.96-4.08-6.47z"/>
+        </svg>
+        How to Use TalkType
+      </div>
+      
+      <ol>
+        <li>Enter your API key above and click <strong>Save Settings</strong></li>
+        <li>Grant microphone access by clicking <strong>Test Microphone</strong></li>
+        <li>Visit any website with text inputs</li>
+        <li>Click the microphone icon that appears next to text inputs</li>
+        <li>Start speaking and your words will be converted to text</li>
       </ol>
-      <p style="margin-top: 10px;"><strong>For Mac users:</strong> You must also allow Chrome in System Preferences &gt; Security &amp; Privacy &gt; Privacy &gt; Microphone</p>
     </div>
-  </div>
-  
-  <div class="info">
-    <p><strong>How to use:</strong></p>
-    <ol>
-      <li>Enter your Gemini API key above and save.</li>
-      <li>Grant microphone access using the button above.</li>
-      <li>Navigate to any website with text inputs.</li>
-      <li>Click on the microphone icon that appears next to text inputs.</li>
-      <li>Speak your text and it will be transcribed into the input field.</li>
-    </ol>
+    
+    <div class="footer">
+      TalkType &copy; 2025
+    </div>
   </div>
   
   <script src="options.js"></script>

@@ -2,32 +2,53 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Audio to Text</title>
+  <title>TalkType</title>
   <style>
     :root {
       --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
       --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
-      --glass-bg: rgba(255, 255, 255, 0.25);
-      --glass-border: rgba(255, 255, 255, 0.4);
-      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      --text-primary: rgba(255, 255, 255, 0.95);
-      --text-secondary: rgba(255, 255, 255, 0.85);
+      --glass-bg: rgba(255, 255, 255, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.7);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      --text-primary: rgba(60, 64, 67, 0.95);
+      --text-secondary: rgba(60, 64, 67, 0.85);
+      --accent-color: rgb(111, 66, 193);
+      --light-accent: rgba(111, 66, 193, 0.1);
     }
     
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      width: 300px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      width: 320px;
       padding: 20px;
       margin: 0;
-      background: linear-gradient(225deg, #4568DC, #7474BF, #348AC7, #56CCF2);
-      background-size: 400% 400%;
-      animation: gradientBG 12s ease infinite;
+      background: linear-gradient(225deg, rgba(255, 255, 255, 0.9), rgba(240, 245, 255, 0.95));
       border-radius: 14px;
       box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
       box-sizing: border-box;
       position: relative;
       overflow: hidden;
       border: 1px solid var(--glass-border);
+      color: #333;
+    }
+    
+    /* Particle background */
+    body::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23bfcaff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+      opacity: 0.3;
+      z-index: 0;
+      animation: subtle-drift 120s linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes subtle-drift {
+      0% { background-position: 0 0; }
+      100% { background-position: 100px 100px; }
     }
     
     /* Animated gradient background */
@@ -45,23 +66,24 @@
       border-radius: 14px;
       border: 1px solid var(--glass-border);
       box-shadow: var(--glass-shadow);
-      padding: 15px;
+      padding: 12px;
       transition: all 0.2s ease;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
     
-    /* Light beams effect */
+    /* Subtle beam effect */
     body::before {
       content: '';
       position: absolute;
       width: 150%;
-      height: 100px;
-      background: rgba(255, 255, 255, 0.1);
+      height: 80px;
+      background: linear-gradient(90deg, rgba(var(--accent-color), 0), rgba(255, 255, 255, 0.05), rgba(var(--accent-color), 0));
       transform: rotate(-45deg);
       top: -40px;
       left: -20%;
-      animation: beam 8s linear infinite;
+      animation: beam 12s linear infinite;
       z-index: 0;
+      opacity: 0.5;
     }
     
     @keyframes beam {
@@ -70,26 +92,86 @@
     }
     
     h1 {
-      font-size: 22px;
+      font-size: 20px;
       margin-top: 0;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       text-align: center;
       color: var(--text-primary);
       font-weight: 600;
       position: relative;
       z-index: 1;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
-    .status {
-      margin-bottom: 20px;
-      padding: 15px;
-      border-radius: 10px;
-      text-align: center;
-      transition: all 0.3s ease;
+    .header-container {
+      position: relative;
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 16px;
+    }
+    
+    .status-pill {
+      display: inline-flex;
+      padding: 4px 10px;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
       color: var(--text-primary);
       position: relative;
       z-index: 1;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+    }
+    
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--accent-color);
+      margin-right: 6px;
+      position: relative;
+    }
+    
+    .pulse-dot::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background-color: var(--accent-color);
+      animation: pulse-status 2s infinite;
+      top: 0;
+      left: 0;
+      opacity: 0.5;
+    }
+    
+    @keyframes pulse-status {
+      0% {
+        transform: scale(1);
+        opacity: 0.5;
+      }
+      70% {
+        transform: scale(2);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 0;
+      }
+    }
+    
+    .status-text {
+      font-weight: 500;
     }
     
     .buttons {
@@ -104,7 +186,7 @@
       background: var(--primary-gradient);
       color: white;
       border: 1px solid var(--glass-border);
-      padding: 12px 15px;
+      padding: 10px 15px;
       border-radius: 10px;
       cursor: pointer;
       font-weight: 500;
@@ -113,7 +195,7 @@
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
       font-size: 14px;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       position: relative;
       overflow: hidden;
@@ -208,13 +290,13 @@
     }
     
     .mic-icon {
-      width: 38px;
-      height: 38px;
-      margin: 0 auto 20px;
-      display: block;
-      filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.2));
+      width: 22px;
+      height: 22px;
+      margin-right: 8px;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
       position: relative;
       z-index: 1;
+      color: var(--accent-color);
     }
     
     /* For the permission dialog */
@@ -268,25 +350,110 @@
       font-size: 20px;
       cursor: pointer;
     }
+    
+    /* Transcription container */
+    .glass-container {
+      background: transparent;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 16px;
+      margin-top: 15px;
+      min-height: 80px;
+      max-height: 150px;
+      overflow-y: auto;
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+      position: relative;
+    }
+    
+    /* Add subtle background gradient to the container */
+    .glass-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: -1;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(111, 66, 193, 0.08), rgba(70, 174, 247, 0.08));
+      opacity: 0.7;
+    }
+    
+    .glass-container:empty {
+      display: none;
+    }
+    
+    #transcription-text {
+      animation: fadeIn 0.5s;
+      line-height: 1.6;
+      color: var(--text-primary);
+      position: relative;
+      z-index: 1;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Icon styles */
+    .icon {
+      display: inline-block;
+      vertical-align: middle;
+      width: 20px;
+      height: 20px;
+      fill: white;
+      margin-right: 6px;
+    }
   </style>
 </head>
 <body>
-  <img src="icons/mic.svg" alt="Microphone" class="mic-icon" aria-hidden="true">
-  <h1>Audio to Text</h1>
+  <h1>
+    <svg class="mic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
+      <path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path>
+      <path fill="currentColor" d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"></path>
+    </svg>
+    TalkType
+  </h1>
   
   <div id="apiKeyError" class="error" style="display: none;">
-    Please set your Gemini API key in the options
+    Please set your API key in the options
   </div>
   
   <div id="recording-animation" class="recording-animation"></div>
   
-  <div id="status" class="status glass" role="status">
-    Ready to transcribe audio to text
+  <div class="header-container">
+    <div id="status" class="status-pill" role="status">
+      <div class="status-indicator">
+        <span class="pulse-dot"></span>
+        <span class="status-text">Ready</span>
+      </div>
+    </div>
   </div>
   
   <div class="buttons">
-    <button id="testMic" aria-label="Record and transcribe audio">Record & Transcribe</button>
-    <button id="options" aria-label="Open options page">Options</button>
+    <button id="startRecording">
+      <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+      </svg>
+      Record & Transcribe
+    </button>
+    <button id="options">
+      <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path>
+      </svg>
+      Settings
+    </button>
+  </div>
+  
+  <div id="transcription-container" class="glass-container" style="display: none;">
+    <div id="transcription-text"></div>
   </div>
   
   <!-- Permission Dialog -->

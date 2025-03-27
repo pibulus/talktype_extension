@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Audio to Text Input",
-  "version": "1.1",
-  "description": "Add cute microphone functionality to text inputs for easy voice transcription",
+  "name": "TalkType",
+  "version": "1.2",
+  "description": "Sleek voice-to-text for any text input with a modern glass interface",
   "permissions": ["activeTab", "scripting", "storage", "tabCapture"],
   "host_permissions": ["<all_urls>"],
   "action": {

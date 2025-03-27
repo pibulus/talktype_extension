@@ -241,6 +241,7 @@ function addMicrophoneToInput(inputElement) {
   micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
   micButton.style.backdropFilter = 'blur(2px)';
   micButton.style.webkitBackdropFilter = 'blur(2px)';
+  micButton.style.display = 'none'; // Initially hidden until focused
   
   // Create mic icon image
   const micIcon = document.createElement('img');
@@ -308,11 +309,19 @@ function addMicrophoneToInput(inputElement) {
   });
   
   micButton.addEventListener('mouseleave', () => {
-    micButton.style.opacity = '0.8';
-    micButton.style.transform = 'scale(1)';
-    micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
-    micButton.style.background = 'rgba(255, 255, 255, 0.05)';
-    micButton.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+    // Only change opacity if not recording
+    if (!isRecording) {
+      micButton.style.opacity = '0.8';
+      micButton.style.transform = 'scale(1)';
+      micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+      micButton.style.background = 'rgba(255, 255, 255, 0.05)';
+      micButton.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+      
+      // If not the active element, hide the button
+      if (document.activeElement !== inputElement) {
+        micButton.style.display = 'none';
+      }
+    }
   });
   
   micButton.addEventListener('mousedown', () => {
@@ -337,25 +346,51 @@ function addMicrophoneToInput(inputElement) {
     }
   });
   
+  // Show mic button when input is focused
+  inputElement.addEventListener('focus', () => {
+    micButton.style.display = 'block';
+    micButton.style.opacity = '0.8';
+    positionMicButton(inputElement, micButton);
+  });
+  
+  // Hide mic button when input loses focus
+  inputElement.addEventListener('blur', () => {
+    // Only hide if not recording
+    if (!isRecording) {
+      // Add slight delay to allow clicking the mic button
+      setTimeout(() => {
+        if (document.activeElement !== micButton && !isRecording) {
+          micButton.style.display = 'none';
+        }
+      }, 150);
+    }
+  });
+  
   // Position the button appropriately based on the input element
   positionMicButton(inputElement, micButton);
   
   // Listen for input resize (if ResizeObserver is available)
   if (window.ResizeObserver) {
     const resizeObserver = new ResizeObserver(() => {
-      positionMicButton(inputElement, micButton);
+      if (document.activeElement === inputElement || isRecording) {
+        positionMicButton(inputElement, micButton);
+      }
     });
     resizeObserver.observe(inputElement);
   }
   
   // Listen for input position changes
   window.addEventListener('resize', () => {
-    positionMicButton(inputElement, micButton);
+    if (document.activeElement === inputElement || isRecording) {
+      positionMicButton(inputElement, micButton);
+    }
   });
   
   // Update position when input changes visibility
   const observer = new MutationObserver(() => {
-    positionMicButton(inputElement, micButton);
+    if (document.activeElement === inputElement || isRecording) {
+      positionMicButton(inputElement, micButton);
+    }
   });
   observer.observe(inputElement, { attributes: true, attributeFilter: ['style', 'class'] });
 }
