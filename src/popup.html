@@ -9,10 +9,11 @@
       display: block !important;
       opacity: 1 !important;
       width: 320px;
-      height: fit-content !important; /* Only as tall as needed */
-      max-height: 400px;
+      min-height: 380px !important; /* Minimum height to prevent clipping */
+      height: fit-content !important;
+      max-height: 450px;
       margin: 0;
-      padding: 16px 18px 14px;
+      padding: 16px 18px 16px;
       box-sizing: border-box;
       animation: smooth-appear 0.25s cubic-bezier(0.23, 1, 0.32, 1) forwards !important;
     }
@@ -26,6 +27,7 @@
     :root {
       --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
       --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
+      --progress-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.9), rgba(247, 70, 180, 0.8), rgba(255, 152, 0, 0.85));
       --glass-bg: rgba(255, 255, 255, 0.65);
       --glass-border: rgba(255, 255, 255, 0.7);
       --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
@@ -37,8 +39,9 @@
     
     html, body {
       width: 320px;
+      min-height: 380px; /* Minimum height to prevent clipping */
       height: auto; /* Let it adjust to content */
-      max-height: 400px; /* Cap maximum height */
+      max-height: 450px; /* Cap maximum height */
       margin: 0;
       padding: 0;
       box-sizing: border-box;
@@ -47,7 +50,7 @@
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      padding: 16px 18px 14px; /* Reduced padding, especially at bottom */
+      padding: 16px 18px 16px; /* Consistent padding */
       background: linear-gradient(225deg, rgba(255, 255, 255, 0.9), rgba(240, 245, 255, 0.95));
       border-radius: 20px; /* Curvier corners */
       box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
@@ -58,6 +61,7 @@
       opacity: 1 !important; /* Force opacity */
       transform: none !important; /* Prevent transform animations */
       transition: none !important; /* Disable transitions */
+      min-height: 380px !important; /* Minimum height to prevent clipping */
       height: fit-content !important; /* Only take space needed */
     }
     
@@ -126,8 +130,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px; /* Reduced spacing */
+      margin-bottom: 16px;
       z-index: 1;
+      padding: 0 4px;
     }
     
     h1 {
@@ -142,6 +147,7 @@
       display: flex;
       align-items: center;
       animation: header-appear 0.5s ease-out forwards;
+      letter-spacing: 0.3px;
     }
     
     @keyframes header-appear {
@@ -323,9 +329,9 @@
     
     .recording-animation {
       display: none;
-      margin: 10px auto; /* Reduced margin */
-      width: 50px; /* Slightly smaller */
-      height: 50px; /* Slightly smaller */
+      margin: 16px auto 24px; /* More spacing, especially below */
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.1);
       position: relative;
@@ -492,7 +498,7 @@
 <body>
   <div class="header-container">
     <h1>
-      <img src="icons/icon_white/favicon-32x32.png" alt="TalkType" width="24" height="24" style="margin-right: 8px; filter: drop-shadow(0 1px 3px rgba(111, 66, 193, 0.3)); transition: transform 0.3s ease;">
+      <img src="icons/icon_black/favicon-32x32.png" alt="TalkType" width="24" height="24" style="margin-right: 8px; filter: drop-shadow(0 1px 3px rgba(111, 66, 193, 0.3)); transition: transform 0.3s ease;">
       TalkType
     </h1>
     <div id="status" class="status-pill" role="status">
