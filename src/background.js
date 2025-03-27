@@ -1,8 +1,36 @@
 // Background script for Audio to Text extension
 
+// Pre-load popup resources
+function preloadPopupResources() {
+  // Pre-load the popup page to keep it in the cache
+  fetch(chrome.runtime.getURL('popup.html'))
+    .then(response => response.text())
+    .catch(error => console.error('Error preloading popup:', error));
+    
+  // Pre-load key scripts
+  const scriptsToPreload = [
+    'audio-service.js',
+    'api-service.js', 
+    'popup.js'
+  ];
+  
+  scriptsToPreload.forEach(script => {
+    fetch(chrome.runtime.getURL(script))
+      .then(response => response.text())
+      .catch(error => console.error(`Error preloading ${script}:`, error));
+  });
+  
+  // Pre-load icon
+  const imageToPreload = new Image();
+  imageToPreload.src = chrome.runtime.getURL('icons/favicon-32x32.png');
+}
+
 // Initialize extension when installed
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log('Audio to Text extension installed');
+  console.log('TalkType extension installed');
+  
+  // Preload resources for faster popup display
+  preloadPopupResources();
   
   // Set default settings if not already set
   const settings = await chrome.storage.sync.get(['apiKey']);
@@ -54,3 +82,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Indicates async response
   }
 });
+
+// Preload popup when browser starts
+chrome.runtime.onStartup.addListener(() => {
+  // Delay preloading slightly to prioritize browser startup
+  setTimeout(preloadPopupResources, 1000);
+});
+
+// Periodically preload popup resources to keep them warm in cache
+setInterval(preloadPopupResources, 60 * 60 * 1000); // Refresh cache every hour

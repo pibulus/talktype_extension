@@ -602,10 +602,23 @@ function openPermissionFix() {
   };
 }
 
+// Pre-load initialization - start without waiting for DOM content
+const startInit = () => {
+  // Pre-initialize global services
+  audioService = new AudioRecordingService();
+};
+
+// Run pre-initialization immediately
+startInit();
+
 // Initialize the popup
 document.addEventListener('DOMContentLoaded', async () => {
-  // Check API key
-  await checkApiKey();
+  // Force immediate rendering
+  document.body.style.display = 'block';
+  document.body.style.opacity = '1';
+  
+  // Check API key in parallel with rendering
+  checkApiKey();
   
   // Add event listeners for settings - show a settings popup instead of opening options page
   document.getElementById('options').addEventListener('click', (e) => {
