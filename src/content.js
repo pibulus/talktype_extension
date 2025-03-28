@@ -192,25 +192,42 @@ function initializeInputDetection() {
   
   // Then handle specific known text editor types with careful selection
   const knownEditors = document.querySelectorAll(`
-    /* Gmail compose area */
+    /* Gmail compose area - enhanced for better detection */
     .Am.Al.editable, 
     [g_editable="true"],
     div[aria-label="Message Body"],
     div[aria-label="Message Text"],
+    div[aria-label="Compose email"],
+    div[role="textbox"][contenteditable="true"][aria-label*="Compose"],
+    div[role="textbox"][contenteditable="true"][aria-label*="compose"],
+    div[aria-multiline="true"][contenteditable="true"],
     
-    /* Facebook comment box - real text areas only */
+    /* Facebook comment box - broader selection for better detection */
     [contenteditable="true"][data-lexical-editor="true"],
     [contenteditable="true"][spellcheck="true"][role="textbox"],
+    form[role="presentation"] [contenteditable="true"],
+    .notranslate[role="textbox"][spellcheck="true"],
+    div[contenteditable="true"][role="textbox"][spellcheck="true"],
+    
+    /* Reddit comment areas */
+    .public-DraftEditor-content[contenteditable="true"],
+    .DraftEditor-root [contenteditable="true"],
+    .RichTextJSON-root [contenteditable="true"],
     
     /* Messaging platforms */
     [contenteditable="true"][data-slate-editor="true"],
     div[role="textbox"][contenteditable="true"],
     div[role="textbox"][aria-label*="message"],
+    div[role="textbox"][aria-label*="comment"],
+    div[role="textbox"][aria-label*="post"],
+    div[role="textbox"][aria-label*="reply"],
     
     /* Major known rich text editors */
     .ql-editor[contenteditable="true"], 
     .ProseMirror[contenteditable="true"], 
-    .public-DraftEditor-content
+    .public-DraftEditor-content,
+    .CodeMirror-code,
+    .monaco-editor .view-lines
   `);
   
   console.log(`TalkType: Found ${knownEditors.length} known rich text editors`);
@@ -227,15 +244,33 @@ function initializeInputDetection() {
     /* Elements with explicit textbox role */
     [role="textbox"]:not([aria-readonly="true"]):not([aria-disabled="true"]),
     
-    /* Elements with clear text input attributes */
+    /* Elements with clear text input attributes - expanded for better coverage */
     [contenteditable="true"][aria-label*="comment"],
+    [contenteditable="true"][aria-label*="Comment"],
     [contenteditable="true"][aria-label*="message"],
+    [contenteditable="true"][aria-label*="Message"],
     [contenteditable="true"][aria-label*="write"],
+    [contenteditable="true"][aria-label*="Write"],
     [contenteditable="true"][aria-label*="text"],
+    [contenteditable="true"][aria-label*="Text"],
+    [contenteditable="true"][aria-label*="post"],
+    [contenteditable="true"][aria-label*="Post"],
+    [contenteditable="true"][aria-label*="reply"],
+    [contenteditable="true"][aria-label*="Reply"],
     
     /* Elements with placeholder text for input */
     [contenteditable="true"][placeholder],
-    [contenteditable="true"][data-placeholder]
+    [contenteditable="true"][data-placeholder],
+    
+    /* Facebook-specific selectors */
+    div[contenteditable="true"][data-lexical-editor="true"],
+    div[role="textbox"][aria-label*="Write a comment"],
+    div[role="textbox"][aria-label*="What's on your mind"],
+    div[contenteditable="true"][spellcheck="true"],
+    
+    /* Gmail-specific selectors */
+    div[contenteditable="true"][aria-label*="compose"],
+    div[contenteditable="true"][role="textbox"][spellcheck="true"]
   `);
   
   console.log(`TalkType: Found ${clearTextInputs.length} additional text inputs with specific attributes`);
@@ -284,7 +319,7 @@ function createProgressNotification(message) {
     styleEl.textContent = `
       .audio-to-text-progress-notification {
         position: fixed;
-        bottom: 20px;
+        top: 20px;
         right: 20px;
         padding: 15px 20px;
         border-radius: 16px;
@@ -675,7 +710,7 @@ function addMicrophoneToInput(inputElement) {
   micButton.className = 'audio-to-text-mic-button';
   micButton.title = 'TalkType: Click to dictate';
   micButton.style.position = 'absolute';
-  micButton.style.zIndex = '99999'; // Very high z-index to ensure visibility
+  micButton.style.zIndex = '5'; // Lower z-index to work better with page content
   micButton.style.background = 'rgba(111, 66, 193, 0.15)';
   micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
   micButton.style.borderRadius = '50%';
@@ -1047,11 +1082,16 @@ function isValidTextInputElement(element) {
            !hasButtons && !hasClicks && !hasInteractiveDescendants;
   }
   
-  // Special case for specific rich text editors
+  // Special case for specific rich text editors - expanded list
   if (element.classList.contains('ql-editor') || 
       element.classList.contains('ProseMirror') ||
       element.classList.contains('public-DraftEditor-content') ||
-      element.classList.contains('richTextArea')) {
+      element.classList.contains('richTextArea') ||
+      element.classList.contains('CodeMirror-code') ||
+      element.classList.contains('notranslate') ||
+      (element.getAttribute('data-lexical-editor') === 'true') ||
+      (element.contentEditable === 'true' && element.getAttribute('data-slate-editor') === 'true') ||
+      (element.getAttribute('data-testid')?.includes('rich-text'))) {
     return true;
   }
   
@@ -1061,10 +1101,14 @@ function isValidTextInputElement(element) {
     return true;
   }
   
-  // Special case for common editor containers
+  // Special case for common editor containers - expanded for better detection
   if (element.getAttribute('role') === 'textbox' || 
       element.getAttribute('data-testid')?.includes('input') || 
-      element.getAttribute('data-testid')?.includes('editor')) {
+      element.getAttribute('data-testid')?.includes('editor') ||
+      element.getAttribute('data-testid')?.includes('composer') ||
+      element.getAttribute('aria-label')?.includes('ompose') || // Catches "Compose", "compose", etc.
+      element.getAttribute('g_editable') === 'true' ||
+      (element.isContentEditable && element.getAttribute('aria-multiline') === 'true')) {
     return true;
   }
   
@@ -1789,7 +1833,7 @@ function showStatusNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.className = `audio-to-text-notification audio-to-text-notification-${type}`;
   notification.style.position = 'fixed';
-  notification.style.bottom = '20px';
+  notification.style.top = '20px';  // Changed from bottom to top
   notification.style.right = '20px';
   notification.style.padding = '16px 20px';
   notification.style.borderRadius = '16px';
@@ -1799,7 +1843,7 @@ function showStatusNotification(message, type = 'info') {
   notification.style.fontWeight = '600';
   notification.style.maxWidth = '350px';
   notification.style.opacity = '0';
-  notification.style.transform = 'translateY(30px) scale(0.95)';
+  notification.style.transform = 'translateY(-30px) scale(0.95)';
   notification.style.transition = 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
   notification.style.backdropFilter = 'blur(16px)';
   notification.style.webkitBackdropFilter = 'blur(16px)';
@@ -1966,7 +2010,7 @@ function showStatusNotification(message, type = 'info') {
   // Add to DOM
   document.body.appendChild(notification);
   
-  // Trigger enhanced entrance animation
+  // Trigger enhanced entrance animation (adjusted for top position)
   setTimeout(() => {
     notification.style.opacity = '1';
     notification.style.transform = 'translateY(0) scale(1)';
@@ -1977,7 +2021,7 @@ function showStatusNotification(message, type = 'info') {
     setTimeout(() => {
       if (document.body.contains(notification)) {
         notification.style.opacity = '0';
-        notification.style.transform = 'translateY(20px) scale(0.95)';
+        notification.style.transform = 'translateY(-20px) scale(0.95)';
         
         // Remove from DOM after transition
         setTimeout(() => {
