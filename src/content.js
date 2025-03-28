@@ -268,6 +268,205 @@ function initializeInputDetection() {
   console.log('TalkType: Input detection completed');
 }
 
+// Create a stylish progress notification
+function createProgressNotification(message) {
+  // Remove any existing notifications first
+  document.querySelectorAll('.audio-to-text-notification, .audio-to-text-progress-notification').forEach(notification => {
+    if (document.body.contains(notification)) {
+      document.body.removeChild(notification);
+    }
+  });
+  
+  // Create progress notification styles if they don't exist
+  if (!document.getElementById('progress-notification-styles')) {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'progress-notification-styles';
+    styleEl.textContent = `
+      .audio-to-text-progress-notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-weight: 500;
+        color: white;
+        background: linear-gradient(135deg, #6f42c1, #7a5dcb);
+        box-shadow: 0 5px 20px rgba(111, 66, 193, 0.3);
+        z-index: 999999;
+        display: flex;
+        flex-direction: column;
+        min-width: 240px;
+        max-width: 300px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      .progress-bar-container {
+        margin-top: 10px;
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 1));
+        border-radius: 6px;
+        transition: width 0.5s cubic-bezier(0.44, 0.89, 0.56, 0.94);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      }
+      
+      .progress-status {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        margin-top: 6px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+      }
+      
+      .progress-message {
+        display: flex;
+        align-items: center;
+      }
+      
+      .progress-icon {
+        margin-right: 10px;
+        animation: pulse 1.5s infinite;
+      }
+      
+      @keyframes pulse {
+        0% { opacity: 0.6; }
+        50% { opacity: 1; }
+        100% { opacity: 0.6; }
+      }
+      
+      .progress-percentage {
+        font-weight: 600;
+      }
+      
+      .progress-complete {
+        background: linear-gradient(135deg, #52c41a, #85e255);
+      }
+      
+      .progress-complete .progress-bar {
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 1));
+      }
+    `;
+    document.head.appendChild(styleEl);
+  }
+  
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = 'audio-to-text-progress-notification';
+  
+  // Create content
+  notification.innerHTML = `
+    <div class="progress-message">
+      <span class="progress-icon">🎙️</span>
+      <span>${message}</span>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar"></div>
+    </div>
+    <div class="progress-status">
+      <span class="progress-status-text">Processing...</span>
+      <span class="progress-percentage">0%</span>
+    </div>
+  `;
+  
+  // Add to DOM
+  document.body.appendChild(notification);
+  
+  // Start initial animation
+  updateProgressNotification(notification, 0);
+  animateIndeterminateProgress(notification);
+  
+  return notification;
+}
+
+// Function to update progress notification
+function updateProgressNotification(notification, percentage) {
+  if (!notification || !document.body.contains(notification)) return;
+  
+  // Get progress elements
+  const progressBar = notification.querySelector('.progress-bar');
+  const progressPercentage = notification.querySelector('.progress-percentage');
+  const progressStatus = notification.querySelector('.progress-status-text');
+  
+  // Ensure percentage is valid
+  const validPercentage = Math.max(0, Math.min(100, percentage));
+  
+  // Update progress bar width
+  if (progressBar) {
+    progressBar.style.width = `${validPercentage}%`;
+  }
+  
+  // Update percentage text
+  if (progressPercentage) {
+    progressPercentage.textContent = `${Math.round(validPercentage)}%`;
+  }
+  
+  // Update status text based on percentage
+  if (progressStatus) {
+    if (validPercentage < 20) {
+      progressStatus.textContent = 'Processing...';
+    } else if (validPercentage < 50) {
+      progressStatus.textContent = 'Uploading...';
+    } else if (validPercentage < 80) {
+      progressStatus.textContent = 'Analyzing...';
+    } else if (validPercentage < 100) {
+      progressStatus.textContent = 'Finishing...';
+    } else {
+      progressStatus.textContent = 'Complete!';
+      notification.classList.add('progress-complete');
+      
+      // Change icon to checkmark
+      const progressIcon = notification.querySelector('.progress-icon');
+      if (progressIcon) {
+        progressIcon.textContent = '✓';
+      }
+    }
+  }
+  
+  // If we have an actual percentage, stop indeterminate animation
+  if (percentage > 0) {
+    stopIndeterminateProgress(notification);
+  }
+}
+
+// For initial indeterminate progress animation
+function animateIndeterminateProgress(notification) {
+  if (!notification) return;
+  
+  notification._indeterminateInterval = setInterval(() => {
+    const progressBar = notification.querySelector('.progress-bar');
+    if (progressBar) {
+      const currentWidth = parseFloat(progressBar.style.width || '0');
+      
+      // Create a "bouncing" effect between 10% and 30%
+      if (currentWidth >= 30) {
+        progressBar.style.width = '10%';
+      } else {
+        progressBar.style.width = `${currentWidth + 1}%`;
+      }
+    }
+  }, 50);
+}
+
+// Stop indeterminate animation
+function stopIndeterminateProgress(notification) {
+  if (notification && notification._indeterminateInterval) {
+    clearInterval(notification._indeterminateInterval);
+    notification._indeterminateInterval = null;
+  }
+}
+
 // Function to observe for dynamically added inputs
 function observeDynamicInputs() {
   console.log('TalkType: Setting up MutationObserver...');
@@ -1146,8 +1345,8 @@ async function startRecordingCore(targetInput, indicator) {
       }
     }
     
-    // Show enhanced listening notification
-    showStatusNotification('Listening... Click again when done speaking', 'recording');
+    // Show enhanced listening notification - shorter text
+    showStatusNotification('Recording... Click to stop', 'recording');
     
     // Start recording with thorough error handling
     console.log('TalkType: Calling audioService.startRecording()...');
@@ -1329,15 +1528,30 @@ async function stopRecording() {
         throw new Error('Could not create transcription service');
       }
       
-      // Show transcribing notification
-      showStatusNotification('Transcribing audio...', 'processing');
+      // Show transcribing notification with progress bar
+      const progressNotification = createProgressNotification('Transcribing audio...');
       
       // Process the audio and get the transcription
-      const transcription = await transcriptionService.transcribeAudio(audioBlob);
+      // Add callback to update progress bar during transcription
+      const transcription = await transcriptionService.transcribeAudio(audioBlob, (status, percentage) => {
+        if (progressNotification) {
+          updateProgressNotification(progressNotification, percentage);
+        }
+      });
       console.log('TalkType: Transcription received:', transcription);
       
-      // Show success notification
-      showStatusNotification('Transcription complete!', 'success');
+      // Complete progress animation and show success notification
+      if (progressNotification) {
+        updateProgressNotification(progressNotification, 100);
+        setTimeout(() => {
+          if (document.body.contains(progressNotification)) {
+            document.body.removeChild(progressNotification);
+            showStatusNotification('Transcription complete!', 'success');
+          }
+        }, 500);
+      } else {
+        showStatusNotification('Transcription complete!', 'success');
+      }
       
       // Insert the transcription directly into the input element
       if (currentInput) {
@@ -1377,6 +1591,12 @@ async function stopRecording() {
       }
     } catch (transcriptionError) {
       console.error('TalkType: Transcription failed:', transcriptionError);
+      
+      // Hide progress notification if it exists
+      if (progressNotification && document.body.contains(progressNotification)) {
+        document.body.removeChild(progressNotification);
+      }
+      
       showStatusNotification(`Transcription failed: ${transcriptionError.message}`, 'error');
     }
     
