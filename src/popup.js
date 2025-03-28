@@ -41,6 +41,12 @@ async function startRecording() {
   const transcriptionText = document.getElementById('transcription-text');
   transcriptionText.textContent = '';
   
+  // Hide copy button when starting a new recording
+  const copyButtonWrapper = document.getElementById('copy-button-wrapper');
+  if (copyButtonWrapper) {
+    copyButtonWrapper.style.display = 'none';
+  }
+  
   // Update status
   const statusElement = document.getElementById('status');
   const recordButton = document.getElementById('startRecording');
@@ -147,8 +153,8 @@ function showClipboardNotification() {
     style.textContent = `
       .clipboard-notification {
         position: fixed;
-        top: 20px;
-        bottom: auto;
+        top: 20px !important;
+        bottom: auto !important;
         left: 50%;
         transform: translateX(-50%) translateY(-30px);
         background: rgba(52, 168, 83, 0.85);
@@ -251,8 +257,15 @@ async function stopRecording() {
       }
     }
     
-    // Show the transcription
+    // Show the transcription with "Complete" status
     statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Complete</span></div>';
+    
+    // Reset status to "Ready" after 3 seconds
+    setTimeout(() => {
+      if (!isRecording) {
+        statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot"></span><span class="status-text">Ready</span></div>';
+      }
+    }, 3000);
     
     // Animate the transcription text
     transcriptionText.style.opacity = '0';
@@ -264,6 +277,12 @@ async function stopRecording() {
     
     // Show with animation
     transcriptionText.style.opacity = '1';
+    
+    // Show copy button when transcription is available
+    const copyButtonWrapper = document.getElementById('copy-button-wrapper');
+    if (copyButtonWrapper) {
+      copyButtonWrapper.style.display = 'block';
+    }
     
   } catch (error) {
     console.error('Error in recording/transcription:', error);
@@ -781,6 +800,41 @@ document.addEventListener('DOMContentLoaded', async () => {
       await startRecording();
     }
   });
+  
+  // Set up COPY BUTTON
+  const copyButton = document.getElementById('copy-button');
+  if (copyButton) {
+    copyButton.addEventListener('click', async () => {
+      const transcriptionText = document.getElementById('transcription-text');
+      if (transcriptionText && transcriptionText.textContent) {
+        try {
+          await navigator.clipboard.writeText(transcriptionText.textContent);
+          showClipboardNotification();
+        } catch (err) {
+          console.error('Failed to copy: ', err);
+        }
+      }
+    });
+    
+    // Add hover effect
+    copyButton.addEventListener('mouseenter', () => {
+      copyButton.style.transform = 'scale(1.15)';
+      copyButton.style.boxShadow = '0 3px 12px rgba(111, 66, 193, 0.3)';
+    });
+    
+    copyButton.addEventListener('mouseleave', () => {
+      copyButton.style.transform = 'scale(1)';
+      copyButton.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+    });
+    
+    copyButton.addEventListener('mousedown', () => {
+      copyButton.style.transform = 'scale(0.95)';
+    });
+    
+    copyButton.addEventListener('mouseup', () => {
+      copyButton.style.transform = 'scale(1.15)';
+    });
+  }
   
   // Set up SETTINGS BUTTON
   const settingsButton = document.getElementById('options');

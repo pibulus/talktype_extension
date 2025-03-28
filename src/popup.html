@@ -493,7 +493,7 @@
       padding: 14px; /* Slightly more padding */
       margin-top: 8px; /* Reduced margin */
       min-height: 70px; /* Smaller min-height */
-      max-height: 120px; /* Smaller max-height */
+      max-height: 170px; /* Increased max-height for longer content */
       overflow-y: auto;
       color: var(--text-primary);
       font-size: 14px;
@@ -542,6 +542,51 @@
       color: var(--text-primary);
       position: relative;
       z-index: 1;
+      max-height: 120px;
+      overflow-y: auto;
+      padding-right: 28px; /* Make room for copy button */
+    }
+    
+    /* Copy button container and styles */
+    .copy-button-container {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      z-index: 2;
+      pointer-events: none; /* Make container transparent to clicks */
+    }
+    
+    .copy-button {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.85;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 0;
+      pointer-events: auto; /* Enable clicks only on the button */
+    }
+    
+    .copy-button:hover {
+      transform: scale(1.15);
+      opacity: 1;
+      box-shadow: 0 3px 8px rgba(111, 66, 193, 0.25);
+    }
+    
+    .copy-button:active {
+      transform: scale(0.95);
+    }
+    
+    .copy-button svg {
+      width: 14px;
+      height: 14px;
+      color: white;
     }
     
     @keyframes fadeIn {
@@ -624,6 +669,15 @@
   
   <div id="transcription-container" class="glass-container" style="display: none;">
     <div id="transcription-text"></div>
+  </div>
+  
+  <!-- Copy button (positioned separately to avoid interfering with container) -->
+  <div id="copy-button-wrapper" style="display: none; position: absolute; bottom: 22px; right: 32px; z-index: 100;">
+    <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75)); border: 1px solid rgba(255, 255, 255, 0.5); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); cursor: pointer; transition: all 0.2s ease;">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px; color: white;">
+        <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+      </svg>
+    </button>
   </div>
   
   <!-- Permission Dialog (positioned with absolute to not affect layout) -->
