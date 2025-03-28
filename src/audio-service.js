@@ -28,42 +28,77 @@ class AudioRecordingService {
   }
 
   /**
-   * Request microphone permission
+   * Request microphone permission with improved error handling and diagnostics
    * @returns {Promise<boolean>}
    */
   requestMicrophonePermission() {
+    console.log('TalkType AudioService: Requesting microphone permission');
+    
     return new Promise((resolve) => {
       // First check storage for existing permission
       chrome.storage.sync.get(['microphonePermission'], (result) => {
-        if (result.microphonePermission === 'granted') {
+        // Chrome storage API error handling
+        if (chrome.runtime.lastError) {
+          console.error('TalkType AudioService: Chrome storage error:', chrome.runtime.lastError);
+        }
+        
+        console.log('TalkType AudioService: Stored permission status:', result.microphonePermission);
+        
+        if (result && result.microphonePermission === 'granted') {
+          console.log('TalkType AudioService: Using stored permission: granted');
           this.permissionGranted = true;
           resolve(true);
           return;
         }
         
+        // Debug browser support
+        if (!navigator.mediaDevices) {
+          console.error('TalkType AudioService: navigator.mediaDevices not available');
+        }
+        
+        if (navigator.mediaDevices && !navigator.mediaDevices.getUserMedia) {
+          console.error('TalkType AudioService: navigator.mediaDevices.getUserMedia not available');
+        }
+        
         // No permission stored, try to request directly
         try {
+          console.log('TalkType AudioService: Requesting media access directly');
+          
           // For maximum compatibility, use both API styles
           if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ audio: true })
+            console.log('TalkType AudioService: Using modern getUserMedia API');
+            
+            navigator.mediaDevices.getUserMedia({ 
+              audio: true,
+              video: false // Explicitly exclude video to avoid confusion
+            })
               .then((stream) => {
+                console.log('TalkType AudioService: Permission granted! Got stream with tracks:', 
+                  stream.getTracks().length);
+                
                 // Stop the stream right away, we just needed permission
                 try {
-                  stream.getTracks().forEach(track => track.stop());
+                  stream.getTracks().forEach(track => {
+                    console.log('TalkType AudioService: Stopping track:', track.kind);
+                    track.stop();
+                  });
                 } catch (e) {
+                  console.error('TalkType AudioService: Error stopping tracks:', e);
                   if (stream.stop) stream.stop();
                 }
                 
                 // Store permission status
+                console.log('TalkType AudioService: Storing permission as granted');
                 chrome.storage.sync.set({ microphonePermission: 'granted' });
                 this.permissionGranted = true;
                 resolve(true);
               })
               .catch((error) => {
-                console.error('Permission request failed:', error);
+                console.error('TalkType AudioService: Permission request failed:', error.name, error.message);
                 
                 // If permission denied, offer options page
                 if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                  console.log('TalkType AudioService: Permission denied, opening permission page');
                   this.openPermissionPage();
                 }
                 
@@ -72,15 +107,21 @@ class AudioRecordingService {
           } 
           // Try older APIs for compatibility
           else if (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) {
+            console.log('TalkType AudioService: Using legacy getUserMedia API');
             const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
             
             getUserMedia.call(navigator, 
-              { audio: true }, 
+              { audio: true, video: false }, 
               // Success
               (stream) => {
+                console.log('TalkType AudioService: Legacy API permission granted!');
                 // Stop the stream
-                if (stream.stop) stream.stop();
+                if (stream.stop) {
+                  console.log('TalkType AudioService: Using legacy stream.stop()');
+                  stream.stop();
+                }
                 else if (stream.getTracks) {
+                  console.log('TalkType AudioService: Using modern getTracks() with legacy API');
                   stream.getTracks().forEach(track => track.stop());
                 }
                 
@@ -91,19 +132,19 @@ class AudioRecordingService {
               },
               // Error
               (error) => {
-                console.error('Permission request failed:', error);
+                console.error('TalkType AudioService: Legacy permission request failed:', error);
                 this.openPermissionPage();
                 resolve(false);
               }
             );
           } else {
             // No API available
-            console.error('No getUserMedia API available');
+            console.error('TalkType AudioService: No getUserMedia API available');
             this.openPermissionPage();
             resolve(false);
           }
         } catch (e) {
-          console.error('Error during permission request:', e);
+          console.error('TalkType AudioService: Error during permission request:', e);
           this.openPermissionPage();
           resolve(false);
         }
@@ -251,7 +292,21 @@ class AudioRecordingService {
    * @returns {boolean} - Whether recording is supported
    */
   isRecordingSupported() {
-    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    console.log('TalkType AudioService: Checking recording support');
+    
+    // More thorough check for browser compatibility
+    const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    const hasGetUserMedia = !!(navigator.getUserMedia || 
+                            navigator.webkitGetUserMedia || 
+                            navigator.mozGetUserMedia || 
+                            navigator.msGetUserMedia);
+    const hasMediaRecorder = typeof MediaRecorder !== 'undefined';
+    
+    console.log('TalkType AudioService: hasMediaDevices:', hasMediaDevices);
+    console.log('TalkType AudioService: hasGetUserMedia:', hasGetUserMedia);
+    console.log('TalkType AudioService: hasMediaRecorder:', hasMediaRecorder);
+    
+    return hasMediaDevices && hasMediaRecorder;
   }
 }
 

@@ -20,38 +20,100 @@ setTimeout(() => {
   initializeExtension();
 }, 500);
 
-// Function to initialize the extension
+// Function to initialize the extension with robust error handling
 async function initializeExtension() {
-  console.log('Audio to Text extension initializing...');
+  console.log('TalkType: Extension initializing...');
   
-  // Get API key from storage
+  // Verify that required objects are available in the page context
+  if (typeof AudioRecordingService === 'undefined') {
+    console.error('TalkType: AudioRecordingService is not defined! Check that audio-service.js is loaded.');
+    showStatusNotification('TalkType initialization error: Required scripts missing', 'error');
+    return;
+  }
+  
+  if (typeof GeminiApiService === 'undefined') {
+    console.error('TalkType: GeminiApiService is not defined! Check that api-service.js is loaded.');
+    showStatusNotification('TalkType initialization error: Required scripts missing', 'error');
+    return;
+  }
+  
+  // Check that chrome API is available
+  if (!chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
+    console.error('TalkType: chrome.runtime.sendMessage not available!');
+    showStatusNotification('TalkType initialization error: Chrome API unavailable', 'error');
+    return;
+  }
+  
+  // Get API key from storage with better error handling
   try {
+    console.log('TalkType: Fetching API key from storage');
+    
     chrome.runtime.sendMessage({action: 'getApiKey'}, response => {
+      // Check for chrome runtime errors
       if (chrome.runtime.lastError) {
-        console.error('Error getting API key:', chrome.runtime.lastError);
+        console.error('TalkType: Error getting API key:', chrome.runtime.lastError);
+        showStatusNotification('Error communicating with extension. Try reloading the page.', 'error');
         return;
       }
       
+      // Process response
       if (response && response.apiKey) {
+        console.log('TalkType: API key retrieved successfully');
         apiKey = response.apiKey;
         
         // Initialize services
-        audioService = new AudioRecordingService();
-        apiService = new GeminiApiService(apiKey);
-        
-        // Initialize input detection
-        initializeInputDetection();
-        
-        // Add observer to detect dynamically added inputs
-        observeDynamicInputs();
-        
-        console.log('Audio to Text extension initialized successfully');
+        try {
+          console.log('TalkType: Creating AudioRecordingService instance');
+          audioService = new AudioRecordingService();
+          
+          console.log('TalkType: Creating GeminiApiService instance with API key');
+          apiService = new GeminiApiService(apiKey);
+          
+          // Check if services initialized correctly
+          if (!audioService || !apiService) {
+            console.error('TalkType: Service initialization failed!');
+            showStatusNotification('Error initializing TalkType services', 'error');
+            return;
+          }
+          
+          // Initialize input detection
+          console.log('TalkType: Initializing input detection');
+          initializeInputDetection();
+          
+          // Add observer to detect dynamically added inputs
+          console.log('TalkType: Setting up DOM mutation observer');
+          observeDynamicInputs();
+          
+          console.log('TalkType: Extension initialized successfully');
+          
+          // Check for browser mic support as an early diagnostic
+          if (audioService.isRecordingSupported()) {
+            console.log('TalkType: Browser supports recording');
+          } else {
+            console.warn('TalkType: Browser may not support recording!');
+            showStatusNotification('Your browser may not support recording. Chrome is recommended.', 'info');
+          }
+        } catch (initError) {
+          console.error('TalkType: Error during service initialization:', initError);
+          showStatusNotification('Error initializing speech services: ' + initError.message, 'error');
+        }
       } else {
-        console.warn('No API key found. Microphone functionality will be limited.');
+        console.warn('TalkType: No API key found.');
+        showStatusNotification('Please set your API key in the extension options.', 'error');
+        
+        // Try to open options page after a delay
+        setTimeout(() => {
+          try {
+            chrome.runtime.sendMessage({action: 'openOptions'});
+          } catch (optionsError) {
+            console.error('TalkType: Failed to open options page:', optionsError);
+          }
+        }, 2000);
       }
     });
   } catch (error) {
-    console.error('Failed to initialize Audio to Text extension:', error);
+    console.error('TalkType: Failed to initialize extension:', error);
+    showStatusNotification('TalkType initialization failed: ' + error.message, 'error');
   }
 }
 
@@ -538,15 +600,31 @@ function addMicrophoneToInput(inputElement) {
     micButton.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
   });
   
-  // Add click event to microphone button
+  // Add click event to microphone button with improved debugging
   micButton.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
     
+    console.log('TalkType: Mic button clicked!', inputElement);
+    showStatusNotification('Microphone button clicked!', 'info');
+    
     if (isRecording) {
+      console.log('TalkType: Stopping existing recording');
       stopRecording();
     } else {
-      startRecording(inputElement, recordingIndicator);
+      console.log('TalkType: Starting new recording on input:', inputElement);
+      // Show immediate visual feedback before the async function runs
+      micButton.style.animation = 'wiggle-mic 0.5s ease';
+      micButton.style.background = 'rgba(255, 64, 129, 0.2)';
+      micButton.style.border = '1px solid rgba(255, 64, 129, 0.4)';
+      
+      // Call startRecording and catch any errors  
+      try {
+        startRecording(inputElement, recordingIndicator);
+      } catch (error) {
+        console.error('TalkType: Error starting recording:', error);
+        showStatusNotification('Error starting recording: ' + error.message, 'error');
+      }
     }
   });
   
@@ -733,18 +811,50 @@ async function startRecording(targetInput, indicator) {
   }
   
   try {
-    // Check if recording is supported
-    if (!audioService.isRecordingSupported()) {
-      alert('Audio recording is not supported in this browser.');
+    // Comprehensive browser API debugging
+    console.log('TalkType: Checking browser API support...');
+    
+    if (!navigator.mediaDevices) {
+      console.error('TalkType: navigator.mediaDevices not available!');
+      showStatusNotification('Your browser does not support media recording', 'error');
       return;
+    }
+    
+    console.log('TalkType: mediaDevices API available:', !!navigator.mediaDevices);
+    console.log('TalkType: getUserMedia available:', !!navigator.mediaDevices.getUserMedia);
+    console.log('TalkType: MediaRecorder available:', typeof MediaRecorder !== 'undefined');
+    
+    // Check if recording is supported by audioService
+    if (!audioService.isRecordingSupported()) {
+      console.error('TalkType: Recording not supported according to audioService');
+      showStatusNotification('Your browser does not support audio recording', 'error');
+      return;
+    }
+    
+    // Check permissions directly
+    console.log('TalkType: Checking permissions...');
+    if (navigator.permissions && navigator.permissions.query) {
+      try {
+        const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+        console.log('TalkType: Microphone permission status:', permissionStatus.state);
+        
+        if (permissionStatus.state === 'denied') {
+          showStatusNotification('Microphone permission denied. Please enable in your browser settings.', 'error');
+          return;
+        }
+      } catch (permError) {
+        console.log('TalkType: Permission check error (this is normal in some browsers):', permError);
+      }
     }
     
     // Update state
     isRecording = true;
     activeInput = targetInput;
+    console.log('TalkType: Set isRecording=true, activeInput=', targetInput);
     
     // Show recording indicator with animations
     if (indicator) {
+      console.log('TalkType: Showing recording indicator');
       indicator.style.display = 'block';
       
       // Find the mic button (parent of the indicator)
@@ -768,40 +878,85 @@ async function startRecording(targetInput, indicator) {
       }
     }
     
-    // Show simple listening notification
-    showStatusNotification('Listening...', 'recording');
+    // Show enhanced listening notification
+    showStatusNotification('Listening... Click again when done speaking', 'recording');
     
-    // Start recording
-    await audioService.startRecording();
+    // Start recording with thorough error handling
+    console.log('TalkType: Calling audioService.startRecording()...');
+    try {
+      await audioService.startRecording();
+      console.log('TalkType: Recording started successfully for', targetInput);
+    } catch (recError) {
+      // This detailed error is handled below in the main catch block
+      throw recError;
+    }
     
-    console.log('Recording started for', targetInput);
+    console.log('TalkType: Recording active for', targetInput);
   } catch (error) {
-    console.error('Failed to start recording:', error);
+    console.error('TalkType: Failed to start recording:', error);
     
-    // Handle different error types
+    // Handle different error types with user-friendly notifications instead of alerts
     if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-      const permissionMessage = `
-        Microphone permission denied. 
-        
-        Please allow microphone access in your browser settings:
-        1. Click the lock icon in the address bar
-        2. Find "Microphone" in the site permissions
-        3. Change it to "Allow"
-        4. Refresh the page and try again
-      `;
-      alert(permissionMessage);
+      console.log('TalkType: Permission error detected:', error.name);
+      
+      // Create a detailed but friendly notification
+      showStatusNotification('Microphone permission needed. Click the lock icon in your address bar and allow microphone access.', 'error');
+      
+      // Try to check system permissions too
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'microphone' })
+          .then(permStatus => {
+            console.log('TalkType: System permission status:', permStatus.state);
+          })
+          .catch(permErr => {
+            console.log('TalkType: System permission check failed:', permErr);
+          });
+      }
+      
+      // On Mac, show a special notification
+      if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+        console.log('TalkType: Mac detected, showing special message');
+        setTimeout(() => {
+          showStatusNotification('Mac users: Also check System Preferences → Security & Privacy → Microphone', 'info');
+        }, 3000);
+      }
+    } else if (error.name === 'NotFoundError') {
+      showStatusNotification('No microphone found. Please connect a microphone and try again.', 'error');
+    } else if (error.name === 'TypeError' && error.message.includes('MediaRecorder')) {
+      showStatusNotification('Your browser doesn\'t support audio recording. Try using Chrome or Edge.', 'error');
     } else {
-      alert(`Failed to start recording: ${error.message}`);
+      // Generic error with more details
+      console.log('TalkType: General recording error:', error);
+      showStatusNotification(`Recording error: ${error.message}`, 'error');
     }
     
     // Reset state
     isRecording = false;
     activeInput = null;
+    console.log('TalkType: Reset recording state after error');
     
-    // Hide recording indicator
+    // Hide recording indicator and update button state
     if (indicator) {
       indicator.style.display = 'none';
+      
+      // Reset button appearance
+      const micButton = indicator.parentElement;
+      if (micButton) {
+        micButton.style.animation = '';
+        micButton.style.opacity = '1';
+        micButton.style.background = 'rgba(111, 66, 193, 0.15)';
+        micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+        micButton.style.boxShadow = '0 2px 6px rgba(111, 66, 193, 0.4)';
+        micButton.style.filter = 'none';
+      }
     }
+    
+    // Remove any recording notifications
+    document.querySelectorAll('.audio-to-text-notification-recording').forEach(notification => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    });
   }
 }
 
