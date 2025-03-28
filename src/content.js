@@ -600,33 +600,74 @@ function addMicrophoneToInput(inputElement) {
     micButton.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
   });
   
-  // Add click event to microphone button with improved debugging
-  micButton.addEventListener('click', (event) => {
+  // Add click event to microphone button - simplified but robust
+  micButton.onclick = async function(event) {
+    // Prevent any default behavior and event bubbling
     event.preventDefault();
     event.stopPropagation();
     
     console.log('TalkType: Mic button clicked!', inputElement);
-    showStatusNotification('Microphone button clicked!', 'info');
     
-    if (isRecording) {
-      console.log('TalkType: Stopping existing recording');
-      stopRecording();
-    } else {
-      console.log('TalkType: Starting new recording on input:', inputElement);
-      // Show immediate visual feedback before the async function runs
-      micButton.style.animation = 'wiggle-mic 0.5s ease';
-      micButton.style.background = 'rgba(255, 64, 129, 0.2)';
-      micButton.style.border = '1px solid rgba(255, 64, 129, 0.4)';
-      
-      // Call startRecording and catch any errors  
-      try {
+    // Set active input element as a global target
+    activeInput = inputElement;
+    
+    // Visual feedback - always show something when clicked
+    micButton.style.transform = 'scale(1.1)';
+    micButton.style.background = 'rgba(255, 64, 129, 0.3)';
+    micButton.style.border = '1px solid rgba(255, 64, 129, 0.5)';
+    micButton.style.boxShadow = '0 2px 8px rgba(255, 64, 129, 0.35)';
+    
+    try {
+      // Toggle recording state
+      if (isRecording) {
+        console.log('TalkType: Stopping recording...');
+        showStatusNotification('Stopping recording...', 'info');
+        stopRecording();
+      } else {
+        console.log('TalkType: Starting recording...');
+        showStatusNotification('Starting recording...', 'info');
+        
+        // First check if services are initialized - initialize them if needed
+        if (!audioService || !apiService) {
+          console.log('TalkType: Services not initialized, initializing now...');
+          showStatusNotification('Initializing TalkType...', 'processing');
+          
+          // Try to initialize before recording
+          initializeExtension();
+          
+          // Wait for initialization
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Check again
+          if (!audioService || !apiService) {
+            console.error('TalkType: Failed to initialize services!');
+            showStatusNotification('Failed to initialize TalkType services. Please check options.', 'error');
+            return;
+          }
+        }
+        
+        // Simple animation
+        const micIcon = micButton.querySelector('img');
+        if (micIcon) {
+          micIcon.style.animation = 'wiggle-mic 0.5s ease';
+        }
+        
+        // Start recording
         startRecording(inputElement, recordingIndicator);
-      } catch (error) {
-        console.error('TalkType: Error starting recording:', error);
-        showStatusNotification('Error starting recording: ' + error.message, 'error');
       }
+    } catch (error) {
+      console.error('TalkType: Error handling click:', error);
+      showStatusNotification('Error: ' + error.message, 'error');
+      
+      // Reset button appearance
+      setTimeout(() => {
+        micButton.style.transform = 'scale(1)';
+        micButton.style.background = 'rgba(111, 66, 193, 0.15)';
+        micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+        micButton.style.boxShadow = '0 2px 6px rgba(111, 66, 193, 0.4)';
+      }, 500);
     }
-  });
+  };
   
   // Always show mic button, but update position on focus
   inputElement.addEventListener('focus', () => {
@@ -672,8 +713,32 @@ function positionMicButton(inputElement, micButton) {
                         (inputRect.height > 40) || 
                         (elementType !== 'input' && elementType !== 'textarea');
   
-  // Add the button to the document body for absolute positioning
-  if (!document.body.contains(micButton)) {
+  // IMPORTANT: Attach the button directly to the input's parent for proper positioning
+  // This ensures it moves with the input and doesn't stay fixed when scrolling
+  const inputParent = inputElement.parentElement;
+  
+  // First remove from document.body if it's there
+  if (document.body.contains(micButton)) {
+    document.body.removeChild(micButton);
+  }
+  
+  // Then add to the parent element with relative positioning
+  if (inputParent && !inputParent.contains(micButton)) {
+    // Make sure parent has position style for proper child positioning
+    const parentStyle = window.getComputedStyle(inputParent);
+    if (parentStyle.position === 'static') {
+      inputParent.style.position = 'relative';
+    }
+    
+    inputParent.appendChild(micButton);
+    
+    // Change from absolute to relative positioning
+    micButton.style.position = 'absolute';
+    micButton.style.zIndex = '99999';
+  }
+  
+  // Fallback to body if parent isn't available
+  if (!inputParent && !document.body.contains(micButton)) {
     document.body.appendChild(micButton);
   }
   
@@ -719,43 +784,31 @@ function positionMicButton(inputElement, micButton) {
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
   
   // For different element types, position differently
-  let top, left;
+  let top, right; // Use right alignment instead of left for better positioning
   
   // Calculate position to ensure mic is always inside the input
   const padding = 8; // Minimum padding from edge
   
+  // When positioned within parent, use relative positioning values
   if (isLargeElement) {
     // For large elements (textareas, contenteditable)
-    top = inputRect.top + scrollTop + padding - 3; // Position slightly higher
-    left = inputRect.right + scrollLeft - 24 - padding; // Keep inside by padding amount
+    top = padding;
+    right = padding; // Positioned from right edge
   } else {
-    // For standard inputs, position vertically centered but slightly higher
-    top = inputRect.top + scrollTop + (inputRect.height - 24) / 2 - 3;
-    
-    // Ensure it's always inside the input field, not outside
-    left = inputRect.left + scrollLeft + inputRect.width - 24 - padding;
+    // For standard inputs, position vertically centered
+    top = (inputRect.height - 28) / 2; // Center vertically (button is 28px)
+    right = padding + 5; // Position from right with padding
     
     // If input is too small, adjust position
     if (inputRect.height < 24) {
-      top = inputRect.top + scrollTop + (inputRect.height - 20) / 2 - 3;
+      top = 0; // Position at top
     }
   }
   
-  // Make sure the button doesn't go off-screen
-  const rightEdge = window.innerWidth + scrollLeft;
-  if (left + 24 > rightEdge) {
-    left = rightEdge - 30;
-  }
-  
-  // Extra safety - ensure we're never outside the input boundaries
-  const inputRight = inputRect.left + inputRect.width;
-  if (left + 24 > inputRight + scrollLeft) {
-    left = inputRight + scrollLeft - 24;
-  }
-  
-  // Set position first, before showing
+  // Set position relative to the parent element to ensure proper scrolling behavior
   micButton.style.top = `${top}px`;
-  micButton.style.left = `${left}px`;
+  micButton.style.right = `${right}px`; // Use right instead of left
+  micButton.style.left = 'auto'; // Clear any previous left value
   
   // Delay showing slightly to ensure position is set first
   setTimeout(() => {
