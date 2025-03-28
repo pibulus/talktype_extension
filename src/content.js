@@ -9,8 +9,16 @@ let isRecording = false;
 let activeInput = null;
 let apiKey = ''; // This should be set through extension options
 
-// Initialize immediately to ensure the script runs on all pages
+// Initialize immediately AND ensure it runs on all DOM changes
+console.log('TalkType content script loading...');
+// Force immediate initialization
 initializeExtension();
+
+// Set an immediate timeout to ensure it runs after DOM is loaded
+setTimeout(() => {
+  console.log('TalkType running delayed initialization...');
+  initializeExtension();
+}, 500);
 
 // Function to initialize the extension
 async function initializeExtension() {
@@ -47,17 +55,35 @@ async function initializeExtension() {
   }
 }
 
-// Also initialize on DOM content loaded to ensure it works in all scenarios
+// Also initialize on DOM content loaded and load events to ensure it works in all scenarios
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('TalkType: DOMContentLoaded event fired');
   if (!audioService || !apiService) {
     initializeExtension();
   }
 });
 
+// Also try on window load
+window.addEventListener('load', () => {
+  console.log('TalkType: Window load event fired');
+  if (!audioService || !apiService) {
+    initializeExtension();
+  }
+  
+  // Double check after a slight delay to catch any late-loading elements
+  setTimeout(() => {
+    console.log('TalkType: Final initialization check');
+    initializeInputDetection();
+  }, 1000);
+});
+
 // Function to initialize input detection
 function initializeInputDetection() {
+  console.log('TalkType: Initializing input detection for mic buttons...');
+  
   // Find all possible text input elements on the page
   const allInputs = document.querySelectorAll('input, textarea');
+  console.log(`TalkType: Found ${allInputs.length} input elements`);
   
   // Filter for inputs that can accept text
   allInputs.forEach(input => {
@@ -92,31 +118,98 @@ function initializeInputDetection() {
   
   // Also check for contenteditable divs and spans
   const editableElements = document.querySelectorAll('[contenteditable="true"]');
+  console.log(`TalkType: Found ${editableElements.length} contenteditable elements`);
   editableElements.forEach(element => {
     addMicrophoneToInput(element);
   });
   
-  // Special handling for common sites (Reddit, Facebook, etc.)
+  // Special handling for social media and common sites (with expanded selectors)
   
-  // Reddit comment boxes
-  const redditCommentBoxes = document.querySelectorAll('.public-DraftEditor-content, .RichTextJSON-root');
+  // Gmail composer (high priority)
+  const gmailComposers = document.querySelectorAll('.Am.Al.editable, .aO9, [role="textbox"][aria-label*="compose"], div[aria-label*="Message Body"], div[g_editable="true"]');
+  console.log(`TalkType: Found ${gmailComposers.length} Gmail composers`);
+  gmailComposers.forEach(element => {
+    if (!element.dataset.hasMicButton) {
+      addMicrophoneToInput(element);
+    }
+  });
+  
+  // Facebook comment & post boxes (with expanded selectors)
+  const facebookInputs = document.querySelectorAll(
+    '[role="textbox"], [data-testid="post-composer"] div[contenteditable], ' +
+    '[aria-label*="comment"], [aria-label*="Comment"], [aria-label*="post"], [aria-label*="Post"], ' +
+    '[aria-label*="Write"], [aria-label*="write"], [placeholder*="comment"], [placeholder*="Comment"], ' +
+    '.notranslate[contenteditable], .UFICommentContainer, .UFIAddCommentInput'
+  );
+  console.log(`TalkType: Found ${facebookInputs.length} Facebook inputs`);
+  facebookInputs.forEach(element => {
+    if (!element.dataset.hasMicButton) {
+      addMicrophoneToInput(element);
+    }
+  });
+  
+  // Reddit comment boxes (expanded)
+  const redditCommentBoxes = document.querySelectorAll(
+    '.public-DraftEditor-content, .RichTextJSON-root, ' +
+    '.usertext-edit textarea, .commentarea textarea, ' +
+    'div[data-test-id="comment-submission-form-richtext"], ' +
+    '[placeholder*="comment"], [placeholder*="Comment"]'
+  );
+  console.log(`TalkType: Found ${redditCommentBoxes.length} Reddit comment boxes`);
   redditCommentBoxes.forEach(element => {
     if (!element.dataset.hasMicButton) {
       addMicrophoneToInput(element);
     }
   });
   
-  // Facebook comment boxes
-  const facebookCommentBoxes = document.querySelectorAll('[role="textbox"], [data-testid="post-composer"] div[contenteditable]');
-  facebookCommentBoxes.forEach(element => {
+  // Common messaging platforms (Slack, Discord, etc.)
+  const messagingInputs = document.querySelectorAll(
+    '[aria-label*="message"], [aria-label*="Message"], ' +
+    '[placeholder*="message"], [placeholder*="Message"], ' +
+    '.ql-editor[contenteditable], ' +
+    '[role="textbox"][aria-label*="message"], [data-slate-editor="true"]'
+  );
+  console.log(`TalkType: Found ${messagingInputs.length} messaging inputs`);
+  messagingInputs.forEach(element => {
     if (!element.dataset.hasMicButton) {
       addMicrophoneToInput(element);
     }
   });
   
-  // Generic rich text editors
-  const richTextEditors = document.querySelectorAll('.ql-editor, .jodit-wysiwyg, .ce-paragraph, .ProseMirror, [role="textbox"]');
+  // Twitter/X composer
+  const twitterInputs = document.querySelectorAll(
+    '[data-testid="tweetTextarea_0"], [aria-label*="tweet"], [aria-label*="Tweet"], ' +
+    '[aria-label*="post"], [data-testid="toolBar"], [role="textbox"][aria-labelledby*="post"]'
+  );
+  console.log(`TalkType: Found ${twitterInputs.length} Twitter/X inputs`);
+  twitterInputs.forEach(element => {
+    if (!element.dataset.hasMicButton) {
+      addMicrophoneToInput(element);
+    }
+  });
+  
+  // Generic rich text editors (expanded list)
+  const richTextEditors = document.querySelectorAll(
+    '.ql-editor, .jodit-wysiwyg, .ce-paragraph, .ProseMirror, [role="textbox"], ' +
+    '.trix-content, .tox-edit-area, .CodeMirror, .markdown-body, .editor-container, ' +
+    '[class*="editor"], [class*="Editor"], [class*="comment"], [class*="Comment"], ' +
+    '[class*="compose"], [class*="Compose"], [id*="editor"], [id*="Editor"]'
+  );
+  console.log(`TalkType: Found ${richTextEditors.length} rich text editors`);
   richTextEditors.forEach(element => {
+    if (!element.dataset.hasMicButton) {
+      addMicrophoneToInput(element);
+    }
+  });
+  
+  // As a fallback, also look for any elements that might seem like text inputs
+  const potentialInputs = document.querySelectorAll(
+    'div[role="textbox"], div[contenteditable], ' +
+    '[aria-label*="input"], [aria-label*="type"], [aria-label*="write"], ' +
+    '[placeholder], [aria-autocomplete="list"]'
+  );
+  console.log(`TalkType: Found ${potentialInputs.length} potential inputs`);
+  potentialInputs.forEach(element => {
     if (!element.dataset.hasMicButton) {
       addMicrophoneToInput(element);
     }
@@ -125,131 +218,243 @@ function initializeInputDetection() {
 
 // Function to observe for dynamically added inputs
 function observeDynamicInputs() {
+  console.log('TalkType: Setting up MutationObserver...');
+  
+  // Create a more thorough check and scan function
+  const scanAndAttachMic = (root) => {
+    console.log('TalkType: Scanning for input elements...');
+    
+    // Find ALL inputs and textareas
+    const allInputs = root.querySelectorAll('input, textarea');
+    if (allInputs.length > 0) {
+      console.log(`TalkType: Found ${allInputs.length} input/textarea elements`);
+    }
+    
+    // Add to text-based inputs
+    allInputs.forEach(input => {
+      if (input.tagName.toLowerCase() === 'input') {
+        const inputType = input.getAttribute('type') || 'text';
+        const textTypes = ['text', 'search', 'email', 'url', 'tel', 'number', 'password', 
+                          'date', 'datetime-local', 'time', 'month', 'week'];
+        
+        if (textTypes.includes(inputType.toLowerCase()) || !input.hasAttribute('type')) {
+          addMicrophoneToInput(input);
+        }
+      } else if (input.tagName.toLowerCase() === 'textarea') {
+        addMicrophoneToInput(input);
+      }
+    });
+    
+    // Find contenteditable elements
+    const editableElements = root.querySelectorAll('[contenteditable="true"]');
+    if (editableElements.length > 0) {
+      console.log(`TalkType: Found ${editableElements.length} contenteditable elements`);
+    }
+    editableElements.forEach(element => {
+      addMicrophoneToInput(element);
+    });
+    
+    // Special handling for known sites and editors
+    
+    // Reddit
+    const redditCommentBoxes = root.querySelectorAll('.public-DraftEditor-content, .RichTextJSON-root');
+    if (redditCommentBoxes.length > 0) {
+      console.log(`TalkType: Found ${redditCommentBoxes.length} Reddit comment boxes`);
+    }
+    redditCommentBoxes.forEach(element => {
+      if (!element.dataset.hasMicButton) {
+        addMicrophoneToInput(element);
+      }
+    });
+    
+    // Facebook
+    const facebookCommentBoxes = root.querySelectorAll('[role="textbox"], [data-testid="post-composer"] div[contenteditable]');
+    if (facebookCommentBoxes.length > 0) {
+      console.log(`TalkType: Found ${facebookCommentBoxes.length} Facebook comment boxes`);
+    }
+    facebookCommentBoxes.forEach(element => {
+      if (!element.dataset.hasMicButton) {
+        addMicrophoneToInput(element);
+      }
+    });
+    
+    // Generic rich text editors (expanded list)
+    const richTextEditors = root.querySelectorAll(
+      '.ql-editor, .jodit-wysiwyg, .ce-paragraph, .ProseMirror, [role="textbox"], ' +
+      '.trix-content, .tox-edit-area, .CodeMirror, .markdown-body, ' +
+      '[class*="editor"], [class*="Editor"], [class*="comment"], [class*="Comment"]'
+    );
+    if (richTextEditors.length > 0) {
+      console.log(`TalkType: Found ${richTextEditors.length} rich text editors`);
+    }
+    richTextEditors.forEach(element => {
+      if (!element.dataset.hasMicButton) {
+        addMicrophoneToInput(element);
+      }
+    });
+  };
+  
+  // Create an observer that watches for ALL DOM changes
   const observer = new MutationObserver((mutations) => {
+    let shouldScan = false;
+    
+    // Check if any mutations are relevant
     mutations.forEach((mutation) => {
+      // If nodes were added
       if (mutation.addedNodes.length) {
+        shouldScan = true;
+        
+        // For each added node that's an element
         mutation.addedNodes.forEach((node) => {
-          // Check if the added node is an input element
+          // Direct check for input elements
           if (node.nodeName === 'INPUT' || node.nodeName === 'TEXTAREA') {
-            // For inputs, check if they can accept text
-            if (node.nodeName === 'INPUT') {
-              const inputType = node.getAttribute('type') || 'text';
-              const textTypes = ['text', 'search', 'email', 'url', 'tel', 'number', 'password', 
-                                'date', 'datetime-local', 'time', 'month', 'week'];
-              
-              if (textTypes.includes(inputType.toLowerCase()) || !node.hasAttribute('type')) {
-                addMicrophoneToInput(node);
-              }
-            } else {
-              // All textareas can accept text
-              addMicrophoneToInput(node);
-            }
-          } else if (node.hasAttribute && node.hasAttribute('contenteditable') && 
-                     node.getAttribute('contenteditable') !== 'false') {
-            // Handle contenteditable elements
             addMicrophoneToInput(node);
-          }
-          
-          // Check for inputs inside the added node
-          if (node.querySelectorAll) {
-            // Check for all possible input types
-            const inputs = node.querySelectorAll('input, textarea');
-            inputs.forEach(input => {
-              if (input.tagName.toLowerCase() === 'input') {
-                const inputType = input.getAttribute('type') || 'text';
-                const textTypes = ['text', 'search', 'email', 'url', 'tel', 'number', 'password', 
-                                  'date', 'datetime-local', 'time', 'month', 'week'];
-                
-                if (textTypes.includes(inputType.toLowerCase()) || !input.hasAttribute('type')) {
-                  addMicrophoneToInput(input);
-                }
-              } else {
-                // All textareas can accept text
-                addMicrophoneToInput(input);
-              }
-            });
-            
-            // Also check for contenteditable elements
-            const editableElements = node.querySelectorAll('[contenteditable="true"]');
-            editableElements.forEach(element => {
-              addMicrophoneToInput(element);
-            });
-            
-            // Special handling for common sites - check for social media inputs
-            // Reddit
-            const redditCommentBoxes = node.querySelectorAll('.public-DraftEditor-content, .RichTextJSON-root');
-            redditCommentBoxes.forEach(element => {
-              if (!element.dataset.hasMicButton) {
-                addMicrophoneToInput(element);
-              }
-            });
-            
-            // Facebook
-            const facebookCommentBoxes = node.querySelectorAll('[role="textbox"], [data-testid="post-composer"] div[contenteditable]');
-            facebookCommentBoxes.forEach(element => {
-              if (!element.dataset.hasMicButton) {
-                addMicrophoneToInput(element);
-              }
-            });
-            
-            // Generic rich text editors
-            const richTextEditors = node.querySelectorAll('.ql-editor, .jodit-wysiwyg, .ce-paragraph, .ProseMirror, [role="textbox"]');
-            richTextEditors.forEach(element => {
-              if (!element.dataset.hasMicButton) {
-                addMicrophoneToInput(element);
-              }
-            });
+          } 
+          // Check for contenteditable
+          else if (node.hasAttribute && node.hasAttribute('contenteditable') && 
+                   node.getAttribute('contenteditable') !== 'false') {
+            addMicrophoneToInput(node);
           }
         });
       }
+      
+      // If attributes changed, check if it's a relevant attribute
+      if (mutation.type === 'attributes') {
+        if (mutation.attributeName === 'contenteditable' || 
+            mutation.attributeName === 'type' || 
+            mutation.attributeName === 'class' ||
+            mutation.attributeName === 'style') {
+          shouldScan = true;
+        }
+      }
     });
+    
+    // If relevant changes were detected, scan the document
+    if (shouldScan) {
+      // Use a small delay to let the DOM settle
+      setTimeout(() => {
+        scanAndAttachMic(document.body);
+      }, 50);
+    }
   });
   
-  // Start observing the document
-  observer.observe(document.body, { childList: true, subtree: true });
+  // Start observing with ALL possible mutation types
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    characterData: false
+  });
+  
+  // Also set up a periodic scan to catch any missed elements
+  setInterval(() => {
+    scanAndAttachMic(document.body);
+  }, 2000);
+  
+  // Initial scan of the page
+  scanAndAttachMic(document.body);
 }
 
 // Function to add microphone icon to an input element
 function addMicrophoneToInput(inputElement) {
+  console.log('TalkType: Adding microphone to input element:', inputElement);
+  
   // Check if this input already has a microphone button
   if (inputElement.dataset.hasMicButton) {
+    console.log('TalkType: Input already has mic button, skipping');
     return;
   }
   
   // Mark this input as having a mic button
   inputElement.dataset.hasMicButton = 'true';
   
-  // Get the mic icon URL
-  const micIconUrl = chrome.runtime.getURL('icons/mic.svg');
+  // Create a hardcoded microphone emoji as fallback
+  const micEmoji = "🎤";
   
-  // Create microphone button
+  // Try to get the SVG icon URL
+  let micIconUrl = chrome.runtime.getURL('icons/mic.svg');
+  console.log('TalkType: Microphone icon URL:', micIconUrl);
+  
+  // Whether we have a valid icon URL
+  const hasValidIcon = micIconUrl && !micIconUrl.includes('undefined') && !micIconUrl.includes('chrome-extension://null');
+  
+  // Create microphone button with TalkType branding
   const micButton = document.createElement('button');
   micButton.className = 'audio-to-text-mic-button';
-  micButton.title = 'Click to dictate';
+  micButton.title = 'TalkType: Click to dictate';
   micButton.style.position = 'absolute';
-  micButton.style.zIndex = '9999';
-  micButton.style.background = 'rgba(255, 255, 255, 0.05)';
-  micButton.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+  micButton.style.zIndex = '99999'; // Very high z-index to ensure visibility
+  micButton.style.background = 'rgba(111, 66, 193, 0.15)';
+  micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
   micButton.style.borderRadius = '50%';
   micButton.style.cursor = 'pointer';
-  micButton.style.width = '24px';
-  micButton.style.height = '24px';
+  micButton.style.width = '28px'; // Slightly larger
+  micButton.style.height = '28px'; // Slightly larger
   micButton.style.padding = '2px';
-  micButton.style.opacity = '0.8'; // Always visible
-  micButton.style.transform = 'scale(0.85)';
+  micButton.style.opacity = '1'; // Fully visible
+  micButton.style.transform = 'scale(1)';
   micButton.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s ease, background 0.2s ease, box-shadow 0.2s ease';
-  micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+  micButton.style.boxShadow = '0 2px 6px rgba(111, 66, 193, 0.4)'; // More pronounced shadow
   micButton.style.backdropFilter = 'blur(2px)';
   micButton.style.webkitBackdropFilter = 'blur(2px)';
   micButton.style.display = 'block'; // Always visible
   
-  // Create mic icon image
-  const micIcon = document.createElement('img');
-  micIcon.src = micIconUrl;
-  micIcon.style.width = '100%';
-  micIcon.style.height = '100%';
-  micIcon.style.transition = 'transform 0.2s ease';
-  micButton.appendChild(micIcon);
+  // Add a subtle pulse animation to make it more noticeable
+  micButton.style.animation = 'gentle-pulse 2s infinite';
+  
+  // Add this animation if it doesn't exist yet
+  if (!document.getElementById('talk-type-animations')) {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'talk-type-animations';
+    styleEl.textContent = `
+      @keyframes gentle-pulse {
+        0% { transform: scale(1); box-shadow: 0 2px 6px rgba(111, 66, 193, 0.4); }
+        50% { transform: scale(1.05); box-shadow: 0 2px 10px rgba(111, 66, 193, 0.6); }
+        100% { transform: scale(1); box-shadow: 0 2px 6px rgba(111, 66, 193, 0.4); }
+      }
+    `;
+    document.head.appendChild(styleEl);
+  }
+  
+  console.log('TalkType: Created mic button for input:', inputElement);
+  
+  // Create the icon (either image or text)
+  if (hasValidIcon) {
+    // Create SVG icon image
+    const micIcon = document.createElement('img');
+    micIcon.src = micIconUrl;
+    micIcon.style.width = '100%';
+    micIcon.style.height = '100%';
+    micIcon.style.transition = 'transform 0.2s ease';
+    
+    // Handle image loading error
+    micIcon.onerror = () => {
+      console.error('TalkType: Failed to load microphone icon, using emoji fallback');
+      micIcon.style.display = 'none';
+      createEmojiIcon();
+    };
+    
+    // Log successful load
+    micIcon.onload = () => {
+      console.log('TalkType: Successfully loaded microphone icon!');
+    };
+    
+    micButton.appendChild(micIcon);
+  } else {
+    // Use emoji fallback immediately
+    createEmojiIcon();
+  }
+  
+  // Function to create emoji fallback
+  function createEmojiIcon() {
+    const textIcon = document.createElement('div');
+    textIcon.innerText = micEmoji;
+    textIcon.style.fontSize = '14px';
+    textIcon.style.textAlign = 'center';
+    textIcon.style.lineHeight = '20px';
+    textIcon.style.color = '#6F42C1'; // Use purple TalkType brand color
+    micButton.appendChild(textIcon);
+  }
   
   // Add recording indicator with vaporwave style
   const recordingIndicator = document.createElement('span');
@@ -299,23 +504,26 @@ function addMicrophoneToInput(inputElement) {
   
   micButton.appendChild(recordingIndicator);
   
-  // Add subtle tactile hover effects
+  // Add more pronounced TalkType branded hover effects
   micButton.addEventListener('mouseenter', () => {
     micButton.style.opacity = '1';
-    micButton.style.transform = 'scale(1.1)';
-    micButton.style.boxShadow = '0 2px 8px rgba(111, 66, 193, 0.35)';
-    micButton.style.background = 'rgba(111, 66, 193, 0.2)';
-    micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+    micButton.style.transform = 'scale(1.15)';
+    micButton.style.boxShadow = '0 2px 8px rgba(111, 66, 193, 0.45)';
+    micButton.style.background = 'rgba(111, 66, 193, 0.25)';
+    micButton.style.border = '1px solid rgba(111, 66, 193, 0.5)';
+    // Add a slight glow effect to highlight the button
+    micButton.style.filter = 'drop-shadow(0 0 3px rgba(111, 66, 193, 0.3))';
   });
   
   micButton.addEventListener('mouseleave', () => {
     // Only change opacity if not recording
     if (!isRecording) {
-      micButton.style.opacity = '0.8';
+      micButton.style.opacity = '0.9';
       micButton.style.transform = 'scale(1)';
-      micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
-      micButton.style.background = 'rgba(255, 255, 255, 0.05)';
-      micButton.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+      micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.15)';
+      micButton.style.background = 'rgba(111, 66, 193, 0.1)';
+      micButton.style.border = '1px solid rgba(111, 66, 193, 0.2)';
+      micButton.style.filter = 'none';
       // We keep the button visible at all times
     }
   });
@@ -374,7 +582,9 @@ function addMicrophoneToInput(inputElement) {
 
 // Function to position microphone button correctly relative to input
 function positionMicButton(inputElement, micButton) {
+  console.log('TalkType: Positioning mic button for input:', inputElement);
   const inputRect = inputElement.getBoundingClientRect();
+  console.log('TalkType: Input element rect:', inputRect);
   
   // Determine the type of input element
   const elementType = inputElement.tagName.toLowerCase();
@@ -490,7 +700,35 @@ function positionMicButton(inputElement, micButton) {
 
 // Function to start recording
 async function startRecording(targetInput, indicator) {
-  if (!audioService || isRecording) {
+  console.log('TalkType: Starting recording with services:', !!audioService, !!apiService);
+  
+  // If services aren't initialized, show a helpful error and try to initialize again
+  if (!audioService || !apiService) {
+    console.error('TalkType: Services not initialized!');
+    
+    // Show error notification
+    showStatusNotification('TalkType services not initialized. Trying to reconnect...', 'error');
+    
+    // Try to initialize again
+    initializeExtension();
+    
+    // Wait a bit and check again
+    setTimeout(() => {
+      if (audioService && apiService) {
+        console.log('TalkType: Services initialized! You can try recording now.');
+        showStatusNotification('TalkType services connected! Try again.', 'success');
+      } else {
+        console.error('TalkType: Services failed to initialize!');
+        showStatusNotification('Could not initialize TalkType. Please check your API key in options.', 'error');
+      }
+    }, 1000);
+    
+    return;
+  }
+  
+  // Check if already recording
+  if (isRecording) {
+    console.log('TalkType: Already recording, ignoring start request');
     return;
   }
   
@@ -521,8 +759,12 @@ async function startRecording(targetInput, indicator) {
           }, 500);
         }
         
-        // Add a subtle highlight for recording state
+        // Add more prominent TalkType branded recording state
         micButton.style.opacity = '1';
+        micButton.style.background = 'rgba(255, 64, 129, 0.2)';
+        micButton.style.border = '1px solid rgba(255, 64, 129, 0.4)';
+        micButton.style.boxShadow = '0 2px 8px rgba(255, 64, 129, 0.35)';
+        micButton.style.filter = 'drop-shadow(0 0 4px rgba(255, 64, 129, 0.4))';
       }
     }
     
@@ -583,11 +825,12 @@ async function stopRecording() {
       // Reset the parent button styling with smooth transition
       const micButton = indicator.parentElement;
       if (micButton) {
-        micButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+        micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.15)';
         micButton.style.transform = 'scale(1)';
-        micButton.style.opacity = '0.7';
-        micButton.style.background = 'rgba(255, 255, 255, 0.05)';
-        micButton.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+        micButton.style.opacity = '0.9';
+        micButton.style.background = 'rgba(111, 66, 193, 0.1)';
+        micButton.style.border = '1px solid rgba(111, 66, 193, 0.2)';
+        micButton.style.filter = 'none';
         
         // Add a modern finish animation
         const micIcon = micButton.querySelector('img');
@@ -712,8 +955,10 @@ async function processAudioData(audioBlob) {
   }
 }
 
-// Function to show status notifications
+// Function to show status notifications with enhanced visual appeal
 function showStatusNotification(message, type = 'info') {
+  console.log('TalkType: Showing notification -', message, type);
+  
   // Don't show notifications if they were recently disabled
   if (window.audioToTextNotificationsDisabled) {
     return;
@@ -727,109 +972,188 @@ function showStatusNotification(message, type = 'info') {
     }
   });
   
-  // Create notification element with glass morphism style
+  // Create notification element with enhanced glass morphism style
   const notification = document.createElement('div');
   notification.className = `audio-to-text-notification audio-to-text-notification-${type}`;
   notification.style.position = 'fixed';
   notification.style.bottom = '20px';
   notification.style.right = '20px';
-  notification.style.padding = '15px 20px';
-  notification.style.borderRadius = '12px';
-  notification.style.boxShadow = '0 8px 32px rgba(31, 38, 135, 0.2)';
-  notification.style.zIndex = '10000';
-  notification.style.fontSize = '15px';
-  notification.style.fontWeight = '500';
-  notification.style.maxWidth = '300px';
+  notification.style.padding = '16px 20px';
+  notification.style.borderRadius = '16px';
+  notification.style.boxShadow = '0 10px 40px rgba(31, 38, 135, 0.3)';
+  notification.style.zIndex = '99999'; // Very high z-index to ensure visibility
+  notification.style.fontSize = '16px';
+  notification.style.fontWeight = '600';
+  notification.style.maxWidth = '350px';
   notification.style.opacity = '0';
-  notification.style.transform = 'translateY(20px) scale(0.98)';
-  notification.style.transition = 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
-  notification.style.backdropFilter = 'blur(12px)';
-  notification.style.webkitBackdropFilter = 'blur(12px)';
-  notification.style.border = '1px solid rgba(255, 255, 255, 0.18)';
+  notification.style.transform = 'translateY(30px) scale(0.95)';
+  notification.style.transition = 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+  notification.style.backdropFilter = 'blur(16px)';
+  notification.style.webkitBackdropFilter = 'blur(16px)';
+  notification.style.border = '2px solid rgba(255, 255, 255, 0.25)';
+  notification.style.pointerEvents = 'all';
   
-  // Set styles based on notification type with lighter glass aesthetics
-  if (type === 'error') {
-    notification.style.background = 'linear-gradient(135deg, rgba(244, 67, 54, 0.75), rgba(255, 87, 34, 0.7))';
-    notification.style.color = 'white';
-    notification.style.border = '1px solid rgba(255, 255, 255, 0.4)';
-  } else if (type === 'success') {
-    notification.style.background = 'linear-gradient(135deg, rgba(76, 175, 80, 0.75), rgba(105, 220, 155, 0.7))';
-    notification.style.color = 'white';
-    notification.style.border = '1px solid rgba(255, 255, 255, 0.4)';
-  } else if (type === 'recording') {
-    notification.style.background = 'linear-gradient(135deg, rgba(111, 66, 193, 0.75), rgba(70, 174, 247, 0.7))';
-    notification.style.color = 'white';
-    notification.style.border = '1px solid rgba(255, 255, 255, 0.4)';
-    
-    // Add gentle pulse animation
-    if (!document.getElementById('pulse-recording-style')) {
-      const style = document.createElement('style');
-      style.id = 'pulse-recording-style';
-      style.textContent = `
-        @keyframes gentle-pulse {
-          0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
-          50% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.5); border-color: rgba(255, 255, 255, 0.5); }
-          100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-    
-    notification.style.animation = 'gentle-pulse 2s infinite';
-  } else if (type === 'processing') {
-    // Create modern gradient animation for processing
-    if (!document.getElementById('gradient-notification-styles')) {
-      const gradientStyle = document.createElement('style');
-      gradientStyle.id = 'gradient-notification-styles';
-      gradientStyle.textContent = `
-        @keyframes gradientBg {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .gradient-notification {
-          background: linear-gradient(90deg, #4568DC, #7474BF, #348AC7, #56CCF2);
-          background-size: 300% 100%;
-          animation: gradientBg 3s ease infinite;
-        }
-      `;
-      document.head.appendChild(gradientStyle);
-    }
-    
-    notification.classList.add('gradient-notification');
-    notification.style.color = 'white';
-    notification.style.border = '1px solid rgba(255, 255, 255, 0.4)';
-  } else {
-    notification.style.background = 'linear-gradient(135deg, rgba(33, 150, 243, 0.75), rgba(3, 169, 244, 0.7))';
-    notification.style.color = 'white';
-    notification.style.border = '1px solid rgba(255, 255, 255, 0.4)';
+  // Create notification styles with animations if they don't exist yet
+  if (!document.getElementById('talktype-notification-styles')) {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'talktype-notification-styles';
+    styleEl.textContent = `
+      @keyframes talktype-gentle-pulse {
+        0% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
+        50% { box-shadow: 0 12px 40px rgba(255, 255, 255, 0.5); border-color: rgba(255, 255, 255, 0.5); }
+        100% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
+      }
+      
+      @keyframes talktype-gradientBg {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      
+      @keyframes talktype-float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+        100% { transform: translateY(0px); }
+      }
+      
+      @keyframes talktype-sparkle {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 1; }
+      }
+      
+      .talktype-gradient-notification {
+        background: linear-gradient(90deg, #4568DC, #7474BF, #348AC7, #56CCF2);
+        background-size: 300% 100%;
+        animation: talktype-gradientBg 3s ease infinite;
+      }
+      
+      .talktype-recording-notification {
+        background: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.8));
+        animation: talktype-gentle-pulse 2s infinite;
+      }
+      
+      .talktype-success-notification {
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.85), rgba(105, 220, 155, 0.8));
+      }
+      
+      .talktype-error-notification {
+        background: linear-gradient(135deg, rgba(244, 67, 54, 0.85), rgba(255, 87, 34, 0.8));
+      }
+      
+      .talktype-notification-icon {
+        display: inline-block;
+        margin-right: 10px;
+        vertical-align: middle;
+        animation: talktype-float 2s ease-in-out infinite;
+      }
+      
+      .talktype-sparkle {
+        position: absolute;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background-color: white;
+        opacity: 0;
+      }
+    `;
+    document.head.appendChild(styleEl);
   }
   
-  // Set content
-  notification.textContent = message;
+  // Create notification content with icon and message
+  let notificationIcon = '';
   
-  // Add close button
+  // Set styles based on notification type with enhanced aesthetics
+  if (type === 'error') {
+    notification.classList.add('talktype-error-notification');
+    notificationIcon = '❌';
+  } else if (type === 'success') {
+    notification.classList.add('talktype-success-notification');
+    notificationIcon = '✓';
+  } else if (type === 'recording') {
+    notification.classList.add('talktype-recording-notification');
+    notificationIcon = '🎤';
+    
+    // Add sparkle effects for recording
+    for (let i = 0; i < 3; i++) {
+      const sparkle = document.createElement('span');
+      sparkle.className = 'talktype-sparkle';
+      sparkle.style.top = `${Math.random() * 100}%`;
+      sparkle.style.left = `${Math.random() * 100}%`;
+      sparkle.style.animation = `talktype-sparkle ${1 + Math.random()}s ease-in-out infinite ${Math.random()}s`;
+      notification.appendChild(sparkle);
+    }
+  } else if (type === 'processing') {
+    notification.classList.add('talktype-gradient-notification');
+    notificationIcon = '⚙️';
+  } else {
+    notification.style.background = 'linear-gradient(135deg, rgba(33, 150, 243, 0.85), rgba(3, 169, 244, 0.8))';
+    notificationIcon = 'ℹ️';
+  }
+  
+  // Create icon element
+  const iconElement = document.createElement('span');
+  iconElement.className = 'talktype-notification-icon';
+  iconElement.textContent = notificationIcon;
+  
+  // Create message text element
+  const messageElement = document.createElement('span');
+  messageElement.textContent = message;
+  messageElement.style.verticalAlign = 'middle';
+  
+  // Add icon and message to notification
+  notification.appendChild(iconElement);
+  notification.appendChild(messageElement);
+  
+  // Apply common styles
+  notification.style.color = 'white';
+  notification.style.display = 'flex';
+  notification.style.alignItems = 'center';
+  
+  // Add close button with improved styling
   const closeButton = document.createElement('button');
   closeButton.innerHTML = '&times;';
   closeButton.style.background = 'transparent';
   closeButton.style.border = 'none';
   closeButton.style.color = 'white';
-  closeButton.style.marginLeft = '10px';
+  closeButton.style.marginLeft = '15px';
   closeButton.style.cursor = 'pointer';
-  closeButton.style.float = 'right';
-  closeButton.style.fontSize = '18px';
-  closeButton.style.lineHeight = '14px';
+  closeButton.style.fontSize = '22px';
+  closeButton.style.lineHeight = '18px';
+  closeButton.style.opacity = '0.8';
+  closeButton.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+  closeButton.style.padding = '0 5px';
+  closeButton.style.borderRadius = '50%';
+  
+  // Add hover effects to close button
+  closeButton.onmouseenter = () => {
+    closeButton.style.opacity = '1';
+    closeButton.style.transform = 'scale(1.1)';
+  };
+  
+  closeButton.onmouseleave = () => {
+    closeButton.style.opacity = '0.8';
+    closeButton.style.transform = 'scale(1)';
+  };
+  
   closeButton.onclick = () => {
     if (document.body.contains(notification)) {
-      document.body.removeChild(notification);
+      notification.style.opacity = '0';
+      notification.style.transform = 'translateY(30px) scale(0.9)';
+      
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 500);
     }
   };
-  notification.prepend(closeButton);
+  
+  notification.appendChild(closeButton);
   
   // Add to DOM
   document.body.appendChild(notification);
   
-  // Trigger animation with more flair
+  // Trigger enhanced entrance animation
   setTimeout(() => {
     notification.style.opacity = '1';
     notification.style.transform = 'translateY(0) scale(1)';
@@ -840,16 +1164,16 @@ function showStatusNotification(message, type = 'info') {
     setTimeout(() => {
       if (document.body.contains(notification)) {
         notification.style.opacity = '0';
-        notification.style.transform = 'translateY(10px)';
+        notification.style.transform = 'translateY(20px) scale(0.95)';
         
         // Remove from DOM after transition
         setTimeout(() => {
           if (document.body.contains(notification)) {
             document.body.removeChild(notification);
           }
-        }, 300);
+        }, 500);
       }
-    }, 5000);
+    }, 6000);
   }
   
   return notification;
