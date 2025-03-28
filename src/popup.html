@@ -394,46 +394,54 @@
       position: relative;
       z-index: 1;
       transition: all 0.3s ease;
-      opacity: 0.5; /* Always visible but subtle when not recording */
+      opacity: 0.8; /* More visible in idle state */
+      cursor: pointer; /* Indicate it's interactive */
     }
     
     .recording-animation.active {
       opacity: 1;
+      transform: scale(1.05); /* Slightly larger when active */
     }
     
     /* Ghost mic styling */
     .ghost-mic {
       width: 100%;
       height: 100%;
-      fill: rgba(60, 64, 67, 0.3); /* Subtle color when inactive */
-      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.05));
+      fill: rgba(0, 0, 0, 0.7); /* Black with slight transparency when inactive */
+      filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
       transition: all 0.4s ease;
     }
     
     /* Dark mode ghost styling */
     .dark-theme .ghost-mic {
-      fill: rgba(255, 255, 255, 0.25); /* Lighter color for dark theme */
-      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+      fill: rgba(255, 255, 255, 0.7); /* White with slight transparency for dark theme */
+      filter: drop-shadow(0 1px 3px rgba(255, 255, 255, 0.1));
+    }
+    
+    /* Subtle hover effect on the ghost */
+    .recording-animation:hover .ghost-mic {
+      transform: scale(1.02);
+      filter: drop-shadow(0 2px 5px rgba(111, 66, 193, 0.2));
     }
     
     /* Active state for the ghost */
     .recording-animation.active .ghost-mic {
       fill: url(#ghost-gradient); /* Use gradient fill when active */
-      filter: drop-shadow(0 2px 8px rgba(187, 85, 255, 0.5));
+      filter: drop-shadow(0 3px 10px rgba(187, 85, 255, 0.6)) url(#ghost-glow);
       animation: ghost-pulse 2s infinite;
     }
     
     @keyframes ghost-pulse {
       0% {
-        filter: drop-shadow(0 0 4px rgba(187, 85, 255, 0.5));
+        filter: drop-shadow(0 0 8px rgba(187, 85, 255, 0.6));
         transform: scale(0.97);
       }
       50% {
-        filter: drop-shadow(0 0 12px rgba(255, 121, 205, 0.7));
+        filter: drop-shadow(0 0 18px rgba(255, 121, 205, 0.8));
         transform: scale(1.03);
       }
       100% {
-        filter: drop-shadow(0 0 4px rgba(187, 85, 255, 0.5));
+        filter: drop-shadow(0 0 8px rgba(187, 85, 255, 0.6));
         transform: scale(0.97);
       }
     }
@@ -799,8 +807,14 @@
         <defs>
           <linearGradient id="ghost-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="#ff79cd" />
+            <stop offset="50%" stop-color="#f168d1" />
             <stop offset="100%" stop-color="#b168df" />
           </linearGradient>
+          <!-- Add a radial glow effect -->
+          <filter id="ghost-glow">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
         </defs>
       </svg>
     </div>
