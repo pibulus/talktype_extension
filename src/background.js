@@ -84,10 +84,23 @@ chrome.runtime.onInstalled.addListener(async () => {
 // Handle messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'getApiKey') {
-    // Get API key from storage
+    // Get API key from storage and ensure immediate response
     chrome.storage.sync.get(['apiKey'], (result) => {
       console.log('Sending API key to content script:', result.apiKey ? 'API key found' : 'No API key');
-      sendResponse({ apiKey: result.apiKey || '' });
+      
+      // Make sure we're sending a response even if there's an error
+      try {
+        sendResponse({ apiKey: result.apiKey || '' });
+      } catch (error) {
+        console.error('Error sending API key response:', error);
+        
+        // Try to send a response again if the first attempt failed
+        try {
+          sendResponse({ apiKey: result.apiKey || '', error: 'Retry after error' });
+        } catch (retryError) {
+          console.error('Failed to send API key response even after retry:', retryError);
+        }
+      }
     });
     return true; // Indicates async response is coming
   }
@@ -113,6 +126,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       width: 400,
       height: 420
     }, () => {
+      sendResponse({ success: true });
+    });
+    return true; // Indicates async response
+  }
+  
+  if (message.action === 'openOptions') {
+    // Open the options page
+    chrome.runtime.openOptionsPage(() => {
       sendResponse({ success: true });
     });
     return true; // Indicates async response

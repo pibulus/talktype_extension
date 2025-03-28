@@ -5,7 +5,7 @@ let audioService = null;
 let apiService = null;
 let isRecording = false;
 let recordingTimeout = null;
-const MAX_RECORDING_TIME = 30000; // 30 seconds
+const MAX_RECORDING_TIME = 15000; // 15 seconds
 
 // Check if API key is set
 async function checkApiKey() {
@@ -13,7 +13,7 @@ async function checkApiKey() {
   const apiKeyError = document.getElementById('apiKeyError');
   const recordButton = document.getElementById('startRecording');
   
-  if (!result.apiKey) {
+  if (\!result.apiKey) {
     apiKeyError.style.display = 'block';
     recordButton.classList.add('disabled');
     recordButton.disabled = true;
@@ -41,12 +41,6 @@ async function startRecording() {
   const transcriptionText = document.getElementById('transcription-text');
   transcriptionText.textContent = '';
   
-  // Hide copy button when starting a new recording
-  const copyButtonWrapper = document.getElementById('copy-button-wrapper');
-  if (copyButtonWrapper) {
-    copyButtonWrapper.style.display = 'none';
-  }
-  
   // Update status
   const statusElement = document.getElementById('status');
   const recordButton = document.getElementById('startRecording');
@@ -54,7 +48,7 @@ async function startRecording() {
   try {
     // Check if API key is set
     const hasApiKey = await checkApiKey();
-    if (!hasApiKey) {
+    if (\!hasApiKey) {
       statusElement.innerHTML = `
         <div class="error-message">
           <svg class="icon" style="color: #ff5252" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -67,12 +61,12 @@ async function startRecording() {
     }
     
     // Initialize service if not already done
-    if (!audioService) {
+    if (\!audioService) {
       audioService = new AudioRecordingService();
     }
     
     // Check recording support
-    if (!audioService.isRecordingSupported()) {
+    if (\!audioService.isRecordingSupported()) {
       statusElement.innerHTML = `
         <div class="error-message">
           <svg class="icon" style="color: #ff5252" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -86,7 +80,7 @@ async function startRecording() {
     
     // Show animation
     const recordingAnimation = document.getElementById('recording-animation');
-    recordingAnimation.classList.add('active');
+    recordingAnimation.style.display = 'block';
     
     // Update button
     recordButton.innerHTML = `
@@ -98,8 +92,8 @@ async function startRecording() {
     
     // Update status
     statusElement.innerHTML = `
-      <div class="status-indicator status-recording">
-        <span class="pulse-dot"></span>
+      <div class="status-indicator">
+        <span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span>
         <span class="status-text">Recording...</span>
       </div>
     `;
@@ -129,12 +123,6 @@ async function startRecording() {
 
 // Function to show clipboard notification
 function showClipboardNotification() {
-  // Remove any existing notification first
-  const existingNotification = document.querySelector('.clipboard-notification');
-  if (existingNotification) {
-    document.body.removeChild(existingNotification);
-  }
-  
   // Create notification element
   const notification = document.createElement('div');
   notification.className = 'clipboard-notification';
@@ -147,16 +135,15 @@ function showClipboardNotification() {
   document.body.appendChild(notification);
   
   // Add styles if not already added
-  if (!document.getElementById('clipboard-notification-style')) {
+  if (\!document.getElementById('clipboard-notification-style')) {
     const style = document.createElement('style');
     style.id = 'clipboard-notification-style';
     style.textContent = `
       .clipboard-notification {
         position: fixed;
-        top: 20px !important;
-        bottom: auto !important;
+        bottom: 20px;
         left: 50%;
-        transform: translateX(-50%) translateY(-30px);
+        transform: translateX(-50%) translateY(30px);
         background: rgba(52, 168, 83, 0.85);
         color: white;
         padding: 8px 16px;
@@ -200,7 +187,7 @@ function showClipboardNotification() {
 
 // Stop recording and transcribe
 async function stopRecording() {
-  if (!isRecording || !audioService) return;
+  if (\!isRecording || \!audioService) return;
   
   // Clear timeout
   if (recordingTimeout) {
@@ -215,7 +202,7 @@ async function stopRecording() {
   
   try {
     // Hide recording animation
-    recordingAnimation.classList.remove('active');
+    recordingAnimation.style.display = 'none';
     
     // Update status indicator
     statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Processing</span></div>';
@@ -227,21 +214,18 @@ async function stopRecording() {
     // Transform recording button into progress bar
     transformButtonToProgressBar(recordButton);
     
-    // Get API key and create fresh service instance to avoid 404 errors
+    // Get API key and create service
     const { apiKey } = await chrome.storage.sync.get(['apiKey']);
-    
-    // Create a new API service instance to prevent stale state
-    apiService = null;
     apiService = new GeminiApiService(apiKey);
     
     // Verify API key
     const isValidKey = await apiService.verifyApiKey();
-    if (!isValidKey) {
+    if (\!isValidKey) {
       throw new Error('Invalid API key. Please check your key in Options.');
     }
     
-    // Update status indicator with random fun messages
-    showTranscribingStatus(statusElement, true);
+    // Update status indicator (minimal display)
+    showTranscribingStatus(statusElement);
     
     // Actually transcribe the audio
     const transcription = await apiService.transcribeAudio(audioBlob, updateProgressCallback);
@@ -253,22 +237,15 @@ async function stopRecording() {
     if (transcription && transcription.trim()) {
       try {
         await navigator.clipboard.writeText(transcription);
-        // Clipboard notification will be shown by completeProgressAnimation
-        // No need to call showClipboardNotification() here to avoid duplicate notifications
+        // Show a subtle notification that text was copied
+        showClipboardNotification();
       } catch (err) {
         console.error('Failed to copy text: ', err);
       }
     }
     
-    // Show the transcription with "Complete" status
-    statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Complete</span></div>';
-    
-    // Reset status to "Ready" after 3 seconds
-    setTimeout(() => {
-      if (!isRecording) {
-        statusElement.innerHTML = '<div class="status-indicator status-ready"><span class="pulse-dot"></span><span class="status-text">Ready</span></div>';
-      }
-    }, 3000);
+    // Show the transcription
+    statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Complete</span></div>';
     
     // Animate the transcription text
     transcriptionText.style.opacity = '0';
@@ -280,12 +257,6 @@ async function stopRecording() {
     
     // Show with animation
     transcriptionText.style.opacity = '1';
-    
-    // Show copy button when transcription is available
-    const copyButtonWrapper = document.getElementById('copy-button-wrapper');
-    if (copyButtonWrapper) {
-      copyButtonWrapper.style.display = 'block';
-    }
     
   } catch (error) {
     console.error('Error in recording/transcription:', error);
@@ -321,7 +292,7 @@ async function stopRecording() {
 // Transform button into progress bar
 function transformButtonToProgressBar(button) {
   // Add the progress bar styles if not already added
-  if (!document.getElementById('progress-bar-styles')) {
+  if (\!document.getElementById('progress-bar-styles')) {
     const progressStyles = document.createElement('style');
     progressStyles.id = 'progress-bar-styles';
     progressStyles.textContent = `
@@ -384,36 +355,6 @@ function transformButtonToProgressBar(button) {
         0% { box-shadow: 0 0 5px rgba(111, 66, 193, 0.3); }
         50% { box-shadow: 0 0 20px rgba(111, 66, 193, 0.6), 0 0 30px rgba(247, 70, 180, 0.4); }
         100% { box-shadow: 0 0 10px rgba(111, 66, 193, 0.5); }
-      }
-      
-      /* Copy notification */
-      .copy-notification {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%) translateY(30px);
-        background: rgba(52, 168, 83, 0.85);
-        color: white;
-        padding: 10px 18px;
-        border-radius: 30px;
-        font-size: 14px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        opacity: 0;
-        transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-        z-index: 2000;
-        display: flex;
-        align-items: center;
-      }
-      
-      .copy-notification.show {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-      }
-      
-      .copy-notification svg {
-        margin-right: 8px;
-        width: 16px;
-        height: 16px;
       }
     `;
     document.head.appendChild(progressStyles);
@@ -478,38 +419,13 @@ function startFakeProgressAnimation() {
   }, 40); // Slightly slower interval for smoother animation
 }
 
-// Show transcribing status with animation and random fun messages
-function showTranscribingStatus(container, randomMessage = false) {
+// Show transcribing status with animation - now just handles progress bar
+function showTranscribingStatus(container) {
+  // We're using the progress bar now instead of text messages
   // Update the status to indicate processing is happening
   const statusElement = document.getElementById('status');
   if (statusElement) {
-    // Array of fun processing messages
-    const processingMessages = [
-      "Processing",
-      "Magic happening",
-      "Converting soundwaves",
-      "Neural magic",
-      "Translating voice",
-      "Brain thinking",
-      "Decoding speech",
-      "Putting words together",
-      "Making sense of audio",
-      "Hang tight",
-      "Almost there",
-      "Processing audio"
-    ];
-    
-    // Choose a message - either random or default
-    const message = randomMessage ? 
-      processingMessages[Math.floor(Math.random() * processingMessages.length)] : 
-      "Processing";
-    
-    statusElement.innerHTML = `
-      <div class="status-indicator status-processing">
-        <span class="pulse-dot"></span>
-        <span class="status-text">${message}...</span>
-      </div>
-    `;
+    statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Processing</span></div>';
   }
   
   // Progress bar animation is handled by startFakeProgressAnimation()
@@ -558,19 +474,26 @@ function completeProgressAnimation() {
         const recordButton = document.getElementById('startRecording');
         
         if (recordButton) {
-          // Always use the original mic icon and "Record & Transcribe" text
-          recordButton.innerHTML = `
-            <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-              <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-            </svg>
-            Record & Transcribe
-          `;
-          recordButton.classList.remove('button-progress-container');
-          recordButton.disabled = false;
-          delete recordButton.dataset.originalContent;
+          // Restore original button appearance
+          if (recordButton.dataset.originalContent) {
+            recordButton.innerHTML = recordButton.dataset.originalContent;
+            recordButton.classList.remove('button-progress-container');
+            recordButton.disabled = false;
+            delete recordButton.dataset.originalContent;
+          } else {
+            // Fallback if original content wasn't stored
+            recordButton.innerHTML = `
+              <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              </svg>
+              Record & Transcribe
+            `;
+            recordButton.classList.remove('button-progress-container');
+            recordButton.disabled = false;
+          }
           
-          // Re-attach the event listener for the record button
+          // Re-attach event listener for the record button
           recordButton.addEventListener('click', async () => {
             if (isRecording) {
               await stopRecording();
@@ -579,16 +502,13 @@ function completeProgressAnimation() {
             }
           });
           
-          // DON'T show the settings button again
-          // We want to keep it hidden to maintain layout stability
-          /* 
+          // Show the settings button again
           const settingsButton = document.getElementById('options');
           if (settingsButton) {
             settingsButton.style.display = 'block';
           }
-          */
         }
-      }, 1200); // Slightly longer delay to ensure user sees "Complete" state
+      }, 1000);
     }, 800); // Wait for animation to complete
   }
 }
@@ -596,7 +516,7 @@ function completeProgressAnimation() {
 // Show copy notification
 function showCopyNotification() {
   // Create notification if it doesn't exist
-  if (!document.getElementById('copy-notification')) {
+  if (\!document.getElementById('copy-notification')) {
     const notification = document.createElement('div');
     notification.id = 'copy-notification';
     notification.className = 'copy-notification';
@@ -607,36 +527,6 @@ function showCopyNotification() {
       <span>Copied to clipboard</span>
     `;
     document.body.appendChild(notification);
-    
-    // Add custom styles for top notification
-    const notifStyle = document.createElement('style');
-    notifStyle.id = 'top-notification-style';
-    notifStyle.textContent = `
-      .copy-notification {
-        position: fixed;
-        top: 20px !important;
-        bottom: auto !important;
-        left: 50%;
-        transform: translateX(-50%) translateY(-40px);
-        background: rgba(52, 168, 83, 0.85);
-        color: white;
-        padding: 10px 18px;
-        border-radius: 30px;
-        font-size: 14px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        opacity: 0;
-        transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-        z-index: 2000;
-        display: flex;
-        align-items: center;
-      }
-      
-      .copy-notification.show {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-      }
-    `;
-    document.head.appendChild(notifStyle);
   }
   
   const notification = document.getElementById('copy-notification');
@@ -667,7 +557,7 @@ function handleRecordingError(error) {
   `;
   
   // Hide animation
-  document.getElementById('recording-animation').classList.remove('active');
+  document.getElementById('recording-animation').style.display = 'none';
   
   // Handle permission errors specially
   if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
@@ -711,7 +601,7 @@ function handleRecordingError(error) {
   }
   
   // Add error message styling
-  if (!document.getElementById('error-message-style')) {
+  if (\!document.getElementById('error-message-style')) {
     const style = document.createElement('style');
     style.id = 'error-message-style';
     style.textContent = `
@@ -758,7 +648,7 @@ function openPermissionFix() {
       chrome.storage.sync.set({ microphonePermission: 'granted' });
       
       // Show success message
-      permissionStatus.textContent = 'Microphone access granted!';
+      permissionStatus.textContent = 'Microphone access granted\!';
       permissionStatus.style.color = '#a0ff9d';
       
       permissionBtn.textContent = 'Access Granted';
@@ -770,7 +660,7 @@ function openPermissionFix() {
         permissionDialog.style.display = 'none';
         permissionDialog.classList.remove('show');
         // Refresh the status message
-        document.getElementById('status').textContent = 'Ready to transcribe! Microphone access granted.';
+        document.getElementById('status').textContent = 'Ready to transcribe\! Microphone access granted.';
       }, 1500);
       
     } catch (error) {
@@ -819,7 +709,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Apply theme based on user preference or system preference
   initializeTheme();
   
-  // Set up RECORD BUTTON
+  // Set up recording button
   const recordButton = document.getElementById('startRecording');
   recordButton.addEventListener('click', async () => {
     if (isRecording) {
@@ -829,49 +719,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   
-  // Set up COPY BUTTON
-  const copyButton = document.getElementById('copy-button');
-  if (copyButton) {
-    copyButton.addEventListener('click', async () => {
-      const transcriptionText = document.getElementById('transcription-text');
-      if (transcriptionText && transcriptionText.textContent) {
-        try {
-          await navigator.clipboard.writeText(transcriptionText.textContent);
-          showClipboardNotification();
-        } catch (err) {
-          console.error('Failed to copy: ', err);
-        }
-      }
-    });
-    
-    // Add hover effect (more subtle without shadow)
-    copyButton.addEventListener('mouseenter', () => {
-      copyButton.style.transform = 'scale(1.15)';
-      copyButton.style.opacity = '1';
-    });
-    
-    copyButton.addEventListener('mouseleave', () => {
-      copyButton.style.transform = 'scale(1)';
-      copyButton.style.opacity = '0.8';
-    });
-    
-    copyButton.addEventListener('mousedown', () => {
-      copyButton.style.transform = 'scale(0.95)';
-    });
-    
-    copyButton.addEventListener('mouseup', () => {
-      copyButton.style.transform = 'scale(1.15)';
-    });
-  }
-  
-  // Set up SETTINGS BUTTON
-  const settingsButton = document.getElementById('options');
-  settingsButton.addEventListener('click', (e) => {
+  // Add event listeners for settings - show a settings popup instead of opening options page
+  document.getElementById('options').addEventListener('click', (e) => {
     e.preventDefault();
     console.log("Settings button clicked");
     
     // Add popup styles if not already added
-    if (!document.getElementById('settings-popup-styles')) {
+    if (\!document.getElementById('settings-popup-styles')) {
       const popupStyles = document.createElement('style');
       popupStyles.id = 'settings-popup-styles';
       popupStyles.textContent = `
@@ -1265,125 +1119,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
     document.body.appendChild(settingsPopup);
     
-    // Add event handlers for the popup buttons
+    // Add minimal event handlers for the buttons
     document.getElementById('closeSettings').addEventListener('click', () => {
       document.body.removeChild(settingsPopup);
     });
     
     document.getElementById('configureApiKey').addEventListener('click', () => {
       document.body.removeChild(settingsPopup);
-      
-      // Create and show the API key configuration popup
-      const apiKeyPopup = document.createElement('div');
-      apiKeyPopup.className = 'settings-popup';
-      apiKeyPopup.innerHTML = `
-        <div class="settings-content">
-          <h3 style="justify-content: center;">Configure API Key</h3>
-          <div style="position: relative; z-index: 2; padding: 0 5px; max-width: 100%; box-sizing: border-box;">
-            <p style="font-size: 14px; margin: 0 0 20px; opacity: 0.85; line-height: 1.5;">
-              Enter your Gemini API key to enable voice transcription
-            </p>
-            <input type="text" id="api-key-field" placeholder="Enter your Gemini API key" spellcheck="false" autocomplete="off" style="width: 100%; box-sizing: border-box; max-width: 100%;" />
-            <button id="save-api-key" class="save-button">
-              <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 6px;">
-                <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
-              </svg>
-              Save API Key
-            </button>
-          </div>
-          <button id="closeApiKey" class="settings-close">&times;</button>
-          <div class="api-key-success">
-            API key saved successfully!
-          </div>
-        </div>
-      `;
-      document.body.appendChild(apiKeyPopup);
-      
-      // Fetch and populate current API key
-      chrome.storage.sync.get(['apiKey'], (result) => {
-        if (result.apiKey) {
-          document.getElementById('api-key-field').value = result.apiKey;
-        }
-      });
-      
-      // Add event listener for save button
-      document.getElementById('save-api-key').addEventListener('click', () => {
-        const apiKey = document.getElementById('api-key-field').value.trim();
-        if (apiKey) {
-          chrome.storage.sync.set({ apiKey }, () => {
-            // Show success message with animation
-            const successMsg = document.querySelector('.api-key-success');
-            successMsg.classList.add('show');
-            
-            // Apply success styling to the button
-            const saveButton = document.getElementById('save-api-key');
-            saveButton.innerHTML = `
-              <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 6px;">
-                <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
-              </svg>
-              Saved!
-            `;
-            
-            // Update the API key check
-            checkApiKey();
-            
-            // Close the popup after a delay
-            setTimeout(() => {
-              document.body.removeChild(apiKeyPopup);
-            }, 1500);
-          });
-        } else {
-          // Show error state for empty input
-          const apiKeyField = document.getElementById('api-key-field');
-          apiKeyField.style.borderColor = 'rgba(255, 0, 0, 0.5)';
-          apiKeyField.style.boxShadow = 'inset 0 1px 3px rgba(255, 0, 0, 0.2)';
-          
-          // Shake animation for empty field
-          apiKeyField.style.animation = 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both';
-          
-          // Add shake animation if not already added
-          if (!document.getElementById('shake-animation')) {
-            const shakeStyle = document.createElement('style');
-            shakeStyle.id = 'shake-animation';
-            shakeStyle.textContent = `
-              @keyframes shake {
-                10%, 90% { transform: translateX(-1px); }
-                20%, 80% { transform: translateX(2px); }
-                30%, 50%, 70% { transform: translateX(-3px); }
-                40%, 60% { transform: translateX(3px); }
-              }
-            `;
-            document.head.appendChild(shakeStyle);
-          }
-          
-          // Reset the error state after animation
-          setTimeout(() => {
-            apiKeyField.style.borderColor = '';
-            apiKeyField.style.boxShadow = '';
-            apiKeyField.style.animation = '';
-          }, 500);
-        }
-      });
-      
-      // Add event listener for Enter key in input field
-      document.getElementById('api-key-field').addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') {
-          document.getElementById('save-api-key').click();
-        }
-      });
-      
-      // Add event listener for close button
-      document.getElementById('closeApiKey').addEventListener('click', () => {
-        document.body.removeChild(apiKeyPopup);
-      });
+      openOptions();
     });
     
     document.getElementById('toggleTheme').addEventListener('click', () => {
       // Toggle theme
       const currentIsDark = document.body.classList.contains('dark-theme');
-      const newIsDark = !currentIsDark;
+      const newIsDark = \!currentIsDark;
       
-      // Save preference
+      // Save preferences
       localStorage.setItem('userToggled', 'true');
       localStorage.setItem('prefersDarkMode', newIsDark);
       
@@ -1427,16 +1178,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Add button to buttons div
   document.querySelector('.buttons').appendChild(permButton);
   
-  // Check microphone permission
-  checkMicPermissionAndUpdateButton();
-
-  // Check for Chrome storage permission
-  const { microphonePermission } = await chrome.storage.sync.get(['microphonePermission']);
-  if (microphonePermission === 'granted') {
-    permButton.style.display = 'none';
-  } else {
-    // If permission not stored, check if we can detect it
+  // Check microphone permission status and show button if needed
+  async function checkMicPermissionAndUpdateButton() {
     try {
+      // Try to get mic permission status from storage
+      const { microphonePermission } = await chrome.storage.sync.get(['microphonePermission']);
+      
+      if (microphonePermission === 'granted') {
+        permButton.style.display = 'none';
+        return;
+      }
+      
+      // If not found in storage, try to check permission state directly
       if (navigator.permissions && navigator.permissions.query) {
         const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
         
@@ -1447,61 +1200,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           permButton.style.display = 'block';
         }
+        
+        // Listen for permission changes
+        permissionStatus.onchange = () => {
+          permButton.style.display = 
+            permissionStatus.state === 'granted' ? 'none' : 'block';
+          
+          if (permissionStatus.state === 'granted') {
+            chrome.storage.sync.set({ microphonePermission: 'granted' });
+          }
+        };
+      } else {
+        // Fallback for browsers that don't support permissions API
+        permButton.style.display = 'block';
       }
     } catch (error) {
       console.error('Error checking mic permission:', error);
+      // Show button on error as fallback
+      permButton.style.display = 'block';
     }
   }
+  
+  // Run the check when popup opens
+  checkMicPermissionAndUpdateButton();
+  
+  // Initialize theme system
+  initializeTheme();
 });
-
-// Check microphone permission status and show button if needed
-async function checkMicPermissionAndUpdateButton() {
-  try {
-    // Try to get mic permission status from storage
-    const { microphonePermission } = await chrome.storage.sync.get(['microphonePermission']);
-    
-    if (microphonePermission === 'granted') {
-      const permButton = document.getElementById('fixPermissions');
-      if (permButton) {
-        permButton.style.display = 'none';
-      }
-      return;
-    }
-    
-    // If not found in storage, try to check permission state directly
-    if (navigator.permissions && navigator.permissions.query) {
-      const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-      const permButton = document.getElementById('fixPermissions');
-      
-      if (permissionStatus.state === 'granted') {
-        if (permButton) {
-          permButton.style.display = 'none';
-        }
-        // Save status to storage
-        chrome.storage.sync.set({ microphonePermission: 'granted' });
-      } else {
-        if (permButton) {
-          permButton.style.display = 'block';
-        }
-      }
-      
-      // Listen for permission changes
-      permissionStatus.onchange = () => {
-        const permBtn = document.getElementById('fixPermissions');
-        if (permBtn) {
-          permBtn.style.display = 
-            permissionStatus.state === 'granted' ? 'none' : 'block';
-        }
-        
-        if (permissionStatus.state === 'granted') {
-          chrome.storage.sync.set({ microphonePermission: 'granted' });
-        }
-      };
-    }
-  } catch (error) {
-    console.error('Error checking mic permission:', error);
-  }
-}
 
 /**
  * Initialize theme based on user preference or system preference
@@ -1515,7 +1240,7 @@ function initializeTheme() {
   // Also check for theme preference in chrome.storage for persistence across devices
   chrome.storage.sync.get(['themePreference', 'userToggled'], (result) => {
     // If we have a stored preference in Chrome storage, use that first
-    if (result.userToggled === 'true' && result.themePreference !== undefined) {
+    if (result.userToggled === 'true' && result.themePreference \!== undefined) {
       console.log('Using Chrome storage theme preference:', result.themePreference);
       const isDarkMode = result.themePreference === 'dark';
       
@@ -1586,7 +1311,7 @@ function initializeTheme() {
 function handleSystemThemeChange(e) {
   // Only apply if user hasn't manually set preference
   chrome.storage.sync.get(['userToggled'], (result) => {
-    if (result.userToggled !== 'true' && localStorage.getItem('userToggled') !== 'true') {
+    if (result.userToggled \!== 'true' && localStorage.getItem('userToggled') \!== 'true') {
       console.log('System theme changed to:', e.matches ? 'dark' : 'light');
       
       // Apply new theme
@@ -1624,7 +1349,7 @@ function applyTheme(isDark) {
       const logoImg = document.querySelector('h1 img');
       if (logoImg) {
         // Ensure we're using the white icon for dark theme
-        if (!logoImg.src.includes('icon_white')) {
+        if (\!logoImg.src.includes('icon_white')) {
           logoImg.src = logoImg.src.replace('icon_black', 'icon_white');
         }
       }
@@ -1649,7 +1374,7 @@ function applyTheme(isDark) {
       const logoImg = document.querySelector('h1 img');
       if (logoImg) {
         // Ensure we're using the black icon for light theme
-        if (!logoImg.src.includes('icon_black')) {
+        if (\!logoImg.src.includes('icon_black')) {
           logoImg.src = logoImg.src.replace('icon_white', 'icon_black');
         }
       }

@@ -853,7 +853,7 @@ function addMicrophoneToInput(inputElement) {
       else {
         // Not recording, start a new recording
         console.log('TalkType: Starting new recording...');
-        showStatusNotification('Starting recording...', 'info');
+        showStatusNotification('Recording... Click to stop', 'recording');
         
         // Set active input element as a global target
         activeInput = inputElement;

@@ -208,10 +208,10 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background-color: rgb(255, 64, 129);
+      background-color: currentColor;
       margin-right: 6px;
       position: relative;
-      box-shadow: 0 0 4px rgba(255, 64, 129, 0.5);
+      box-shadow: 0 0 4px currentColor;
     }
     
     .pulse-dot::after {
@@ -220,7 +220,7 @@
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      background-color: rgb(255, 64, 129);
+      background-color: currentColor;
       animation: pulse-status 1.5s infinite ease-out;
       top: 0;
       left: 0;
@@ -234,12 +234,25 @@
       width: 130%;
       height: 130%;
       border-radius: 50%;
-      background-color: rgb(255, 64, 129);
+      background-color: currentColor;
       animation: pulse-glow 2s infinite ease-in-out;
       top: -15%;
       left: -15%;
       opacity: 0.2;
       filter: blur(2px);
+    }
+    
+    /* Status-specific colors */
+    .status-ready {
+      color: rgb(111, 66, 193); /* Purple - matches theme */
+    }
+    
+    .status-recording, .status-processing {
+      color: rgb(255, 64, 129); /* Pink */
+    }
+    
+    .status-complete {
+      color: rgb(70, 174, 247); /* Light blue - matches theme accent */
     }
     
     @keyframes pulse-status {
@@ -655,8 +668,8 @@
       TalkType
     </h1>
     <div id="status" class="status-pill" role="status">
-      <div class="status-indicator">
-        <span class="pulse-dot" style="background-color: rgb(52, 168, 83);"></span>
+      <div class="status-indicator status-ready">
+        <span class="pulse-dot"></span>
         <span class="status-text">Ready</span>
       </div>
     </div>
@@ -688,17 +701,16 @@
     </button>
   </div>
   
-  <div id="transcription-container" class="glass-container" style="display: none;">
+  <div id="transcription-container" class="glass-container" style="display: none; position: relative;">
     <div id="transcription-text"></div>
-  </div>
-  
-  <!-- Copy button (positioned separately to avoid interfering with container) -->
-  <div id="copy-button-wrapper" style="display: none; position: absolute; bottom: 22px; right: 40px; z-index: 100;">
-    <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, rgba(111, 66, 193, 0.5), rgba(70, 174, 247, 0.4)); border: 1px solid rgba(255, 255, 255, 0.4); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: none; cursor: pointer; transition: all 0.2s ease;">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px; color: white;">
-        <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-      </svg>
-    </button>
+    <!-- Copy button embedded in the transcription container -->
+    <div id="copy-button-wrapper" style="display: none; position: absolute; top: 10px; right: 10px; z-index: 100;">
+      <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, rgba(111, 66, 193, 0.5), rgba(70, 174, 247, 0.4)); border: 1px solid rgba(255, 255, 255, 0.4); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: none; cursor: pointer; transition: all 0.2s ease;">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px; color: white;">
+          <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+        </svg>
+      </button>
+    </div>
   </div>
   
   <!-- Permission Dialog (positioned with absolute to not affect layout) -->
