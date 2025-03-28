@@ -247,6 +247,11 @@
       color: rgb(111, 66, 193); /* Purple - matches theme */
     }
     
+    /* Dark mode style for ready status */
+    .dark-theme .status-ready {
+      color: rgb(156, 126, 255); /* Lighter purple for better visibility in dark mode */
+    }
+    
     .status-recording, .status-processing {
       color: rgb(255, 64, 129); /* Pink */
     }
@@ -557,10 +562,19 @@
       z-index: 1;
       max-height: 120px;
       overflow-y: auto;
-      padding-right: 30px; /* Room for copy button */
+      padding-right: 38px; /* Increased room for copy button + scrollbar */
       padding-bottom: 30px; /* Room for bottom copy button */
       scrollbar-width: thin; /* Firefox */
       scrollbar-color: rgba(111, 66, 193, 0.3) rgba(255, 255, 255, 0.1); /* Firefox */
+      cursor: text; /* Indicates it's editable */
+      border: none; /* Remove default border when focused */
+      min-height: 30px; /* Minimum height for empty text */
+    }
+    
+    /* Add a focus styling */
+    #transcription-text:focus {
+      box-shadow: inset 0 0 0 1px rgba(111, 66, 193, 0.2);
+      background-color: rgba(255, 255, 255, 0.05);
     }
     
     /* Custom scrollbar for webkit browsers */
@@ -703,9 +717,9 @@
   </div>
   
   <div id="transcription-container" class="glass-container" style="display: none; position: relative;">
-    <div id="transcription-text"></div>
+    <div id="transcription-text" contenteditable="true" spellcheck="true" style="outline: none;"></div>
     <!-- Copy button embedded in the transcription container -->
-    <div id="copy-button-wrapper" style="display: none; position: absolute; bottom: 10px; right: 10px; z-index: 100;">
+    <div id="copy-button-wrapper" style="display: none; position: absolute; bottom: 10px; right: 18px; z-index: 100;">
       <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, rgba(111, 66, 193, 0.7), rgba(70, 174, 247, 0.6)); border: 1px solid rgba(255, 255, 255, 0.5); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); cursor: pointer; transition: all 0.2s ease;">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; color: white;">
           <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>

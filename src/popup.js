@@ -836,6 +836,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const transcriptionText = document.getElementById('transcription-text');
       if (transcriptionText && transcriptionText.textContent) {
         try {
+          // Get edited text content from the contenteditable element
           await navigator.clipboard.writeText(transcriptionText.textContent);
           showClipboardNotification();
         } catch (err) {
