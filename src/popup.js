@@ -483,20 +483,20 @@ function showTranscribingStatus(container, randomMessage = false) {
   // Update the status to indicate processing is happening
   const statusElement = document.getElementById('status');
   if (statusElement) {
-    // Array of fun processing messages
+    // Array of fun single-word processing messages
     const processingMessages = [
       "Processing",
-      "Magic happening",
-      "Converting soundwaves",
-      "Neural magic",
-      "Translating voice",
-      "Brain thinking",
-      "Decoding speech",
-      "Putting words together",
-      "Making sense of audio",
-      "Hang tight",
-      "Almost there",
-      "Processing audio"
+      "Magic",
+      "Converting",
+      "Thinking",
+      "Translating",
+      "Analyzing",
+      "Decoding",
+      "Working",
+      "Transcribing",
+      "Interpreting",
+      "Transforming",
+      "Computing"
     ];
     
     // Choose a message - either random or default

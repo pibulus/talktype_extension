@@ -499,7 +499,7 @@ function updateProgressNotification(notification, percentage) {
     progressPercentage.textContent = `${Math.round(validPercentage)}%`;
   }
   
-  // Update status text based on percentage - using shorter messages
+  // Update status text based on percentage - single word messages
   if (progressStatus) {
     if (validPercentage < 20) {
       progressStatus.textContent = 'Processing';
@@ -510,7 +510,7 @@ function updateProgressNotification(notification, percentage) {
     } else if (validPercentage < 100) {
       progressStatus.textContent = 'Finishing';
     } else {
-      progressStatus.textContent = 'Complete!';
+      progressStatus.textContent = 'Done!';
       notification.classList.add('progress-complete');
       
       // Change icon to checkmark
@@ -869,11 +869,11 @@ function addMicrophoneToInput(inputElement) {
   recordingIndicator.style.width = '8px'; // Slightly smaller
   recordingIndicator.style.height = '8px'; // Slightly smaller
   recordingIndicator.style.borderRadius = '50%';
-  recordingIndicator.style.background = '#ff5c8a'; // Softer pink color
+  recordingIndicator.style.background = '#e991a9'; // Even softer, less urgent pink color
   recordingIndicator.style.position = 'absolute';
   recordingIndicator.style.top = '-2px';
   recordingIndicator.style.right = '-2px';
-  recordingIndicator.style.boxShadow = '0 0 3px rgba(255, 92, 138, 0.5)'; // Softer glow
+  recordingIndicator.style.boxShadow = '0 0 3px rgba(233, 145, 169, 0.4)'; // Softer, more subtle glow
   // Don't set animation directly to avoid CSP issues
   recordingIndicator.style.border = '1px solid rgba(255, 255, 255, 0.2)';
   
@@ -986,7 +986,7 @@ function addMicrophoneToInput(inputElement) {
       else {
         // Not recording, start a new recording
         console.log('TalkType: Starting new recording...');
-        showStatusNotification('Recording... Click to stop', 'recording');
+        showStatusNotification('Recording', 'recording');
         
         // Set active input element as a global target
         activeInput = inputElement;
@@ -995,14 +995,14 @@ function addMicrophoneToInput(inputElement) {
         micButton.style.animation = 'subtle-glow 1.5s infinite';
         
         if (isDarkMode) {
-          micButton.style.background = 'rgba(255, 92, 138, 0.25)'; // Softer pink for dark mode
-          micButton.style.border = '1px solid rgba(255, 92, 138, 0.4)';
+          micButton.style.background = 'rgba(233, 145, 169, 0.25)'; // Even softer pink for dark mode
+          micButton.style.border = '1px solid rgba(233, 145, 169, 0.4)';
         } else {
-          micButton.style.background = 'rgba(255, 92, 138, 0.2)'; // Softer pink for light mode
-          micButton.style.border = '1px solid rgba(255, 92, 138, 0.35)';
+          micButton.style.background = 'rgba(233, 145, 169, 0.2)'; // Even softer pink for light mode
+          micButton.style.border = '1px solid rgba(233, 145, 169, 0.35)';
         }
         
-        micButton.style.boxShadow = '0 1px 4px rgba(255, 92, 138, 0.3)';
+        micButton.style.boxShadow = '0 1px 4px rgba(233, 145, 169, 0.3)';
         
         // Get the recording indicator and show it
         const recordingIndicator = micButton.querySelector('.audio-to-text-recording-indicator');
