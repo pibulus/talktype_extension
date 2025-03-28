@@ -130,7 +130,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px; /* Reduced margin since we have divider now */
+      margin-bottom: 10px; /* Further reduced margin */
       z-index: 1;
       padding: 0 4px;
     }
@@ -143,7 +143,7 @@
         rgba(247, 70, 180, 0.4) 50%, 
         rgba(111, 66, 193, 0.4) 80%, 
         rgba(111, 66, 193, 0.15) 100%);
-      margin-bottom: 16px;
+      margin-bottom: 10px; /* Reduced margin */
       border-radius: 2px;
       box-shadow: 0 1px 4px rgba(111, 66, 193, 0.08);
     }
@@ -282,11 +282,11 @@
     .buttons {
       display: flex;
       flex-direction: column;
-      gap: 10px; /* Increased spacing between buttons */
+      gap: 8px; /* Slightly reduced spacing between buttons */
       position: relative;
       z-index: 1;
       margin-bottom: 10px; /* Bottom margin */
-      margin-top: 2px; /* Reduced space since we have the recording container */
+      margin-top: 0; /* No top margin needed */
     }
     
     button {
@@ -544,7 +544,28 @@
       z-index: 1;
       max-height: 120px;
       overflow-y: auto;
-      padding-right: 28px; /* Make room for copy button */
+      padding-right: 30px; /* More room for copy button */
+      scrollbar-width: thin; /* Firefox */
+      scrollbar-color: rgba(111, 66, 193, 0.3) rgba(255, 255, 255, 0.1); /* Firefox */
+    }
+    
+    /* Custom scrollbar for webkit browsers */
+    #transcription-text::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    #transcription-text::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+    
+    #transcription-text::-webkit-scrollbar-thumb {
+      background: rgba(111, 66, 193, 0.3);
+      border-radius: 10px;
+    }
+    
+    #transcription-text::-webkit-scrollbar-thumb:hover {
+      background: rgba(111, 66, 193, 0.5);
     }
     
     /* Copy button container and styles */
@@ -635,7 +656,7 @@
     </h1>
     <div id="status" class="status-pill" role="status">
       <div class="status-indicator">
-        <span class="pulse-dot"></span>
+        <span class="pulse-dot" style="background-color: rgb(52, 168, 83);"></span>
         <span class="status-text">Ready</span>
       </div>
     </div>
@@ -672,8 +693,8 @@
   </div>
   
   <!-- Copy button (positioned separately to avoid interfering with container) -->
-  <div id="copy-button-wrapper" style="display: none; position: absolute; bottom: 22px; right: 32px; z-index: 100;">
-    <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75)); border: 1px solid rgba(255, 255, 255, 0.5); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); cursor: pointer; transition: all 0.2s ease;">
+  <div id="copy-button-wrapper" style="display: none; position: absolute; bottom: 22px; right: 40px; z-index: 100;">
+    <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, rgba(111, 66, 193, 0.5), rgba(70, 174, 247, 0.4)); border: 1px solid rgba(255, 255, 255, 0.4); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: none; cursor: pointer; transition: all 0.2s ease;">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px; color: white;">
         <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
       </svg>

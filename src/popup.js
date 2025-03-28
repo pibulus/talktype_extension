@@ -227,8 +227,11 @@ async function stopRecording() {
     // Transform recording button into progress bar
     transformButtonToProgressBar(recordButton);
     
-    // Get API key and create service
+    // Get API key and create fresh service instance to avoid 404 errors
     const { apiKey } = await chrome.storage.sync.get(['apiKey']);
+    
+    // Create a new API service instance to prevent stale state
+    apiService = null;
     apiService = new GeminiApiService(apiKey);
     
     // Verify API key
@@ -260,10 +263,10 @@ async function stopRecording() {
     // Show the transcription with "Complete" status
     statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Complete</span></div>';
     
-    // Reset status to "Ready" after 3 seconds
+    // Reset status to "Ready" after 3 seconds (with green color)
     setTimeout(() => {
       if (!isRecording) {
-        statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot"></span><span class="status-text">Ready</span></div>';
+        statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(52, 168, 83);"></span><span class="status-text">Ready</span></div>';
       }
     }, 3000);
     
@@ -816,15 +819,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
     
-    // Add hover effect
+    // Add hover effect (more subtle without shadow)
     copyButton.addEventListener('mouseenter', () => {
       copyButton.style.transform = 'scale(1.15)';
-      copyButton.style.boxShadow = '0 3px 12px rgba(111, 66, 193, 0.3)';
+      copyButton.style.opacity = '1';
     });
     
     copyButton.addEventListener('mouseleave', () => {
       copyButton.style.transform = 'scale(1)';
-      copyButton.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+      copyButton.style.opacity = '0.8';
     });
     
     copyButton.addEventListener('mousedown', () => {
