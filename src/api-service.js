@@ -18,6 +18,12 @@ class GeminiApiService {
    */
   async transcribeAudio(audioBlob, progressCallback = null) {
     try {
+      // Verify the API key before proceeding
+      const keyValidation = await this.verifyApiKey();
+      if (!keyValidation.valid) {
+        throw new Error(keyValidation.displayMessage);
+      }
+      
       // Step 1: Upload the audio file to Gemini
       if (progressCallback) progressCallback('upload-start', 0);
       
@@ -40,6 +46,61 @@ class GeminiApiService {
       console.error("Transcription error:", error);
       throw error;
     }
+  }
+  
+  /**
+   * Transcribe audio with automatic retry for transient errors
+   * @param {Blob} audioBlob - The recorded audio as a Blob
+   * @param {Function} progressCallback - Optional callback function to report progress
+   * @param {number} maxRetries - Maximum number of retry attempts (default: 2)
+   * @returns {Promise<string>} - The transcribed text
+   */
+  async transcribeAudioWithRetry(audioBlob, progressCallback = null, maxRetries = 2) {
+    let retries = 0;
+    let lastError = null;
+    
+    while (retries <= maxRetries) {
+      try {
+        // If retrying, update the progress callback
+        if (retries > 0 && progressCallback) {
+          progressCallback('retrying', 0);
+          progressCallback(`retry-attempt-${retries}`, 0);
+        }
+        
+        return await this.transcribeAudio(audioBlob, progressCallback);
+      } catch (error) {
+        lastError = error;
+        
+        // Check if error is retryable
+        const isRetryable = 
+          // Network errors
+          error.message.includes("network") || 
+          error.message.includes("timeout") ||
+          error.message.includes("connection") ||
+          // Server errors (5xx)
+          (error.status >= 500 && error.status < 600) ||
+          // Rate limit errors sometimes happen
+          error.message.includes("rate limit") ||
+          error.message.includes("429");
+        
+        if (isRetryable && retries < maxRetries) {
+          console.log(`Retrying transcription after error (attempt ${retries + 1}/${maxRetries}):`, error.message);
+          retries++;
+          
+          // Wait longer between each retry (exponential backoff)
+          const delayMs = 1000 * Math.pow(2, retries - 1); // 1s, 2s, 4s...
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+          continue;
+        }
+        
+        // Not retryable or max retries exceeded
+        console.error(`Transcription failed after ${retries} retries:`, error);
+        throw error;
+      }
+    }
+    
+    // This should never be reached, but just in case
+    throw lastError || new Error("Transcription failed after multiple attempts");
   }
 
   /**
@@ -187,23 +248,89 @@ class GeminiApiService {
 
   /**
    * Verify that the API key is valid
-   * @returns {Promise<boolean>} - Whether the key is valid
+   * @returns {Promise<Object>} - Result object with validation details
    */
   async verifyApiKey() {
     try {
+      // Check if key is empty or missing
+      if (!this.apiKey || this.apiKey.trim() === '') {
+        return { 
+          valid: false, 
+          errorCode: "MISSING_KEY",
+          message: "API key is missing",
+          displayMessage: "Please set your API key in the extension options."
+        };
+      }
+
+      // Basic format validation - most Gemini API keys start with "AIza"
+      if (!this.apiKey.startsWith('AIza')) {
+        return { 
+          valid: false, 
+          errorCode: "INVALID_FORMAT",
+          message: "API key has invalid format",
+          displayMessage: "The API key format appears invalid. Gemini API keys typically start with 'AIza'."
+        };
+      }
+
       // Make a simple request to verify the API key
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`
       );
+      
       if (response.ok) {
-        return true;
+        return { 
+          valid: true, 
+          message: "API key is valid" 
+        };
       } else {
-        console.error("API key verification failed:", await response.text());
-        return false;
+        // Parse the error response for more details
+        const errorData = await response.json().catch(() => ({}));
+        const errorCode = errorData.error?.code || response.status;
+        const errorMessage = errorData.error?.message || "Unknown API error";
+        const displayMessage = this._getDisplayMessageForError(errorCode, errorMessage);
+        
+        console.error("API key verification failed:", errorCode, errorMessage);
+        
+        return { 
+          valid: false, 
+          errorCode,
+          message: errorMessage,
+          displayMessage
+        };
       }
     } catch (error) {
       console.error("API key verification error:", error);
-      return false;
+      return { 
+        valid: false, 
+        errorCode: "NETWORK_ERROR",
+        message: error.message,
+        displayMessage: "Network error while validating API key. Please check your internet connection."
+      };
+    }
+  }
+  
+  /**
+   * Get user-friendly error message based on error code and message
+   * @private
+   * @param {number|string} code - The error code
+   * @param {string} message - The error message
+   * @returns {string} - User-friendly error message
+   */
+  _getDisplayMessageForError(code, message) {
+    switch(code) {
+      case 400:
+        return "Invalid API key format. Please check your key.";
+      case 401:
+        return "API key is invalid or expired.";
+      case 403:
+        return "API key doesn't have permission to access this resource.";
+      case 429:
+        return "API rate limit exceeded. Please try again later.";
+      default:
+        if (message.includes("API key")) {
+          return "API key validation failed: " + message;
+        }
+        return "Error validating API key: " + message;
     }
   }
 

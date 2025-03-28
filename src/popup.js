@@ -234,17 +234,17 @@ async function stopRecording() {
     apiService = null;
     apiService = new GeminiApiService(apiKey);
     
-    // Verify API key
-    const isValidKey = await apiService.verifyApiKey();
-    if (!isValidKey) {
-      throw new Error('Invalid API key. Please check your key in Options.');
+    // Verify API key with our enhanced validation
+    const keyValidation = await apiService.verifyApiKey();
+    if (!keyValidation.valid) {
+      throw new Error(keyValidation.displayMessage || 'Invalid API key. Please check your key in Options.');
     }
     
     // Update status indicator with random fun messages
     showTranscribingStatus(statusElement, true);
     
-    // Actually transcribe the audio
-    const transcription = await apiService.transcribeAudio(audioBlob, updateProgressCallback);
+    // Actually transcribe the audio using retry mechanism
+    const transcription = await apiService.transcribeAudioWithRetry(audioBlob, updateProgressCallback);
     
     // Complete the progress animation
     completeProgressAnimation();

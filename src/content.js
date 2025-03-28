@@ -201,6 +201,11 @@ function initializeInputDetection() {
     div[role="textbox"][contenteditable="true"][aria-label*="Compose"],
     div[role="textbox"][contenteditable="true"][aria-label*="compose"],
     div[aria-multiline="true"][contenteditable="true"],
+    .editable[contenteditable="true"],
+    .gmail_quote + div[contenteditable="true"],
+    div[aria-label*="Reply"],
+    div[aria-label*="Forward"],
+    div[data-smartmail="gmail_signature"],
     
     /* Facebook comment box - broader selection for better detection */
     [contenteditable="true"][data-lexical-editor="true"],
@@ -208,6 +213,12 @@ function initializeInputDetection() {
     form[role="presentation"] [contenteditable="true"],
     .notranslate[role="textbox"][spellcheck="true"],
     div[contenteditable="true"][role="textbox"][spellcheck="true"],
+    div[contenteditable="true"][aria-label*="Comment"],
+    div[contenteditable="true"][aria-label*="comment"],
+    div[contenteditable="true"][aria-label*="Write"],
+    div[contenteditable="true"][aria-label*="write"],
+    div[contenteditable="true"][aria-label*="what's on your mind"],
+    div[contenteditable="true"][data-contents="true"],
     
     /* Reddit comment areas */
     .public-DraftEditor-content[contenteditable="true"],
@@ -1702,25 +1713,105 @@ async function stopRecording() {
       // Insert the transcription directly into the input element
       if (currentInput) {
         if (currentInput.isContentEditable) {
-          // For contentEditable elements
-          currentInput.textContent = transcription;
-          currentInput.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log('TalkType: Inserted text into contenteditable element');
+          try {
+            // First check if we should preserve existing content
+            const shouldReplace = !currentInput.textContent.trim(); // Replace if empty
+            
+            if (shouldReplace) {
+              // For empty contentEditable elements
+              currentInput.textContent = transcription;
+            } else {
+              // Try to insert at cursor position if available
+              if (window.getSelection && document.createRange) {
+                // Get current selection
+                const selection = window.getSelection();
+                let range;
+                
+                // Check if selection is in the current input
+                if (selection.rangeCount > 0 && 
+                    selection.getRangeAt(0).commonAncestorContainer.contains(currentInput) ||
+                    currentInput.contains(selection.getRangeAt(0).commonAncestorContainer)) {
+                  range = selection.getRangeAt(0);
+                } else {
+                  // Otherwise, create a new range at the end
+                  range = document.createRange();
+                  const lastChild = currentInput.lastChild;
+                  if (lastChild) {
+                    if (lastChild.nodeType === Node.TEXT_NODE) {
+                      range.setStart(lastChild, lastChild.textContent.length);
+                    } else {
+                      range.setStartAfter(lastChild);
+                    }
+                  } else {
+                    range.setStart(currentInput, 0);
+                  }
+                  selection.removeAllRanges();
+                  selection.addRange(range);
+                }
+                
+                // Insert text at cursor position
+                const textNode = document.createTextNode(transcription);
+                range.deleteContents();
+                range.insertNode(textNode);
+                
+                // Move cursor to end of inserted text
+                range.setStartAfter(textNode);
+                range.setEndAfter(textNode);
+                selection.removeAllRanges();
+                selection.addRange(range);
+              } else {
+                // Fallback for browsers without selection support
+                currentInput.textContent += transcription;
+              }
+            }
+            
+            // Special handling for Facebook and Gmail editors
+            if (currentInput.getAttribute('data-lexical-editor') === 'true') {
+              // Facebook lexical editor - trigger input and focus
+              currentInput.focus();
+              currentInput.click();
+            }
+            
+            // Dispatch events to notify frameworks of content changes
+            currentInput.dispatchEvent(new Event('input', { bubbles: true }));
+            currentInput.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            console.log('TalkType: Inserted text into contenteditable element');
+          } catch (e) {
+            console.error('TalkType: Error inserting into contenteditable:', e);
+            // Fallback to simple approach
+            currentInput.textContent = transcription;
+            currentInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }
         } 
         else if (currentInput.tagName === 'INPUT' || currentInput.tagName === 'TEXTAREA') {
           // For standard input/textarea elements
-          currentInput.value = transcription;
+          const originalValue = currentInput.value || '';
+          const selStart = currentInput.selectionStart || 0;
+          const selEnd = currentInput.selectionEnd || selStart || 0;
+          
+          // Insert text at cursor position if there's a selection
+          if (typeof selStart === 'number' && typeof selEnd === 'number') {
+            const newValue = originalValue.substring(0, selStart) + 
+                             transcription + 
+                             originalValue.substring(selEnd);
+            currentInput.value = newValue;
+            
+            // Move cursor to the end of inserted text
+            const newPosition = selStart + transcription.length;
+            currentInput.setSelectionRange(newPosition, newPosition);
+          } else {
+            // Simple replacement if no selection info
+            currentInput.value = transcription;
+          }
+          
+          // Dispatch events
           currentInput.dispatchEvent(new Event('input', { bubbles: true }));
           currentInput.dispatchEvent(new Event('change', { bubbles: true }));
           console.log('TalkType: Inserted text into input/textarea element');
           
-          // Focus the input and place cursor at the end
+          // Focus the input
           currentInput.focus();
-          
-          // Set selection range if supported
-          if (typeof currentInput.setSelectionRange === 'function') {
-            currentInput.setSelectionRange(transcription.length, transcription.length);
-          }
         } 
         else {
           // Fallback for other elements - try innerText
@@ -1743,7 +1834,46 @@ async function stopRecording() {
         document.body.removeChild(progressNotification);
       }
       
-      showStatusNotification(`Transcription failed: ${transcriptionError.message}`, 'error');
+      // Enhanced error handling with more specific messages
+      let errorMessage = "Transcription failed";
+      let suggestedAction = "";
+      
+      // Check for specific error types
+      if (transcriptionError.message.includes("API key")) {
+        errorMessage = "API key error";
+        suggestedAction = "Please check your API key in extension options";
+      } else if (transcriptionError.message.includes("upload")) {
+        errorMessage = "Failed to upload audio";
+        suggestedAction = "Check your internet connection and try again";
+      } else if (transcriptionError.message.includes("network") || 
+                 transcriptionError.message.includes("timeout") ||
+                 transcriptionError.message.includes("connect")) {
+        errorMessage = "Network error";
+        suggestedAction = "Check your internet connection and try again";
+      } else if (transcriptionError.message.includes("rate limit") || 
+                 transcriptionError.message.includes("429")) {
+        errorMessage = "Rate limit exceeded";
+        suggestedAction = "Please wait a moment and try again";
+      } else if (transcriptionError.message.includes("500") || 
+                 transcriptionError.message.includes("server")) {
+        errorMessage = "Gemini API server error";
+        suggestedAction = "Please try again later";
+      } else if (transcriptionError.message.includes("no speech") || 
+                 transcriptionError.message.includes("empty") || 
+                 transcriptionError.message.includes("silent")) {
+        errorMessage = "No speech detected";
+        suggestedAction = "Please speak clearly and try again";
+      }
+      
+      // Show detailed notification with suggested action
+      const detailedMessage = suggestedAction ? 
+        `${errorMessage}: ${suggestedAction}` : 
+        `${errorMessage}: ${transcriptionError.message}`;
+        
+      showStatusNotification(detailedMessage, 'error');
+      
+      // Log it for debugging
+      console.log(`TalkType: Showing detailed error: ${detailedMessage}`);
     }
     
     // Reset button appearance after processing
