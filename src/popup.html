@@ -130,9 +130,22 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px; /* Increased margin for better spacing */
+      margin-bottom: 16px; /* Reduced margin since we have divider now */
       z-index: 1;
       padding: 0 4px;
+    }
+    
+    .header-divider {
+      height: 1px;
+      background: linear-gradient(90deg, 
+        rgba(111, 66, 193, 0.1), 
+        rgba(111, 66, 193, 0.3) 20%, 
+        rgba(247, 70, 180, 0.3) 50%, 
+        rgba(111, 66, 193, 0.3) 80%, 
+        rgba(111, 66, 193, 0.1) 100%);
+      margin-bottom: 16px;
+      border-radius: 1px;
+      box-shadow: 0 1px 3px rgba(111, 66, 193, 0.05);
     }
     
     h1 {
@@ -208,10 +221,25 @@
       height: 100%;
       border-radius: 50%;
       background-color: rgb(255, 64, 129);
-      animation: pulse-status 2s infinite;
+      animation: pulse-status 1.5s infinite ease-out;
       top: 0;
       left: 0;
       opacity: 0.5;
+      filter: blur(1px);
+    }
+    
+    .pulse-dot::before {
+      content: '';
+      position: absolute;
+      width: 130%;
+      height: 130%;
+      border-radius: 50%;
+      background-color: rgb(255, 64, 129);
+      animation: pulse-glow 2s infinite ease-in-out;
+      top: -15%;
+      left: -15%;
+      opacity: 0.2;
+      filter: blur(2px);
     }
     
     @keyframes pulse-status {
@@ -219,13 +247,31 @@
         transform: scale(1);
         opacity: 0.5;
       }
-      70% {
-        transform: scale(2);
+      50% {
+        transform: scale(2.5);
+        opacity: 0.2;
+      }
+      100% {
+        transform: scale(3);
         opacity: 0;
+      }
+    }
+    
+    @keyframes pulse-glow {
+      0% {
+        transform: scale(1);
+        opacity: 0.3;
+        filter: blur(2px);
+      }
+      50% {
+        transform: scale(1.8);
+        opacity: 0.1;
+        filter: blur(5px);
       }
       100% {
         transform: scale(1);
-        opacity: 0;
+        opacity: 0.3;
+        filter: blur(2px);
       }
     }
     
@@ -439,12 +485,12 @@
     
     /* Transcription container */
     .glass-container {
-      background: transparent;
+      background: rgba(255, 255, 255, 0.12);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-radius: 18px; /* Curvier corners */
-      border: 2px solid rgba(255, 255, 255, 0.3); /* Thicker border */
-      padding: 12px; /* Reduced padding */
+      border: 2px solid rgba(255, 255, 255, 0.25); /* Subtler border */
+      padding: 14px; /* Slightly more padding */
       margin-top: 8px; /* Reduced margin */
       min-height: 70px; /* Smaller min-height */
       max-height: 120px; /* Smaller max-height */
@@ -452,7 +498,7 @@
       color: var(--text-primary);
       font-size: 14px;
       transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
       position: relative;
     }
     
@@ -465,9 +511,25 @@
       right: 0;
       bottom: 0;
       z-index: -1;
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(111, 66, 193, 0.08), rgba(70, 174, 247, 0.08));
-      opacity: 0.7;
+      border-radius: 16px;
+      background: linear-gradient(135deg, 
+        rgba(111, 66, 193, 0.08), 
+        rgba(247, 70, 180, 0.05) 50%, 
+        rgba(70, 174, 247, 0.08) 100%);
+      opacity: 0.9;
+    }
+    
+    /* Add subtle inner shadow */
+    .glass-container::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+      border-radius: 16px;
+      pointer-events: none;
     }
     
     .glass-container:empty {
@@ -496,6 +558,28 @@
       fill: white;
       margin-right: 6px;
     }
+    
+    /* API key success notification */
+    .api-key-success {
+      position: absolute;
+      bottom: -60px;
+      left: 0;
+      right: 0;
+      background: rgba(52, 168, 83, 0.85);
+      color: white;
+      padding: 10px;
+      border-radius: 12px;
+      text-align: center;
+      transform: translateY(0);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      z-index: 10;
+    }
+    
+    .api-key-success.show {
+      transform: translateY(-70px);
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -511,6 +595,8 @@
       </div>
     </div>
   </div>
+  
+  <div class="header-divider"></div>
   
   <div id="apiKeyError" class="error" style="display: none;">
     Please set your API key in the options

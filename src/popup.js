@@ -5,7 +5,7 @@ let audioService = null;
 let apiService = null;
 let isRecording = false;
 let recordingTimeout = null;
-const MAX_RECORDING_TIME = 15000; // 15 seconds
+const MAX_RECORDING_TIME = 30000; // 30 seconds
 
 // Check if API key is set
 async function checkApiKey() {
@@ -237,8 +237,8 @@ async function stopRecording() {
     if (transcription && transcription.trim()) {
       try {
         await navigator.clipboard.writeText(transcription);
-        // Show a subtle notification that text was copied
-        showClipboardNotification();
+        // Clipboard notification will be shown by completeProgressAnimation
+        // No need to call showClipboardNotification() here to avoid duplicate notifications
       } catch (err) {
         console.error('Failed to copy text: ', err);
       }
@@ -1157,7 +1157,110 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     document.getElementById('configureApiKey').addEventListener('click', () => {
       document.body.removeChild(settingsPopup);
-      openOptions();
+      
+      // Create and show the API key configuration popup
+      const apiKeyPopup = document.createElement('div');
+      apiKeyPopup.className = 'settings-popup';
+      apiKeyPopup.innerHTML = `
+        <div class="settings-content">
+          <h3 style="justify-content: center;">Configure API Key</h3>
+          <div style="position: relative; z-index: 2; padding: 0 5px; max-width: 100%; box-sizing: border-box;">
+            <p style="font-size: 14px; margin: 0 0 20px; opacity: 0.85; line-height: 1.5;">
+              Enter your Gemini API key to enable voice transcription
+            </p>
+            <input type="text" id="api-key-field" placeholder="Enter your Gemini API key" spellcheck="false" autocomplete="off" style="width: 100%; box-sizing: border-box; max-width: 100%;" />
+            <button id="save-api-key" class="save-button">
+              <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 6px;">
+                <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+              </svg>
+              Save API Key
+            </button>
+          </div>
+          <button id="closeApiKey" class="settings-close">&times;</button>
+          <div class="api-key-success">
+            API key saved successfully!
+          </div>
+        </div>
+      `;
+      document.body.appendChild(apiKeyPopup);
+      
+      // Fetch and populate current API key
+      chrome.storage.sync.get(['apiKey'], (result) => {
+        if (result.apiKey) {
+          document.getElementById('api-key-field').value = result.apiKey;
+        }
+      });
+      
+      // Add event listener for save button
+      document.getElementById('save-api-key').addEventListener('click', () => {
+        const apiKey = document.getElementById('api-key-field').value.trim();
+        if (apiKey) {
+          chrome.storage.sync.set({ apiKey }, () => {
+            // Show success message with animation
+            const successMsg = document.querySelector('.api-key-success');
+            successMsg.classList.add('show');
+            
+            // Apply success styling to the button
+            const saveButton = document.getElementById('save-api-key');
+            saveButton.innerHTML = `
+              <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 6px;">
+                <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+              </svg>
+              Saved!
+            `;
+            
+            // Update the API key check
+            checkApiKey();
+            
+            // Close the popup after a delay
+            setTimeout(() => {
+              document.body.removeChild(apiKeyPopup);
+            }, 1500);
+          });
+        } else {
+          // Show error state for empty input
+          const apiKeyField = document.getElementById('api-key-field');
+          apiKeyField.style.borderColor = 'rgba(255, 0, 0, 0.5)';
+          apiKeyField.style.boxShadow = 'inset 0 1px 3px rgba(255, 0, 0, 0.2)';
+          
+          // Shake animation for empty field
+          apiKeyField.style.animation = 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both';
+          
+          // Add shake animation if not already added
+          if (!document.getElementById('shake-animation')) {
+            const shakeStyle = document.createElement('style');
+            shakeStyle.id = 'shake-animation';
+            shakeStyle.textContent = `
+              @keyframes shake {
+                10%, 90% { transform: translateX(-1px); }
+                20%, 80% { transform: translateX(2px); }
+                30%, 50%, 70% { transform: translateX(-3px); }
+                40%, 60% { transform: translateX(3px); }
+              }
+            `;
+            document.head.appendChild(shakeStyle);
+          }
+          
+          // Reset the error state after animation
+          setTimeout(() => {
+            apiKeyField.style.borderColor = '';
+            apiKeyField.style.boxShadow = '';
+            apiKeyField.style.animation = '';
+          }, 500);
+        }
+      });
+      
+      // Add event listener for Enter key in input field
+      document.getElementById('api-key-field').addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('save-api-key').click();
+        }
+      });
+      
+      // Add event listener for close button
+      document.getElementById('closeApiKey').addEventListener('click', () => {
+        document.body.removeChild(apiKeyPopup);
+      });
     });
     
     document.getElementById('toggleTheme').addEventListener('click', () => {
