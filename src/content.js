@@ -525,43 +525,28 @@ function addMicrophoneToInput(inputElement) {
   recordingIndicator.style.width = '10px';
   recordingIndicator.style.height = '10px';
   recordingIndicator.style.borderRadius = '50%';
-  recordingIndicator.style.background = 'linear-gradient(135deg, #9c27b0, #673ab7)'; // Purple vaporwave colors
+  recordingIndicator.style.background = '#9c27b0'; // Simple color instead of gradient for better compatibility
   recordingIndicator.style.position = 'absolute';
   recordingIndicator.style.top = '-3px';
   recordingIndicator.style.right = '-3px';
   recordingIndicator.style.boxShadow = '0 0 5px rgba(156, 39, 176, 0.7)';
-  recordingIndicator.style.animation = 'pulse-mic 1.5s infinite';
+  // Don't set animation directly to avoid CSP issues
   recordingIndicator.style.border = '1px solid rgba(255, 255, 255, 0.3)';
   
-  // Add pulse animation for recording indicator
+  // Add animations safely via extension's CSS instead of inline JavaScript
+  // This avoids Content Security Policy violations
   if (!document.getElementById('audio-to-text-animations')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'audio-to-text-animations';
-    styleEl.textContent = `
-      @keyframes pulse-mic {
-        0% {
-          box-shadow: 0 0 0 0 rgba(156, 39, 176, 0.7);
-          opacity: 1;
-        }
-        50% {
-          box-shadow: 0 0 10px 3px rgba(156, 39, 176, 0.4);
-          opacity: 0.9;
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(156, 39, 176, 0);
-          opacity: 1;
-        }
-      }
-      
-      @keyframes wiggle-mic {
-        0% { transform: rotate(-3deg) scale(1); }
-        25% { transform: rotate(3deg) scale(1.05); }
-        50% { transform: rotate(-2deg) scale(1.02); }
-        75% { transform: rotate(2deg) scale(1.05); }
-        100% { transform: rotate(0deg) scale(1); }
-      }
-    `;
-    document.head.appendChild(styleEl);
+    // Create a link to the stylesheet instead of inline styles
+    const link = document.createElement('link');
+    link.id = 'audio-to-text-animations';
+    link.rel = 'stylesheet';
+    link.href = chrome.runtime.getURL('styles.css');
+    
+    // Append to document
+    (document.head || document.documentElement).appendChild(link);
+    
+    // Set class names for animations instead of inline styles
+    recordingIndicator.classList.add('pulse-animation');
   }
   
   micButton.appendChild(recordingIndicator);
@@ -646,10 +631,17 @@ function addMicrophoneToInput(inputElement) {
           }
         }
         
-        // Simple animation
+        // Simple animation using class-based approach to avoid CSP issues
         const micIcon = micButton.querySelector('img');
         if (micIcon) {
-          micIcon.style.animation = 'wiggle-mic 0.5s ease';
+          // Remove old classes first
+          micIcon.classList.remove('wiggle-animation', 'wiggle-reverse-animation');
+          // Add animation class
+          micIcon.classList.add('wiggle-animation');
+          // Remove class after animation completes
+          setTimeout(() => {
+            micIcon.classList.remove('wiggle-animation');
+          }, 500);
         }
         
         // Start recording
@@ -905,20 +897,27 @@ async function startRecording(targetInput, indicator) {
     activeInput = targetInput;
     console.log('TalkType: Set isRecording=true, activeInput=', targetInput);
     
-    // Show recording indicator with animations
+    // Show recording indicator with animations using classes
     if (indicator) {
       console.log('TalkType: Showing recording indicator');
       indicator.style.display = 'block';
       
+      // Add pulse animation class
+      indicator.classList.add('pulse-animation');
+      
       // Find the mic button (parent of the indicator)
       const micButton = indicator.parentElement;
       if (micButton) {
-        // Add wiggle animation to the mic icon
+        // Add wiggle animation to the mic icon using class
         const micIcon = micButton.querySelector('img');
         if (micIcon) {
-          micIcon.style.animation = 'wiggle-mic 0.5s ease';
+          // Remove old classes first
+          micIcon.classList.remove('wiggle-animation', 'wiggle-reverse-animation');
+          // Add animation class
+          micIcon.classList.add('wiggle-animation');
+          // Remove class after animation completes
           setTimeout(() => {
-            micIcon.style.animation = ''; // Remove animation after it completes
+            micIcon.classList.remove('wiggle-animation');
           }, 500);
         }
         
@@ -1040,12 +1039,16 @@ async function stopRecording() {
         micButton.style.border = '1px solid rgba(111, 66, 193, 0.2)';
         micButton.style.filter = 'none';
         
-        // Add a modern finish animation
+        // Add a modern finish animation using classes
         const micIcon = micButton.querySelector('img');
         if (micIcon) {
-          micIcon.style.animation = 'wiggle-mic 0.3s ease reverse';
+          // Remove old classes first
+          micIcon.classList.remove('wiggle-animation', 'wiggle-reverse-animation');
+          // Add reverse animation class
+          micIcon.classList.add('wiggle-reverse-animation');
+          // Remove class after animation completes
           setTimeout(() => {
-            micIcon.style.animation = '';
+            micIcon.classList.remove('wiggle-reverse-animation');
           }, 300);
         }
       }

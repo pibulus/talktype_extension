@@ -45,7 +45,16 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["permission.html", "permission-dialog.js", "icons/mic.svg", "permission-fix.html", "permission-fix.js"],
+      "resources": [
+        "permission.html", 
+        "permission-dialog.js", 
+        "icons/mic.svg", 
+        "permission-fix.html", 
+        "permission-fix.js",
+        "icons/icon_black/*",
+        "icons/icon_white/*",
+        "styles.css"
+      ],
       "matches": ["<all_urls>"]
     }
   ]
