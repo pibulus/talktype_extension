@@ -705,14 +705,26 @@ function addMicrophoneToInput(inputElement) {
   // Whether we have a valid icon URL
   const hasValidIcon = micIconUrl && !micIconUrl.includes('undefined') && !micIconUrl.includes('chrome-extension://null');
   
+  // Check if system is using dark mode
+  const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  
   // Create microphone button with TalkType branding
   const micButton = document.createElement('button');
   micButton.className = 'audio-to-text-mic-button';
   micButton.title = 'TalkType: Click to dictate';
   micButton.style.position = 'absolute';
   micButton.style.zIndex = '5'; // Lower z-index to work better with page content
-  micButton.style.background = 'rgba(111, 66, 193, 0.15)';
-  micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+  
+  // Set background based on dark mode
+  if (isDarkMode) {
+    micButton.style.background = 'rgba(111, 66, 193, 0.2)'; // Slightly more visible in dark mode
+    micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+    micButton.dataset.darkMode = 'true'; // Mark as dark mode for later reference
+  } else {
+    micButton.style.background = 'rgba(111, 66, 193, 0.15)';
+    micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+  }
+  
   micButton.style.borderRadius = '50%';
   micButton.style.cursor = 'pointer';
   micButton.style.width = '28px'; // Slightly larger
@@ -721,13 +733,13 @@ function addMicrophoneToInput(inputElement) {
   micButton.style.opacity = '1'; // Fully visible
   micButton.style.transform = 'scale(1)';
   micButton.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s ease, background 0.2s ease, box-shadow 0.2s ease';
-  micButton.style.boxShadow = '0 2px 6px rgba(111, 66, 193, 0.4)'; // More pronounced shadow
+  micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.3)'; // More subtle shadow
   micButton.style.backdropFilter = 'blur(2px)';
   micButton.style.webkitBackdropFilter = 'blur(2px)';
   micButton.style.display = 'block'; // Always visible
   
-  // Add a subtle pulse animation to make it more noticeable
-  micButton.style.animation = 'gentle-pulse 2s infinite';
+  // No animation by default - only on hover and recording
+  micButton.style.animation = 'none';
   
   // Store a reference to the input element this button belongs to
   micButton.talkTypeInputElement = inputElement;
@@ -742,6 +754,12 @@ function addMicrophoneToInput(inputElement) {
         50% { transform: scale(1.05); box-shadow: 0 2px 10px rgba(111, 66, 193, 0.6); }
         100% { transform: scale(1); box-shadow: 0 2px 6px rgba(111, 66, 193, 0.4); }
       }
+      
+      @keyframes subtle-glow {
+        0% { box-shadow: 0 0 3px rgba(111, 66, 193, 0.3); }
+        50% { box-shadow: 0 0 5px rgba(111, 66, 193, 0.4); }
+        100% { box-shadow: 0 0 3px rgba(111, 66, 193, 0.3); }
+      }
     `;
     document.head.appendChild(styleEl);
   }
@@ -753,6 +771,12 @@ function addMicrophoneToInput(inputElement) {
     // Create SVG icon image
     const micIcon = document.createElement('img');
     micIcon.src = micIconUrl;
+    
+    // Apply dark mode filter for light icon on dark backgrounds
+    if (isDarkMode) {
+      micIcon.style.filter = 'brightness(0) invert(1)'; // Makes the icon white
+    }
+    
     micIcon.style.width = '100%';
     micIcon.style.height = '100%';
     micIcon.style.transition = 'transform 0.2s ease';
@@ -786,20 +810,20 @@ function addMicrophoneToInput(inputElement) {
     micButton.appendChild(textIcon);
   }
   
-  // Add recording indicator with vaporwave style
+  // Add recording indicator
   const recordingIndicator = document.createElement('span');
   recordingIndicator.className = 'audio-to-text-recording-indicator';
   recordingIndicator.style.display = 'none';
-  recordingIndicator.style.width = '10px';
-  recordingIndicator.style.height = '10px';
+  recordingIndicator.style.width = '8px'; // Slightly smaller
+  recordingIndicator.style.height = '8px'; // Slightly smaller
   recordingIndicator.style.borderRadius = '50%';
-  recordingIndicator.style.background = '#9c27b0'; // Simple color instead of gradient for better compatibility
+  recordingIndicator.style.background = '#ff5c8a'; // Softer pink color
   recordingIndicator.style.position = 'absolute';
-  recordingIndicator.style.top = '-3px';
-  recordingIndicator.style.right = '-3px';
-  recordingIndicator.style.boxShadow = '0 0 5px rgba(156, 39, 176, 0.7)';
+  recordingIndicator.style.top = '-2px';
+  recordingIndicator.style.right = '-2px';
+  recordingIndicator.style.boxShadow = '0 0 3px rgba(255, 92, 138, 0.5)'; // Softer glow
   // Don't set animation directly to avoid CSP issues
-  recordingIndicator.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+  recordingIndicator.style.border = '1px solid rgba(255, 255, 255, 0.2)';
   
   // Add animations safely via extension's CSS instead of inline JavaScript
   // This avoids Content Security Policy violations
@@ -819,26 +843,40 @@ function addMicrophoneToInput(inputElement) {
   
   micButton.appendChild(recordingIndicator);
   
-  // Add more pronounced TalkType branded hover effects
+  // Add more subtle TalkType branded hover effects
   micButton.addEventListener('mouseenter', () => {
     micButton.style.opacity = '1';
-    micButton.style.transform = 'scale(1.15)';
-    micButton.style.boxShadow = '0 2px 8px rgba(111, 66, 193, 0.45)';
-    micButton.style.background = 'rgba(111, 66, 193, 0.25)';
-    micButton.style.border = '1px solid rgba(111, 66, 193, 0.5)';
-    // Add a slight glow effect to highlight the button
-    micButton.style.filter = 'drop-shadow(0 0 3px rgba(111, 66, 193, 0.3))';
+    micButton.style.transform = 'scale(1.1)';
+    micButton.style.animation = 'subtle-glow 2s infinite';
+    
+    if (isDarkMode) {
+      micButton.style.background = 'rgba(111, 66, 193, 0.25)';
+      micButton.style.border = '1px solid rgba(111, 66, 193, 0.5)';
+      // No glow effect for dark mode - it's too harsh
+    } else {
+      micButton.style.background = 'rgba(111, 66, 193, 0.2)';
+      micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+      // Subtle glow for light mode only
+      micButton.style.boxShadow = '0 1px 4px rgba(111, 66, 193, 0.3)';
+    }
   });
   
   micButton.addEventListener('mouseleave', () => {
-    // Only change opacity if not recording
+    // Only change styling if not recording
     if (!isRecording || activeInput !== inputElement) {
-      micButton.style.opacity = '0.9';
+      micButton.style.opacity = '1';
       micButton.style.transform = 'scale(1)';
-      micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.15)';
-      micButton.style.background = 'rgba(111, 66, 193, 0.1)';
-      micButton.style.border = '1px solid rgba(111, 66, 193, 0.2)';
-      micButton.style.filter = 'none';
+      micButton.style.animation = 'none';
+      
+      if (isDarkMode) {
+        micButton.style.background = 'rgba(111, 66, 193, 0.2)';
+        micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+      } else {
+        micButton.style.background = 'rgba(111, 66, 193, 0.15)';
+        micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+      }
+      
+      micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.3)';
       // We keep the button visible at all times
     }
   });
@@ -871,10 +909,18 @@ function addMicrophoneToInput(inputElement) {
         console.log('TalkType: Stopping recording...');
         showStatusNotification('Processing recording...', 'info');
         
-        // Update button appearance to processing state
-        micButton.style.background = 'rgba(52, 168, 83, 0.3)'; // Green processing color
-        micButton.style.border = '1px solid rgba(52, 168, 83, 0.5)';
-        micButton.style.boxShadow = '0 2px 8px rgba(52, 168, 83, 0.35)';
+        // Update button appearance to processing state - more subtle
+        micButton.style.animation = 'subtle-glow 2s infinite';
+        
+        if (micButton.dataset.darkMode === 'true') {
+          micButton.style.background = 'rgba(52, 168, 83, 0.25)'; // Green processing color for dark mode
+          micButton.style.border = '1px solid rgba(52, 168, 83, 0.4)';
+        } else {
+          micButton.style.background = 'rgba(52, 168, 83, 0.2)'; // Green processing color for light mode
+          micButton.style.border = '1px solid rgba(52, 168, 83, 0.35)';
+        }
+        
+        micButton.style.boxShadow = '0 1px 4px rgba(52, 168, 83, 0.3)';
         
         // Get the recording indicator
         const recordingIndicator = micButton.querySelector('.audio-to-text-recording-indicator');
@@ -893,10 +939,18 @@ function addMicrophoneToInput(inputElement) {
         // Set active input element as a global target
         activeInput = inputElement;
         
-        // Update visual state
-        micButton.style.background = 'rgba(255, 64, 129, 0.3)'; // Red recording color
-        micButton.style.border = '1px solid rgba(255, 64, 129, 0.5)';
-        micButton.style.boxShadow = '0 2px 8px rgba(255, 64, 129, 0.35)';
+        // Update visual state - more subtle when recording
+        micButton.style.animation = 'subtle-glow 1.5s infinite';
+        
+        if (isDarkMode) {
+          micButton.style.background = 'rgba(255, 92, 138, 0.25)'; // Softer pink for dark mode
+          micButton.style.border = '1px solid rgba(255, 92, 138, 0.4)';
+        } else {
+          micButton.style.background = 'rgba(255, 92, 138, 0.2)'; // Softer pink for light mode
+          micButton.style.border = '1px solid rgba(255, 92, 138, 0.35)';
+        }
+        
+        micButton.style.boxShadow = '0 1px 4px rgba(255, 92, 138, 0.3)';
         
         // Get the recording indicator and show it
         const recordingIndicator = micButton.querySelector('.audio-to-text-recording-indicator');
@@ -964,8 +1018,13 @@ function addMicrophoneToInput(inputElement) {
           showStatusNotification('Error starting recording: ' + error.message, 'error');
           
           // Reset button appearance
-          micButton.style.background = 'rgba(111, 66, 193, 0.15)';
-          micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+          if (micButton.dataset.darkMode === 'true') {
+            micButton.style.background = 'rgba(111, 66, 193, 0.2)';
+            micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+          } else {
+            micButton.style.background = 'rgba(111, 66, 193, 0.15)';
+            micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+          }
           
           // Hide the recording indicator
           const recordingIndicator = micButton.querySelector('.audio-to-text-recording-indicator');
@@ -981,9 +1040,17 @@ function addMicrophoneToInput(inputElement) {
       // Reset button appearance
       setTimeout(() => {
         micButton.style.transform = 'scale(1)';
-        micButton.style.background = 'rgba(111, 66, 193, 0.15)';
-        micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
-        micButton.style.boxShadow = '0 2px 6px rgba(111, 66, 193, 0.4)';
+        micButton.style.animation = 'none';
+        
+        if (micButton.dataset.darkMode === 'true') {
+          micButton.style.background = 'rgba(111, 66, 193, 0.2)';
+          micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+        } else {
+          micButton.style.background = 'rgba(111, 66, 193, 0.15)';
+          micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+        }
+        
+        micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.3)';
       }, 500);
     }
   };
@@ -1528,26 +1595,20 @@ async function stopRecording() {
       // Update the parent button styling to show processing state
       const micButton = indicator.parentElement;
       if (micButton) {
-        micButton.style.background = 'rgba(52, 168, 83, 0.3)'; // Green processing color
-        micButton.style.border = '1px solid rgba(52, 168, 83, 0.5)';
-        micButton.style.boxShadow = '0 2px 8px rgba(52, 168, 83, 0.35)';
+        if (micButton.dataset.darkMode === 'true') {
+          micButton.style.background = 'rgba(52, 168, 83, 0.25)'; // Green processing color for dark mode
+          micButton.style.border = '1px solid rgba(52, 168, 83, 0.4)';
+        } else {
+          micButton.style.background = 'rgba(52, 168, 83, 0.2)'; // Green processing color for light mode
+          micButton.style.border = '1px solid rgba(52, 168, 83, 0.35)';
+        }
+        
+        micButton.style.boxShadow = '0 1px 4px rgba(52, 168, 83, 0.3)';
         
         // Add a subtle pulse animation during processing
-        micButton.style.animation = 'processing-pulse 1.5s infinite';
+        micButton.style.animation = 'subtle-glow 1.5s infinite';
         
-        // Add processing animation if it doesn't exist
-        if (!document.getElementById('processing-animation')) {
-          const styleEl = document.createElement('style');
-          styleEl.id = 'processing-animation';
-          styleEl.textContent = `
-            @keyframes processing-pulse {
-              0% { transform: scale(1); }
-              50% { transform: scale(1.05); }
-              100% { transform: scale(1); }
-            }
-          `;
-          document.head.appendChild(styleEl);
-        }
+        // We're using the subtle-glow animation now which is already defined
       }
     });
     
@@ -1646,12 +1707,19 @@ async function stopRecording() {
     
     // Reset button appearance after processing
     document.querySelectorAll('.audio-to-text-mic-button').forEach(button => {
-      button.style.animation = '';
+      button.style.animation = 'none';
       button.style.transform = 'scale(1)';
-      button.style.opacity = '0.9';
-      button.style.background = 'rgba(111, 66, 193, 0.15)';
-      button.style.border = '1px solid rgba(111, 66, 193, 0.3)';
-      button.style.boxShadow = '0 2px 6px rgba(111, 66, 193, 0.4)';
+      button.style.opacity = '1';
+      
+      if (button.dataset.darkMode === 'true') {
+        button.style.background = 'rgba(111, 66, 193, 0.2)';
+        button.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+      } else {
+        button.style.background = 'rgba(111, 66, 193, 0.15)';
+        button.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+      }
+      
+      button.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.3)';
       button.style.filter = 'none';
     });
     
@@ -1670,12 +1738,19 @@ async function stopRecording() {
       // Also reset the parent button
       const micButton = indicator.parentElement;
       if (micButton) {
-        micButton.style.animation = '';
+        micButton.style.animation = 'none';
         micButton.style.transform = 'scale(1)';
-        micButton.style.opacity = '0.9';
-        micButton.style.background = 'rgba(111, 66, 193, 0.15)';
-        micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
-        micButton.style.boxShadow = '0 2px 6px rgba(111, 66, 193, 0.4)';
+        micButton.style.opacity = '1';
+        
+        if (micButton.dataset.darkMode === 'true') {
+          micButton.style.background = 'rgba(111, 66, 193, 0.2)';
+          micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+        } else {
+          micButton.style.background = 'rgba(111, 66, 193, 0.15)';
+          micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+        }
+        
+        micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.3)';
         micButton.style.filter = 'none';
       }
     });
