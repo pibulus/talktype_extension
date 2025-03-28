@@ -162,21 +162,26 @@ function showClipboardNotification() {
     style.textContent = `
       .clipboard-notification {
         position: fixed;
-        top: 20px !important;
-        bottom: auto !important;
+        bottom: 10px !important;
+        top: auto !important;
         left: 50%;
-        transform: translateX(-50%) translateY(-30px);
-        background: rgba(75, 203, 156, 0.85);
+        transform: translateX(-50%) translateY(40px);
+        background: rgba(75, 203, 156, 0.95);
         color: white;
-        padding: 8px 16px;
-        border-radius: 20px;
+        padding: 10px 18px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
-        font-size: 13px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        justify-content: center;
+        font-size: 14px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         opacity: 0;
         transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         z-index: 1000;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        width: 90%;
       }
       .clipboard-notification.show {
         opacity: 1;
@@ -399,13 +404,13 @@ function transformButtonToProgressBar(button) {
       /* Copy notification */
       .copy-notification {
         position: fixed;
-        bottom: 20px;
+        bottom: 10px;
         left: 50%;
-        transform: translateX(-50%) translateY(30px);
-        background: rgba(75, 203, 156, 0.85);
+        transform: translateX(-50%) translateY(40px);
+        background: rgba(75, 203, 156, 0.95);
         color: white;
         padding: 10px 18px;
-        border-radius: 30px;
+        border-radius: 14px;
         font-size: 14px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         opacity: 0;
@@ -413,6 +418,11 @@ function transformButtonToProgressBar(button) {
         z-index: 2000;
         display: flex;
         align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        width: 90%;
       }
       
       .copy-notification.show {
@@ -620,14 +630,14 @@ function showCopyNotification() {
     notifStyle.textContent = `
       .copy-notification {
         position: fixed;
-        top: 20px !important;
-        bottom: auto !important;
+        bottom: 10px !important;
+        top: auto !important;
         left: 50%;
-        transform: translateX(-50%) translateY(-40px);
-        background: rgba(75, 203, 156, 0.85);
+        transform: translateX(-50%) translateY(40px);
+        background: rgba(75, 203, 156, 0.95);
         color: white;
         padding: 10px 18px;
-        border-radius: 30px;
+        border-radius: 14px;
         font-size: 14px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         opacity: 0;
@@ -635,6 +645,11 @@ function showCopyNotification() {
         z-index: 2000;
         display: flex;
         align-items: center;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        width: 90%;
+        justify-content: center;
       }
       
       .copy-notification.show {
@@ -1137,21 +1152,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         .api-key-success {
           position: absolute;
           bottom: -60px;
-          left: 0;
-          right: 0;
-          background: rgba(75, 203, 156, 0.85);
+          left: 50%;
+          width: 90%;
+          max-width: 280px;
+          transform: translateX(-50%) translateY(0);
+          background: rgba(75, 203, 156, 0.95);
           color: white;
-          padding: 10px;
-          border-radius: 12px;
+          padding: 12px;
+          border-radius: 14px;
           text-align: center;
-          transform: translateY(0);
           opacity: 0;
           transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
           z-index: 10;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
         
         .api-key-success.show {
-          transform: translateY(-70px);
+          transform: translateX(-50%) translateY(-15px);
           opacity: 1;
         }
         
@@ -1217,18 +1237,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         /* Theme toggle success message */
         .theme-success {
           position: fixed;
-          bottom: 20px;
+          bottom: 10px;
           left: 50%;
-          transform: translateX(-50%) translateY(30px);
-          background: rgba(111, 66, 193, 0.85);
+          transform: translateX(-50%) translateY(40px);
+          background: rgba(111, 66, 193, 0.95);
           color: white;
           padding: 10px 18px;
-          border-radius: 30px;
+          border-radius: 14px;
           font-size: 14px;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
           opacity: 0;
           transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
           z-index: 2000;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          width: 90%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .theme-success.show {

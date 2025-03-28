@@ -714,21 +714,26 @@
     .api-key-success {
       position: absolute;
       bottom: -60px;
-      left: 0;
-      right: 0;
-      background: rgba(75, 203, 156, 0.85);
+      left: 50%;
+      width: 90%;
+      max-width: 280px;
+      transform: translateX(-50%) translateY(0);
+      background: rgba(75, 203, 156, 0.95);
       color: white;
-      padding: 10px;
-      border-radius: 12px;
+      padding: 12px;
+      border-radius: 14px;
       text-align: center;
-      transform: translateY(0);
       opacity: 0;
       transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
       z-index: 10;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     }
     
     .api-key-success.show {
-      transform: translateY(-70px);
+      transform: translateX(-50%) translateY(-15px);
       opacity: 1;
     }
   </style>
