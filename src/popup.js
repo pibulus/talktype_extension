@@ -123,6 +123,12 @@ async function startRecording() {
 
 // Function to show clipboard notification
 function showClipboardNotification() {
+  // Remove any existing notification first
+  const existingNotification = document.querySelector('.clipboard-notification');
+  if (existingNotification) {
+    document.body.removeChild(existingNotification);
+  }
+  
   // Create notification element
   const notification = document.createElement('div');
   notification.className = 'clipboard-notification';
@@ -141,9 +147,10 @@ function showClipboardNotification() {
     style.textContent = `
       .clipboard-notification {
         position: fixed;
-        bottom: 20px;
+        top: 20px;
+        bottom: auto;
         left: 50%;
-        transform: translateX(-50%) translateY(30px);
+        transform: translateX(-50%) translateY(-30px);
         background: rgba(52, 168, 83, 0.85);
         color: white;
         padding: 8px 16px;
@@ -504,25 +511,18 @@ function completeProgressAnimation() {
         const recordButton = document.getElementById('startRecording');
         
         if (recordButton) {
-          // Restore original button appearance
-          if (recordButton.dataset.originalContent) {
-            recordButton.innerHTML = recordButton.dataset.originalContent;
-            recordButton.classList.remove('button-progress-container');
-            recordButton.disabled = false;
-            delete recordButton.dataset.originalContent;
-          } else {
-            // Fallback if original content wasn't stored
-            recordButton.innerHTML = `
-              <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-              </svg>
-              Record & Transcribe
-            `;
-            recordButton.classList.remove('button-progress-container');
-            recordButton.disabled = false;
-          }
-        
+          // Always use the original mic icon and "Record & Transcribe" text
+          recordButton.innerHTML = `
+            <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            </svg>
+            Record & Transcribe
+          `;
+          recordButton.classList.remove('button-progress-container');
+          recordButton.disabled = false;
+          delete recordButton.dataset.originalContent;
+          
           // Re-attach the event listener for the record button
           recordButton.addEventListener('click', async () => {
             if (isRecording) {
@@ -532,13 +532,16 @@ function completeProgressAnimation() {
             }
           });
           
-          // Show the settings button again
+          // DON'T show the settings button again
+          // We want to keep it hidden to maintain layout stability
+          /* 
           const settingsButton = document.getElementById('options');
           if (settingsButton) {
             settingsButton.style.display = 'block';
           }
+          */
         }
-      }, 1000);
+      }, 1200); // Slightly longer delay to ensure user sees "Complete" state
     }, 800); // Wait for animation to complete
   }
 }
@@ -557,6 +560,36 @@ function showCopyNotification() {
       <span>Copied to clipboard</span>
     `;
     document.body.appendChild(notification);
+    
+    // Add custom styles for top notification
+    const notifStyle = document.createElement('style');
+    notifStyle.id = 'top-notification-style';
+    notifStyle.textContent = `
+      .copy-notification {
+        position: fixed;
+        top: 20px !important;
+        bottom: auto !important;
+        left: 50%;
+        transform: translateX(-50%) translateY(-40px);
+        background: rgba(52, 168, 83, 0.85);
+        color: white;
+        padding: 10px 18px;
+        border-radius: 30px;
+        font-size: 14px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+      }
+      
+      .copy-notification.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    `;
+    document.head.appendChild(notifStyle);
   }
   
   const notification = document.getElementById('copy-notification');
