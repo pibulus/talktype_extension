@@ -27,7 +27,7 @@
     :root {
       --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
       --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
-      --progress-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.9), rgba(247, 70, 180, 0.8), rgba(255, 152, 0, 0.85));
+      --progress-gradient: linear-gradient(135deg, rgba(70, 174, 247, 0.8), rgba(90, 120, 255, 0.85), rgba(130, 80, 255, 0.75));
       --glass-bg: rgba(255, 255, 255, 0.65);
       --glass-border: rgba(255, 255, 255, 0.7);
       --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
@@ -252,12 +252,34 @@
       color: rgb(156, 126, 255); /* Lighter purple for better visibility in dark mode */
     }
     
-    .status-recording, .status-processing {
-      color: rgb(255, 64, 129); /* Pink */
+    /* Recording status - softer pink */
+    .status-recording {
+      color: rgb(234, 87, 177); /* Softer pink, closer to ready purple */
     }
     
+    /* Dark mode recording status */
+    .dark-theme .status-recording {
+      color: rgb(255, 130, 204); /* Lighter pink for dark mode */
+    }
+    
+    /* Processing status - blue */
+    .status-processing {
+      color: rgb(70, 174, 247); /* Blue */
+    }
+    
+    /* Dark mode processing status */
+    .dark-theme .status-processing {
+      color: rgb(110, 194, 255); /* Lighter blue for dark mode */
+    }
+    
+    /* Complete status - aqua green */
     .status-complete {
-      color: rgb(70, 174, 247); /* Light blue - matches theme accent */
+      color: rgb(75, 203, 156); /* Aqua-green */
+    }
+    
+    /* Dark mode complete status */
+    .dark-theme .status-complete {
+      color: rgb(105, 232, 185); /* Lighter aqua-green for dark mode */
     }
     
     @keyframes pulse-status {
@@ -694,7 +716,7 @@
       bottom: -60px;
       left: 0;
       right: 0;
-      background: rgba(52, 168, 83, 0.85);
+      background: rgba(75, 203, 156, 0.85);
       color: white;
       padding: 10px;
       border-radius: 12px;

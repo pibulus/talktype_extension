@@ -7,6 +7,15 @@ let isRecording = false;
 let recordingTimeout = null;
 const MAX_RECORDING_TIME = 30000; // 30 seconds
 
+// Fun processing messages - used in multiple places
+const PROCESSING_MESSAGES = [
+  "Processing", "Magic", "Converting", "Thinking", "Translating", 
+  "Analyzing", "Decoding", "Working", "Transcribing", "Interpreting", 
+  "Transforming", "Computing", "Listening", "Deciphering", "Understanding", 
+  "Pondering", "Absorbing", "Wizardry", "Enchanting", "Conjuring", 
+  "Brewing", "Spellcasting", "Unraveling", "Digesting", "Transmuting", "Calculating"
+];
+
 // Check if API key is set
 async function checkApiKey() {
   const result = await chrome.storage.sync.get(['apiKey']);
@@ -157,7 +166,7 @@ function showClipboardNotification() {
         bottom: auto !important;
         left: 50%;
         transform: translateX(-50%) translateY(-30px);
-        background: rgba(52, 168, 83, 0.85);
+        background: rgba(75, 203, 156, 0.85);
         color: white;
         padding: 8px 16px;
         border-radius: 20px;
@@ -217,8 +226,9 @@ async function stopRecording() {
     // Hide recording animation
     recordingAnimation.classList.remove('active');
     
-    // Update status indicator
-    statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Processing</span></div>';
+    // Update status indicator with a random fun message
+    const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
+    statusElement.innerHTML = `<div class="status-indicator status-processing"><span class="pulse-dot"></span><span class="status-text">${randomMessage}...</span></div>`;
     
     // Stop recording and get audio data
     const audioBlob = await audioService.stopRecording();
@@ -381,9 +391,9 @@ function transformButtonToProgressBar(button) {
       }
       
       @keyframes glow {
-        0% { box-shadow: 0 0 5px rgba(111, 66, 193, 0.3); }
-        50% { box-shadow: 0 0 20px rgba(111, 66, 193, 0.6), 0 0 30px rgba(247, 70, 180, 0.4); }
-        100% { box-shadow: 0 0 10px rgba(111, 66, 193, 0.5); }
+        0% { box-shadow: 0 0 5px rgba(70, 174, 247, 0.3); }
+        50% { box-shadow: 0 0 20px rgba(75, 203, 156, 0.6), 0 0 30px rgba(90, 120, 255, 0.5); }
+        100% { box-shadow: 0 0 10px rgba(75, 203, 156, 0.6); }
       }
       
       /* Copy notification */
@@ -392,7 +402,7 @@ function transformButtonToProgressBar(button) {
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%) translateY(30px);
-        background: rgba(52, 168, 83, 0.85);
+        background: rgba(75, 203, 156, 0.85);
         color: white;
         padding: 10px 18px;
         border-radius: 30px;
@@ -426,14 +436,15 @@ function transformButtonToProgressBar(button) {
   button.classList.add('button-progress-container');
   button.disabled = true;
   
-  // Create progress structure
+  // Create progress structure with a random fun message
+  const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
   button.innerHTML = `
     <div id="progress-bar" class="button-progress-bar"></div>
     <div class="button-progress-content">
       <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path fill="currentColor" d="M6 2l12 10-12 10V2z"/>
       </svg>
-      <span>Processing</span>
+      <span>${randomMessage}...</span>
     </div>
   `;
   
@@ -453,6 +464,8 @@ function transformButtonToProgressBar(button) {
 // Start fake progress animation
 function startFakeProgressAnimation() {
   let fakeProgress = 0;
+  let lastMessageUpdateTime = Date.now();
+  
   window.progressInterval = setInterval(() => {
     if (fakeProgress < 30) {
       fakeProgress += 3; // Fast initial progress
@@ -474,6 +487,17 @@ function startFakeProgressAnimation() {
     const progressBar = document.getElementById('progress-bar');
     if (progressBar) {
       progressBar.style.width = fakeProgress + '%';
+      
+      // Occasionally update the message (every ~2.5 seconds)
+      const now = Date.now();
+      if (now - lastMessageUpdateTime > 2500) {
+        const messageElement = document.querySelector('.button-progress-content span');
+        if (messageElement) {
+          const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
+          messageElement.textContent = `${randomMessage}...`;
+        }
+        lastMessageUpdateTime = now;
+      }
     }
   }, 40); // Slightly slower interval for smoother animation
 }
@@ -483,26 +507,8 @@ function showTranscribingStatus(container, randomMessage = false) {
   // Update the status to indicate processing is happening
   const statusElement = document.getElementById('status');
   if (statusElement) {
-    // Array of fun single-word processing messages
-    const processingMessages = [
-      "Processing",
-      "Magic",
-      "Converting",
-      "Thinking",
-      "Translating",
-      "Analyzing",
-      "Decoding",
-      "Working",
-      "Transcribing",
-      "Interpreting",
-      "Transforming",
-      "Computing"
-    ];
-    
-    // Choose a message - either random or default
-    const message = randomMessage ? 
-      processingMessages[Math.floor(Math.random() * processingMessages.length)] : 
-      "Processing";
+    // Always choose a random fun message
+    const message = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
     
     statusElement.innerHTML = `
       <div class="status-indicator status-processing">
@@ -618,7 +624,7 @@ function showCopyNotification() {
         bottom: auto !important;
         left: 50%;
         transform: translateX(-50%) translateY(-40px);
-        background: rgba(52, 168, 83, 0.85);
+        background: rgba(75, 203, 156, 0.85);
         color: white;
         padding: 10px 18px;
         border-radius: 30px;
@@ -1105,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         .save-button {
           width: 100%;
           padding: 10px 12px;
-          background: linear-gradient(135deg, rgba(52, 168, 83, 0.85), rgba(66, 133, 244, 0.75));
+          background: linear-gradient(135deg, rgba(75, 203, 156, 0.85), rgba(70, 174, 247, 0.75));
           color: white;
           border: none;
           border-radius: 12px;
@@ -1120,7 +1126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         .save-button:hover {
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(52, 168, 83, 0.2);
+          box-shadow: 0 4px 12px rgba(75, 203, 156, 0.25);
         }
         
         .save-button:active {
@@ -1133,7 +1139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           bottom: -60px;
           left: 0;
           right: 0;
-          background: rgba(52, 168, 83, 0.85);
+          background: rgba(75, 203, 156, 0.85);
           color: white;
           padding: 10px;
           border-radius: 12px;
@@ -1417,7 +1423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </svg>
         ${newIsDark ? 'Dark' : 'Light'} Mode Applied
       `;
-      toggleButton.style.background = 'linear-gradient(135deg, rgba(52, 168, 83, 0.85), rgba(66, 133, 244, 0.75))';
+      toggleButton.style.background = 'linear-gradient(135deg, rgba(75, 203, 156, 0.85), rgba(70, 174, 247, 0.75))';
     });
   });
   
