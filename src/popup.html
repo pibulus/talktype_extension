@@ -557,7 +557,8 @@
       z-index: 1;
       max-height: 120px;
       overflow-y: auto;
-      padding-right: 30px; /* More room for copy button */
+      padding-right: 30px; /* Room for copy button */
+      padding-bottom: 30px; /* Room for bottom copy button */
       scrollbar-width: thin; /* Firefox */
       scrollbar-color: rgba(111, 66, 193, 0.3) rgba(255, 255, 255, 0.1); /* Firefox */
     }
@@ -704,9 +705,9 @@
   <div id="transcription-container" class="glass-container" style="display: none; position: relative;">
     <div id="transcription-text"></div>
     <!-- Copy button embedded in the transcription container -->
-    <div id="copy-button-wrapper" style="display: none; position: absolute; top: 10px; right: 10px; z-index: 100;">
-      <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, rgba(111, 66, 193, 0.5), rgba(70, 174, 247, 0.4)); border: 1px solid rgba(255, 255, 255, 0.4); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: none; cursor: pointer; transition: all 0.2s ease;">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px; color: white;">
+    <div id="copy-button-wrapper" style="display: none; position: absolute; bottom: 10px; right: 10px; z-index: 100;">
+      <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, rgba(111, 66, 193, 0.7), rgba(70, 174, 247, 0.6)); border: 1px solid rgba(255, 255, 255, 0.5); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); cursor: pointer; transition: all 0.2s ease;">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; color: white;">
           <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
         </svg>
       </button>

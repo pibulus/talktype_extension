@@ -350,10 +350,43 @@ function createProgressNotification(message) {
       .progress-bar {
         height: 100%;
         width: 0%;
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 1));
+        background: linear-gradient(90deg, rgba(111, 66, 193, 0.7), rgba(247, 70, 180, 0.7));
+        background-size: 200% 100%;
         border-radius: 6px;
         transition: width 0.5s cubic-bezier(0.44, 0.89, 0.56, 0.94);
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        box-shadow: 0 0 10px rgba(111, 66, 193, 0.5);
+        position: relative;
+      }
+      
+      .progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        animation: progress-shine 2s infinite;
+      }
+      
+      .progress-bar.complete {
+        animation: gradient-shift 1.5s ease forwards, glow 1.5s ease forwards;
+      }
+      
+      @keyframes progress-shine {
+        0% { left: -100%; }
+        100% { left: 200%; }
+      }
+      
+      @keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 100% 50%; }
+      }
+      
+      @keyframes glow {
+        0% { box-shadow: 0 0 5px rgba(111, 66, 193, 0.3); }
+        50% { box-shadow: 0 0 15px rgba(111, 66, 193, 0.6), 0 0 20px rgba(247, 70, 180, 0.4); }
+        100% { box-shadow: 0 0 10px rgba(111, 66, 193, 0.5); }
       }
       
       .progress-status {
@@ -440,6 +473,14 @@ function updateProgressNotification(notification, percentage) {
   // Update progress bar width
   if (progressBar) {
     progressBar.style.width = `${validPercentage}%`;
+    
+    // Add the 'complete' class when progress reaches 100%
+    // This triggers the gradient-shift and glow animations
+    if (validPercentage >= 100) {
+      progressBar.classList.add('complete');
+    } else {
+      progressBar.classList.remove('complete');
+    }
   }
   
   // Update percentage text
@@ -447,16 +488,16 @@ function updateProgressNotification(notification, percentage) {
     progressPercentage.textContent = `${Math.round(validPercentage)}%`;
   }
   
-  // Update status text based on percentage
+  // Update status text based on percentage - using shorter messages
   if (progressStatus) {
     if (validPercentage < 20) {
-      progressStatus.textContent = 'Processing...';
+      progressStatus.textContent = 'Processing';
     } else if (validPercentage < 50) {
-      progressStatus.textContent = 'Uploading...';
+      progressStatus.textContent = 'Converting';
     } else if (validPercentage < 80) {
-      progressStatus.textContent = 'Analyzing...';
+      progressStatus.textContent = 'Analyzing';
     } else if (validPercentage < 100) {
-      progressStatus.textContent = 'Finishing...';
+      progressStatus.textContent = 'Finishing';
     } else {
       progressStatus.textContent = 'Complete!';
       notification.classList.add('progress-complete');
@@ -1960,7 +2001,7 @@ function showStatusNotification(message, type = 'info') {
       }
       
       .talktype-recording-notification {
-        background: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.8));
+        background: linear-gradient(135deg, rgba(111, 66, 193, 0.8), rgba(130, 160, 240, 0.75));
         animation: talktype-gentle-pulse 2s infinite;
       }
       
