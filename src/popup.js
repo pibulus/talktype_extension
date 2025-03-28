@@ -80,7 +80,7 @@ async function startRecording() {
     
     // Show animation
     const recordingAnimation = document.getElementById('recording-animation');
-    recordingAnimation.style.display = 'block';
+    recordingAnimation.classList.add('active');
     
     // Update button
     recordButton.innerHTML = `
@@ -93,7 +93,7 @@ async function startRecording() {
     // Update status
     statusElement.innerHTML = `
       <div class="status-indicator">
-        <span class="pulse-dot" style="background-color: #ff5252;"></span>
+        <span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span>
         <span class="status-text">Recording...</span>
       </div>
     `;
@@ -201,33 +201,18 @@ async function stopRecording() {
   const transcriptionText = document.getElementById('transcription-text');
   
   try {
-    // Update UI
-    recordButton.innerHTML = `
-      <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-        <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-      </svg>
-      Record & Transcribe
-    `;
-    statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: #2196F3;"></span><span class="status-text">Processing</span></div>';
-    recordingAnimation.style.display = 'none';
+    // Hide recording animation
+    recordingAnimation.classList.remove('active');
     
-    // Show settings button again
-    const settingsButton = document.getElementById('options');
-    if (settingsButton) {
-      settingsButton.style.display = 'block';
-    }
+    // Update status indicator
+    statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Processing</span></div>';
     
     // Stop recording and get audio data
     const audioBlob = await audioService.stopRecording();
     isRecording = false;
     
-    // Replace options button with progress bar
-    const buttonsContainer = document.querySelector('.buttons');
-    if (buttonsContainer) {
-      // Create progress UI in the buttons container
-      createProgressUI(buttonsContainer);
-    }
+    // Transform recording button into progress bar
+    transformButtonToProgressBar(recordButton);
     
     // Get API key and create service
     const { apiKey } = await chrome.storage.sync.get(['apiKey']);
@@ -260,7 +245,7 @@ async function stopRecording() {
     }
     
     // Show the transcription
-    statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: #34a853;"></span><span class="status-text">Transcription complete</span></div>';
+    statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Complete</span></div>';
     
     // Animate the transcription text
     transcriptionText.style.opacity = '0';
@@ -284,48 +269,59 @@ async function stopRecording() {
       </div>
     `;
     transcriptionText.textContent = 'Transcription failed. Please try again.';
+    
+    // Restore button in case of error
+    recordButton.innerHTML = `
+      <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+      </svg>
+      Record & Transcribe
+    `;
+    recordButton.disabled = false;
+    recordButton.classList.remove('button-progress-container');
+    
+    // Show settings button again
+    const settingsButton = document.getElementById('options');
+    if (settingsButton) {
+      settingsButton.style.display = 'block';
+    }
   }
 }
 
-// Create progress UI elements
-function createProgressUI(container) {
+// Transform button into progress bar
+function transformButtonToProgressBar(button) {
   // Add the progress bar styles if not already added
   if (!document.getElementById('progress-bar-styles')) {
     const progressStyles = document.createElement('style');
     progressStyles.id = 'progress-bar-styles';
     progressStyles.textContent = `
       /* Gradient Progress Bar */
-      .progress-container {
-        width: 100%;
-        height: 42px;
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 12px;
-        overflow: hidden;
+      .button-progress-container {
         position: relative;
-        margin: 10px 0;
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+        overflow: hidden;
+        border-radius: 16px;
       }
       
-      .progress-bar {
+      .button-progress-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
         height: 100%;
         width: 0%;
         background: var(--progress-gradient);
         background-size: 200% 100%;
-        border-radius: 12px;
+        border-radius: 16px;
         transition: width 0.3s ease;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 0 10px rgba(111, 66, 193, 0.2);
+        z-index: 0;
+        opacity: 0.85;
       }
       
-      .progress-bar.complete {
+      .button-progress-bar.complete {
         animation: gradient-shift 1.5s ease forwards, glow 1.5s ease forwards;
       }
       
-      .progress-bar::after {
+      .button-progress-bar::after {
         content: '';
         position: absolute;
         top: 0;
@@ -334,6 +330,15 @@ function createProgressUI(container) {
         height: 100%;
         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         animation: progress-shine 2s infinite;
+      }
+      
+      .button-progress-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
       }
       
       @keyframes progress-shine {
@@ -385,27 +390,32 @@ function createProgressUI(container) {
     document.head.appendChild(progressStyles);
   }
   
-  // Clear container
-  container.innerHTML = '';
+  // Preserve button content
+  const buttonContent = button.innerHTML;
   
-  // Create progress container
-  const progressContainer = document.createElement('div');
-  progressContainer.className = 'progress-container';
+  // Transform button to progress bar
+  button.classList.add('button-progress-container');
+  button.disabled = true;
   
-  // Create progress bar
-  const progressBar = document.createElement('div');
-  progressBar.id = 'progress-bar';
-  progressBar.className = 'progress-bar';
-  
-  // Assemble the progress UI
-  progressContainer.appendChild(progressBar);
-  container.appendChild(progressContainer);
+  // Create progress structure
+  button.innerHTML = `
+    <div id="progress-bar" class="button-progress-bar"></div>
+    <div class="button-progress-content">
+      <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="currentColor" d="M6 2l12 10-12 10V2z"/>
+      </svg>
+      <span>Processing</span>
+    </div>
+  `;
   
   // Hide settings button while showing progress
   const settingsButton = document.getElementById('options');
   if (settingsButton) {
     settingsButton.style.display = 'none';
   }
+  
+  // Store original content for later restoration
+  button.dataset.originalContent = buttonContent;
   
   // Start progress animation
   startFakeProgressAnimation();
@@ -445,7 +455,7 @@ function showTranscribingStatus(container) {
   // Update the status to indicate processing is happening
   const statusElement = document.getElementById('status');
   if (statusElement) {
-    statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: #2196F3;"></span><span class="status-text">Transcribing</span></div>';
+    statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Processing</span></div>';
   }
   
   // Progress bar animation is handled by startFakeProgressAnimation()
@@ -473,39 +483,48 @@ function completeProgressAnimation() {
     progressBar.style.transition = 'width 0.5s cubic-bezier(0.1, 0.9, 0.2, 1.2)';
     progressBar.classList.add('complete');
     
+    // Update the progress content text to show "Complete"
+    const progressContent = document.querySelector('.button-progress-content span');
+    if (progressContent) {
+      progressContent.textContent = 'Complete';
+    }
+    
+    // Update icon to checkmark
+    const progressIcon = document.querySelector('.button-progress-content svg path');
+    if (progressIcon) {
+      progressIcon.setAttribute('d', 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z');
+    }
+    
     // Show the copy notification
     setTimeout(() => {
       showCopyNotification();
       
-      // Restore buttons container after a short delay
+      // Restore button after a short delay
       setTimeout(() => {
-        const buttonsContainer = document.querySelector('.buttons');
-        if (buttonsContainer) {
-          // Remove the progress bar
-          const progressContainer = buttonsContainer.querySelector('.progress-container');
-          if (progressContainer) {
-            buttonsContainer.removeChild(progressContainer);
-          }
-          
-          // Show both buttons
-          buttonsContainer.innerHTML = `
-            <button id="startRecording">
+        const recordButton = document.getElementById('startRecording');
+        
+        if (recordButton) {
+          // Restore original button appearance
+          if (recordButton.dataset.originalContent) {
+            recordButton.innerHTML = recordButton.dataset.originalContent;
+            recordButton.classList.remove('button-progress-container');
+            recordButton.disabled = false;
+            delete recordButton.dataset.originalContent;
+          } else {
+            // Fallback if original content wasn't stored
+            recordButton.innerHTML = `
               <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                 <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
               </svg>
               Record & Transcribe
-            </button>
-            <button id="options">
-              <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path>
-              </svg>
-              Settings
-            </button>
-          `;
-          
-          // Re-attach event listeners for the new buttons
-          document.getElementById('startRecording').addEventListener('click', async () => {
+            `;
+            recordButton.classList.remove('button-progress-container');
+            recordButton.disabled = false;
+          }
+        
+          // Re-attach the event listener for the record button
+          recordButton.addEventListener('click', async () => {
             if (isRecording) {
               await stopRecording();
             } else {
@@ -513,92 +532,11 @@ function completeProgressAnimation() {
             }
           });
           
-          // Re-attach the settings button click handler
-          document.getElementById('options').addEventListener('click', (e) => {
-            e.preventDefault();
-            console.log("Settings button clicked");
-            
-            // Use the same settings popup code as in the DOMContentLoaded event handler
-            // But simplified to just re-run the main code from scratch
-            if (!document.getElementById('settings-popup-styles')) {
-              // The page is probably refreshed, so let the main DOMContentLoaded handler handle it
-              location.reload();
-              return;
-            }
-            
-            // Create and show settings popup (simplified version)
-            const settingsPopup = document.createElement('div');
-            settingsPopup.className = 'settings-popup';
-            
-            // Determine current theme for accurate button labels
-            const isDarkTheme = document.body.classList.contains('dark-theme');
-            
-            // Use same popup HTML as the original handler
-            settingsPopup.innerHTML = `
-              <div class="settings-content">
-                <h3>Settings</h3>
-                <button id="configureApiKey" class="settings-button">
-                  <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; margin-right: 10px;">
-                    <path fill="currentColor" d="M22 11.5c0-1.65-1.35-3-3-3s-3 1.35-3 3c0 .75.28 1.43.75 1.95l-2.75 2.75c-.27-.17-.56-.31-.87-.39l-.51-3.56c.86-.33 1.38-1.18 1.38-2.12 0-1.32-1.04-2.38-2.38-2.38-1.33 0-2.37 1.06-2.37 2.38 0 .89.47 1.68 1.18 2.05l-.71 3.58c-.94.29-1.72.98-2.09 1.89L3.8 15.4c.02-.16.05-.32.05-.49 0-1.21-.99-2.2-2.2-2.2S-.55 13.7-.55 14.91s.99 2.2 2.2 2.2c.69 0 1.31-.33 1.71-.83l3.44 1.61c-.01.08-.03.15-.03.24 0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5c0-.31-.05-.6-.12-.89l2.7-2.7c.43.28.93.45 1.5.45 1.65.01 3-1.34 3-2.99zm-5.91 6.32c-.26.57-.85.97-1.53.97-.92 0-1.67-.75-1.67-1.67 0-.58.29-1.1.76-1.39.17-.11.37-.2.57-.25l.25-.04.21 1.04-1.06.21.5.87c-.02.03-.04.08-.04.12 0 .17.13.3.3.3s.3-.13.3-.3c0-.12-.06-.21-.16-.26zm.3-6.32c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5z"/>
-                  </svg>
-                  Configure API Key
-                </button>
-                <button id="toggleTheme" class="settings-button">
-                  <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; margin-right: 10px;">
-                    ${isDarkTheme ? 
-                      `<path fill="currentColor" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5s5-2.24 5-5s-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0c-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0c-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0c.39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>` 
-                      : 
-                      `<path fill="currentColor" d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9s9-4.03 9-9c0-.46-.04-.92-.1-1.36c-.98 1.37-2.58 2.26-4.4 2.26c-2.98 0-5.4-2.42-5.4-5.4c0-1.81.89-3.42 2.26-4.4c-.44-.06-.9-.1-1.36-.1z"/>`
-                    }
-                  </svg>
-                  Switch to ${isDarkTheme ? 'Light' : 'Dark'} Mode
-                </button>
-                <div class="theme-indicator" style="
-                  display: flex;
-                  justify-content: center;
-                  margin-top: 20px;
-                  font-size: 12px;
-                  color: var(--text-secondary);
-                  align-items: center;
-                  opacity: 0.8;
-                ">
-                  <span style="position: relative; z-index: 2;">
-                    Current theme: <strong>${isDarkTheme ? 'Dark Mode' : 'Light Mode'}</strong>
-                  </span>
-                </div>
-                <button id="closeSettings" class="settings-close">&times;</button>
-              </div>
-            `;
-            document.body.appendChild(settingsPopup);
-            
-            // Add minimal event handlers for the buttons
-            document.getElementById('closeSettings').addEventListener('click', () => {
-              document.body.removeChild(settingsPopup);
-            });
-            
-            document.getElementById('configureApiKey').addEventListener('click', () => {
-              document.body.removeChild(settingsPopup);
-              location.reload(); // Reload to ensure proper event handlers
-            });
-            
-            document.getElementById('toggleTheme').addEventListener('click', () => {
-              // Toggle theme using the existing function
-              const currentIsDark = document.body.classList.contains('dark-theme');
-              const newIsDark = !currentIsDark;
-              
-              // Save preferences
-              localStorage.setItem('userToggled', 'true');
-              localStorage.setItem('prefersDarkMode', newIsDark);
-              
-              // Apply theme
-              applyTheme(newIsDark);
-              
-              // Close popup
-              setTimeout(() => {
-                document.body.removeChild(settingsPopup);
-              }, 800);
-            });
-          });
+          // Show the settings button again
+          const settingsButton = document.getElementById('options');
+          if (settingsButton) {
+            settingsButton.style.display = 'block';
+          }
         }
       }, 1000);
     }, 800); // Wait for animation to complete
@@ -649,7 +587,7 @@ function handleRecordingError(error) {
   `;
   
   // Hide animation
-  document.getElementById('recording-animation').style.display = 'none';
+  document.getElementById('recording-animation').classList.remove('active');
   
   // Handle permission errors specially
   if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
@@ -801,8 +739,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Apply theme based on user preference or system preference
   initializeTheme();
   
-  // Add event listeners for settings - show a settings popup instead of opening options page
-  document.getElementById('options').addEventListener('click', (e) => {
+  // Set up RECORD BUTTON
+  const recordButton = document.getElementById('startRecording');
+  recordButton.addEventListener('click', async () => {
+    if (isRecording) {
+      await stopRecording();
+    } else {
+      await startRecording();
+    }
+  });
+  
+  // Set up SETTINGS BUTTON
+  const settingsButton = document.getElementById('options');
+  settingsButton.addEventListener('click', (e) => {
     e.preventDefault();
     console.log("Settings button clicked");
     
@@ -1156,13 +1105,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.head.appendChild(popupStyles);
     }
     
-    // Create and show a settings popup
+    // Create and show settings popup
     const settingsPopup = document.createElement('div');
     settingsPopup.className = 'settings-popup';
     
     // Determine current theme for accurate button labels
     const isDarkTheme = document.body.classList.contains('dark-theme');
     
+    // Use same popup HTML as the original handler
     settingsPopup.innerHTML = `
       <div class="settings-content">
         <h3>Settings</h3>
@@ -1200,145 +1150,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
     document.body.appendChild(settingsPopup);
     
-    // Add event listeners for the popup buttons
-    document.getElementById('configureApiKey').addEventListener('click', () => {
-      // Remove the settings popup
+    // Add event handlers for the popup buttons
+    document.getElementById('closeSettings').addEventListener('click', () => {
       document.body.removeChild(settingsPopup);
-      
-      // Create and show the API key configuration popup
-      const apiKeyPopup = document.createElement('div');
-      apiKeyPopup.className = 'settings-popup';
-      apiKeyPopup.innerHTML = `
-        <div class="settings-content">
-          <h3 style="justify-content: center;">Configure API Key</h3>
-          <div style="position: relative; z-index: 2; padding: 0 5px; max-width: 100%; box-sizing: border-box;">
-            <p style="font-size: 14px; margin: 0 0 20px; opacity: 0.85; line-height: 1.5;">
-              Enter your Gemini API key to enable voice transcription
-            </p>
-            <input type="text" id="api-key-field" placeholder="Enter your Gemini API key" spellcheck="false" autocomplete="off" style="width: 100%; box-sizing: border-box; max-width: 100%;" />
-            <button id="save-api-key" class="save-button">
-              <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 6px;">
-                <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
-              </svg>
-              Save API Key
-            </button>
-          </div>
-          <button id="closeApiKey" class="settings-close">&times;</button>
-          <div class="api-key-success">
-            API key saved successfully!
-          </div>
-        </div>
-      `;
-      document.body.appendChild(apiKeyPopup);
-      
-      // Fetch and populate current API key
-      chrome.storage.sync.get(['apiKey'], (result) => {
-        if (result.apiKey) {
-          document.getElementById('api-key-field').value = result.apiKey;
-        }
-      });
-      
-      // Add event listener for save button
-      document.getElementById('save-api-key').addEventListener('click', () => {
-        const apiKey = document.getElementById('api-key-field').value.trim();
-        if (apiKey) {
-          chrome.storage.sync.set({ apiKey }, () => {
-            // Show success message with animation
-            const successMsg = document.querySelector('.api-key-success');
-            successMsg.classList.add('show');
-            
-            // Apply success styling to the button
-            const saveButton = document.getElementById('save-api-key');
-            saveButton.innerHTML = `
-              <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 6px;">
-                <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
-              </svg>
-              Saved!
-            `;
-            
-            // Update the API key check
-            checkApiKey();
-            
-            // Close the popup after a delay
-            setTimeout(() => {
-              document.body.removeChild(apiKeyPopup);
-            }, 1500);
-          });
-        } else {
-          // Show error state for empty input
-          const apiKeyField = document.getElementById('api-key-field');
-          apiKeyField.style.borderColor = 'rgba(255, 0, 0, 0.5)';
-          apiKeyField.style.boxShadow = 'inset 0 1px 3px rgba(255, 0, 0, 0.2)';
-          
-          // Shake animation for empty field
-          apiKeyField.style.animation = 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both';
-          
-          // Add shake animation if not already added
-          if (!document.getElementById('shake-animation')) {
-            const shakeStyle = document.createElement('style');
-            shakeStyle.id = 'shake-animation';
-            shakeStyle.textContent = `
-              @keyframes shake {
-                10%, 90% { transform: translateX(-1px); }
-                20%, 80% { transform: translateX(2px); }
-                30%, 50%, 70% { transform: translateX(-3px); }
-                40%, 60% { transform: translateX(3px); }
-              }
-            `;
-            document.head.appendChild(shakeStyle);
-          }
-          
-          // Reset the error state after animation
-          setTimeout(() => {
-            apiKeyField.style.borderColor = '';
-            apiKeyField.style.boxShadow = '';
-            apiKeyField.style.animation = '';
-          }, 500);
-        }
-      });
-      
-      // Add event listener for Enter key in input field
-      document.getElementById('api-key-field').addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') {
-          document.getElementById('save-api-key').click();
-        }
-      });
-      
-      // Add event listener for close button
-      document.getElementById('closeApiKey').addEventListener('click', () => {
-        document.body.removeChild(apiKeyPopup);
-      });
-      
-      // Close when clicking outside
-      apiKeyPopup.addEventListener('click', (event) => {
-        if (event.target === apiKeyPopup) {
-          document.body.removeChild(apiKeyPopup);
-        }
-      });
     });
     
-    // Add event listener for theme toggle
+    document.getElementById('configureApiKey').addEventListener('click', () => {
+      document.body.removeChild(settingsPopup);
+      openOptions();
+    });
+    
     document.getElementById('toggleTheme').addEventListener('click', () => {
-      console.log('Theme toggle clicked');
-      
-      // Get current theme state and toggle it
+      // Toggle theme
       const currentIsDark = document.body.classList.contains('dark-theme');
       const newIsDark = !currentIsDark;
       
-      // Mark as user toggled so system changes don't override
+      // Save preference
       localStorage.setItem('userToggled', 'true');
       localStorage.setItem('prefersDarkMode', newIsDark);
       
-      // Also store in Chrome storage for persistence across devices
-      chrome.storage.sync.set({
-        themePreference: newIsDark ? 'dark' : 'light',
-        userToggled: 'true'
-      });
-      
-      // Apply theme properly with all style fixes
+      // Apply theme
       applyTheme(newIsDark);
       
-      // Show feedback with animation
+      // Update theme indicator
+      const themeIndicator = document.querySelector('.theme-indicator span strong');
+      if (themeIndicator) {
+        themeIndicator.textContent = newIsDark ? 'Dark Mode' : 'Light Mode';
+      }
+      
+      // Apply success styling to button
       const toggleButton = document.getElementById('toggleTheme');
       toggleButton.innerHTML = `
         <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; margin-right: 10px;">
@@ -1346,61 +1186,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         </svg>
         ${newIsDark ? 'Dark' : 'Light'} Mode Applied
       `;
-      
-      // Apply a success animation
       toggleButton.style.background = 'linear-gradient(135deg, rgba(52, 168, 83, 0.85), rgba(66, 133, 244, 0.75))';
-      
-      // Create and show a floating success message
-      const themeSuccess = document.createElement('div');
-      themeSuccess.className = 'theme-success';
-      themeSuccess.textContent = `${newIsDark ? 'Dark' : 'Light'} mode activated!`;
-      document.body.appendChild(themeSuccess);
-      
-      // Show the message with animation
-      setTimeout(() => {
-        themeSuccess.classList.add('show');
-      }, 10);
-      
-      // Close the popup after a brief delay to show feedback
-      setTimeout(() => {
-        document.body.removeChild(settingsPopup);
-        
-        // Remove the success message
-        setTimeout(() => {
-          themeSuccess.classList.remove('show');
-          setTimeout(() => {
-            if (document.body.contains(themeSuccess)) {
-              document.body.removeChild(themeSuccess);
-            }
-          }, 300);
-        }, 1000);
-      }, 800);
-    });
-    
-    // Add event listener for close button
-    document.getElementById('closeSettings').addEventListener('click', () => {
-      document.body.removeChild(settingsPopup);
-    });
-    
-    // Close when clicking outside
-    settingsPopup.addEventListener('click', (event) => {
-      if (event.target === settingsPopup) {
-        document.body.removeChild(settingsPopup);
-      }
     });
   });
   
-  // Set up recording button
-  const recordButton = document.getElementById('startRecording');
-  recordButton.addEventListener('click', async () => {
-    if (isRecording) {
-      await stopRecording();
-    } else {
-      await startRecording();
-    }
-  });
-  
-  // Create permission fix button but only show when needed
+  // Create permission fix button
   const permButton = document.createElement('button');
   permButton.id = 'fixPermissions';
   permButton.innerHTML = `
@@ -1411,7 +1201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   `;
   permButton.style.marginTop = '12px';
   permButton.style.backgroundColor = 'rgba(255, 122, 69, 0.85)';
-  permButton.style.display = 'none'; // Hidden by default, show only when needed
+  permButton.style.display = 'none'; // Hidden by default
   
   // Add click event
   permButton.addEventListener('click', openPermissionFix);
@@ -1419,18 +1209,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Add button to buttons div
   document.querySelector('.buttons').appendChild(permButton);
   
-  // Check microphone permission status and show button if needed
-  async function checkMicPermissionAndUpdateButton() {
+  // Check microphone permission
+  checkMicPermissionAndUpdateButton();
+
+  // Check for Chrome storage permission
+  const { microphonePermission } = await chrome.storage.sync.get(['microphonePermission']);
+  if (microphonePermission === 'granted') {
+    permButton.style.display = 'none';
+  } else {
+    // If permission not stored, check if we can detect it
     try {
-      // Try to get mic permission status from storage
-      const { microphonePermission } = await chrome.storage.sync.get(['microphonePermission']);
-      
-      if (microphonePermission === 'granted') {
-        permButton.style.display = 'none';
-        return;
-      }
-      
-      // If not found in storage, try to check permission state directly
       if (navigator.permissions && navigator.permissions.query) {
         const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
         
@@ -1441,33 +1229,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           permButton.style.display = 'block';
         }
-        
-        // Listen for permission changes
-        permissionStatus.onchange = () => {
-          permButton.style.display = 
-            permissionStatus.state === 'granted' ? 'none' : 'block';
-          
-          if (permissionStatus.state === 'granted') {
-            chrome.storage.sync.set({ microphonePermission: 'granted' });
-          }
-        };
-      } else {
-        // Fallback for browsers that don't support permissions API
-        permButton.style.display = 'block';
       }
     } catch (error) {
       console.error('Error checking mic permission:', error);
-      // Show button on error as fallback
-      permButton.style.display = 'block';
     }
   }
-  
-  // Run the check when popup opens
-  checkMicPermissionAndUpdateButton();
-  
-  // Initialize theme system
-  initializeTheme();
 });
+
+// Check microphone permission status and show button if needed
+async function checkMicPermissionAndUpdateButton() {
+  try {
+    // Try to get mic permission status from storage
+    const { microphonePermission } = await chrome.storage.sync.get(['microphonePermission']);
+    
+    if (microphonePermission === 'granted') {
+      const permButton = document.getElementById('fixPermissions');
+      if (permButton) {
+        permButton.style.display = 'none';
+      }
+      return;
+    }
+    
+    // If not found in storage, try to check permission state directly
+    if (navigator.permissions && navigator.permissions.query) {
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+      const permButton = document.getElementById('fixPermissions');
+      
+      if (permissionStatus.state === 'granted') {
+        if (permButton) {
+          permButton.style.display = 'none';
+        }
+        // Save status to storage
+        chrome.storage.sync.set({ microphonePermission: 'granted' });
+      } else {
+        if (permButton) {
+          permButton.style.display = 'block';
+        }
+      }
+      
+      // Listen for permission changes
+      permissionStatus.onchange = () => {
+        const permBtn = document.getElementById('fixPermissions');
+        if (permBtn) {
+          permBtn.style.display = 
+            permissionStatus.state === 'granted' ? 'none' : 'block';
+        }
+        
+        if (permissionStatus.state === 'granted') {
+          chrome.storage.sync.set({ microphonePermission: 'granted' });
+        }
+      };
+    }
+  } catch (error) {
+    console.error('Error checking mic permission:', error);
+  }
+}
 
 /**
  * Initialize theme based on user preference or system preference
