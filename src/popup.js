@@ -829,6 +829,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   
+  // Make the ghost microphone clickable for recording too
+  const ghostMic = document.getElementById('recording-animation');
+  if (ghostMic) {
+    ghostMic.addEventListener('click', async () => {
+      if (isRecording) {
+        await stopRecording();
+      } else {
+        await startRecording();
+      }
+    });
+  }
+  
   // Set up COPY BUTTON
   const copyButton = document.getElementById('copy-button');
   if (copyButton) {

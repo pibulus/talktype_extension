@@ -418,10 +418,21 @@
       filter: drop-shadow(0 1px 3px rgba(255, 255, 255, 0.1));
     }
     
-    /* Subtle hover effect on the ghost */
+    /* Enhanced hover effect on the ghost - purply glow */
     .recording-animation:hover .ghost-mic {
-      transform: scale(1.02);
-      filter: drop-shadow(0 2px 5px rgba(111, 66, 193, 0.2));
+      transform: scale(1.05);
+      filter: drop-shadow(0 3px 8px rgba(111, 66, 193, 0.5));
+    }
+    
+    /* Light mode hover fill */
+    .recording-animation:hover .ghost-mic {
+      fill: rgba(111, 66, 193, 0.7); /* Purply color on hover */
+      transition: all 0.3s ease;
+    }
+    
+    /* Dark mode hover fill */
+    .dark-theme .recording-animation:hover .ghost-mic {
+      fill: rgba(156, 126, 255, 0.8); /* Lighter purply color for dark mode */
     }
     
     /* Active state for the ghost */
@@ -721,7 +732,7 @@
   </div>
   
   <div id="recording-container">
-    <div id="recording-animation" class="recording-animation">
+    <div id="recording-animation" class="recording-animation" title="Click to start/stop recording">
       <svg class="ghost-mic" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
         <!-- Ghost body -->
         <path class="ghost-body" d="M513.404419,867.481567 
