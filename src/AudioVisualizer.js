@@ -25,8 +25,12 @@ class AudioVisualizer {
     // Determine device and set scaling factors
     const userAgent = navigator.userAgent;
     this.isAndroid = /Android/i.test(userAgent);
-    this.isiPhone = /iPhone/i.test(userAgent);
+    this.isiPhone = /iPhone|iPad/i.test(userAgent);
+    this.isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
     this.isMac = /Macintosh/i.test(userAgent);
+    
+    // Determine if we should use the fallback visualizer for Safari/iOS
+    this.useFallback = this.isiPhone || this.isSafari;
     
     // Set scaling factors - increased sensitivity
     if (this.isAndroid) {
@@ -246,17 +250,8 @@ class AudioVisualizer {
     if (this.recording) return;
     
     try {
-      // Initialize visualizer
+      // For both real and fallback visualizer, we need microphone permission
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
-      // Create analyzer with optimized settings for smoother visualization
-      this.analyser = this.audioContext.createAnalyser();
-      this.analyser.fftSize = 512;
-      this.analyser.smoothingTimeConstant = 0.7; // Balanced smoothing
-      
-      const source = this.audioContext.createMediaStreamSource(this.stream);
-      source.connect(this.analyser);
       this.recording = true;
       
       // Reset display properties
@@ -272,11 +267,36 @@ class AudioVisualizer {
       this.history = Array(this.historyLength).fill(initialLevel);
       this.prevLevels = Array(10).fill(initialLevel);
       
+      // Initialize audio analyzer if not using fallback
+      if (!this.useFallback) {
+        // Standard WebAudio API for compatible browsers
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = 512;
+        this.analyser.smoothingTimeConstant = 0.7; // Balanced smoothing
+        
+        const source = this.audioContext.createMediaStreamSource(this.stream);
+        source.connect(this.analyser);
+        
+        // Start standard animation
+        this.updateVisualizer();
+      } else {
+        // Safari/iOS fallback - use simulated visualizer
+        console.log('Using fallback visualizer for Safari/iOS');
+        
+        // Set up fallback data
+        this.fallbackBaseLevel = 15;
+        this.fallbackRange = 30;
+        this.fallbackVariation = 10;
+        this.fallbackSmoothing = 0.6;
+        this.fallbackLastValue = this.fallbackBaseLevel;
+        
+        // Start fallback animation
+        this.fallbackInterval = setInterval(() => this.updateFallbackVisualizer(), 100);
+      }
+      
       // Create initial bars with flowing animation
       this.updateBars(true);
-      
-      // Start animation
-      this.updateVisualizer();
       
       // Start recording timer
       this.recordingStartTime = Date.now();
@@ -302,8 +322,14 @@ class AudioVisualizer {
     // Immediately disable pointer events to prevent interaction conflicts
     this.visualizerWrapper.style.pointerEvents = 'none';
     
-    // Stop animation
-    cancelAnimationFrame(this.animationFrameId);
+    // Stop appropriate animation type
+    if (!this.useFallback) {
+      // Stop standard WebAudio visualizer
+      cancelAnimationFrame(this.animationFrameId);
+    } else {
+      // The interval will detect this.recording = false and fade out naturally
+      // We don't immediately clear the interval to allow for fade out animation
+    }
     
     // Stop timer
     clearInterval(this.timerInterval);
@@ -311,7 +337,6 @@ class AudioVisualizer {
     
     // Reset audio data
     this.audioLevel = 0;
-    this.history = [];
     this.prevLevels = [];
     
     // Remove all bars after fade completes
@@ -324,13 +349,23 @@ class AudioVisualizer {
       this.visualizerWrapper.style.display = 'none';
       this.visualizerWrapper.style.zIndex = '-1';
       
-      // Close audio context and stop stream
+      // Clear fallback interval if it exists
+      if (this.fallbackInterval) {
+        clearInterval(this.fallbackInterval);
+        this.fallbackInterval = null;
+      }
+      
+      // Reset history array
+      this.history = [];
+      
+      // Close audio context and stop stream for standard visualizer
       if (this.audioContext) {
         this.audioContext.close();
         this.audioContext = null;
         this.analyser = null;
       }
       
+      // Always stop the audio stream
       if (this.stream) {
         this.stream.getTracks().forEach(track => track.stop());
         this.stream = null;
@@ -361,6 +396,7 @@ class AudioVisualizer {
     }
   }
   
+  // Standard WebAudio API visualizer implementation
   updateVisualizer() {
     if (!this.recording || !this.analyser) return;
     
@@ -432,6 +468,58 @@ class AudioVisualizer {
     this.updateBars();
     
     this.animationFrameId = requestAnimationFrame(this.updateVisualizer.bind(this));
+  }
+  
+  // Safari/iOS fallback visualizer implementation
+  updateFallbackVisualizer() {
+    if (!this.recording) {
+      // If we're not recording, fade out the bars gradually
+      if (this.history.some(level => level > 2)) {
+        this.history = this.history.map(level => level * 0.9);
+        this.updateBars();
+      } else {
+        clearInterval(this.fallbackInterval);
+      }
+      return;
+    }
+    
+    // Generate speech-like pattern with random peaks
+    // Simulate the waveform of natural speech
+    
+    // Calculate trend (whether we're going up or down in volume)
+    const trendDirection = Math.random() > 0.5 ? 1 : -1;
+    const trendMagnitude = Math.random() * this.fallbackVariation;
+    
+    // Calculate random component for natural variations
+    const randomComponent = (Math.random() * 2 - 1) * this.fallbackVariation * 0.5;
+    
+    // Apply natural smoothing to previous value for continuity
+    let newLevel = this.fallbackLastValue * this.fallbackSmoothing + 
+                  (1 - this.fallbackSmoothing) * (
+                    this.fallbackBaseLevel + 
+                    trendDirection * trendMagnitude + 
+                    randomComponent
+                  );
+    
+    // Occasionally add speech "peaks" to simulate speech patterns
+    if (Math.random() < 0.12) { // 12% chance of a peak
+      newLevel += Math.random() * this.fallbackRange * 0.7;
+    }
+    
+    // Ensure we stay within reasonable visualization bounds
+    newLevel = Math.max(5, Math.min(this.maxLevelCap, newLevel));
+    
+    // Save for next iteration
+    this.fallbackLastValue = newLevel;
+    
+    // Add to history and limit length
+    this.history = [newLevel, ...this.history];
+    if (this.history.length > this.historyLength) {
+      this.history = this.history.slice(0, this.historyLength);
+    }
+    
+    // Update the visualization
+    this.updateBars();
   }
   
   updateBars(initialAnimation = false) {
