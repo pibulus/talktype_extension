@@ -21,7 +21,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["permission-dialog.js", "audio-service.js", "api-service.js", "content.js"],
+      "js": ["permission-dialog.js", "audio-service.js", "api-service.js", "AudioVisualizer.js", "content.js"],
       "css": ["styles.css"],
       "run_at": "document_start"
     }
@@ -55,7 +55,8 @@
         "icons/icon_white/*",
         "styles.css",
         "audio-service.js",
-        "api-service.js"
+        "api-service.js",
+        "AudioVisualizer.js"
       ],
       "matches": ["<all_urls>"]
     }

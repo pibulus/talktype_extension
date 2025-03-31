@@ -3,6 +3,7 @@
 // Global variables
 let audioService = null;
 let apiService = null;
+let audioVisualizer = null;
 let isRecording = false;
 let recordingTimeout = null;
 const MAX_RECORDING_TIME = 30000; // 30 seconds
@@ -49,6 +50,12 @@ async function startRecording() {
   transcriptionContainer.style.display = 'block';
   const transcriptionText = document.getElementById('transcription-text');
   transcriptionText.textContent = '';
+  transcriptionText.style.display = 'none'; // Hide text container while visualizer is active
+  
+  // Start audio visualizer
+  if (audioVisualizer) {
+    audioVisualizer.start();
+  }
   
   // Hide copy button when starting a new recording
   const copyButtonWrapper = document.getElementById('copy-button-wrapper');
@@ -227,6 +234,11 @@ async function stopRecording() {
   const recordingAnimation = document.getElementById('recording-animation');
   const transcriptionText = document.getElementById('transcription-text');
   
+  // Stop audio visualizer
+  if (audioVisualizer) {
+    audioVisualizer.stop();
+  }
+  
   try {
     // Hide recording animation
     recordingAnimation.classList.remove('active');
@@ -289,6 +301,7 @@ async function stopRecording() {
     transcriptionText.style.opacity = '0';
     transcriptionText.style.transition = 'opacity 0.3s ease';
     transcriptionText.textContent = transcription || 'No speech detected.';
+    transcriptionText.style.display = 'block'; // Show text container
     
     // Force reflow to ensure animation works
     transcriptionText.offsetHeight;
@@ -839,6 +852,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Apply theme based on user preference or system preference
   initializeTheme();
+  
+  // Initialize audio visualizer
+  audioVisualizer = new AudioVisualizer(document.getElementById('transcription-container'));
+  
+  // Set click-to-stop callback
+  audioVisualizer.setStopRecordingCallback(() => {
+    if (isRecording) {
+      stopRecording();
+    }
+  });
   
   // Set up RECORD BUTTON
   const recordButton = document.getElementById('startRecording');
