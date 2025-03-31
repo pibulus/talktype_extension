@@ -26,24 +26,27 @@ class AudioVisualizer {
     this.isiPhone = /iPhone/i.test(userAgent);
     this.isMac = /Macintosh/i.test(userAgent);
     
-    // Set scaling factors based on device
+    // Set scaling factors based on device - SIGNIFICANTLY REDUCED SENSITIVITY
     if (this.isAndroid) {
-      this.scalingFactor = 35; // Slightly increased sensitivity
-      this.offset = 80;
-      this.exponent = 0.45;
+      this.scalingFactor = 80; // Much lower sensitivity
+      this.offset = 60;
+      this.exponent = 0.6;
     } else if (this.isiPhone) {
-      this.scalingFactor = 35;
-      this.offset = 80;
-      this.exponent = 0.2;
+      this.scalingFactor = 80;
+      this.offset = 60;
+      this.exponent = 0.3;
     } else if (this.isMac) {
-      this.scalingFactor = 18; // Slightly increased sensitivity
-      this.offset = 100;
-      this.exponent = 0.45;
+      this.scalingFactor = 60; // Much lower sensitivity
+      this.offset = 75;
+      this.exponent = 0.6;
     } else {
-      this.scalingFactor = 1800; // Increased sensitivity
-      this.offset = 80;
-      this.exponent = 0.45;
+      this.scalingFactor = 5000; // Much lower sensitivity
+      this.offset = 60;
+      this.exponent = 0.6;
     }
+    
+    // Cap for max level percentage (to avoid constant peaking)
+    this.maxLevelCap = 85; // Cap at 85% height
     
     this.frameSkipCounter = 0;
     this.frameSkipRate = 1; // Reduced for smoother animation
@@ -89,8 +92,8 @@ class AudioVisualizer {
       }
     }, 1000);
     
-    // Initialize history with random values to warm up animations
-    this.history = Array(this.historyLength).fill(0).map(() => Math.random() * 5);
+    // Initialize history with calmer random values
+    this.history = Array(this.historyLength).fill(0).map(() => Math.random() * 3 + 2); // Much lower initial values
   }
   
   createElements() {
@@ -218,11 +221,11 @@ class AudioVisualizer {
       /* Flowing initial animation */
       @keyframes flow-up {
         0% { height: 0%; opacity: 0.7; }
-        20% { height: 30%; opacity: 0.85; }
-        40% { height: 20%; opacity: 0.9; }
-        60% { height: 35%; opacity: 0.95; }
-        80% { height: 25%; opacity: 0.97; }
-        100% { height: 30%; opacity: 1; }
+        20% { height: 15%; opacity: 0.85; }
+        40% { height: 10%; opacity: 0.9; }
+        60% { height: 18%; opacity: 0.95; }
+        80% { height: 12%; opacity: 0.97; }
+        100% { height: 15%; opacity: 1; }
       }
       
       .history-bar.flow-up {
@@ -248,7 +251,7 @@ class AudioVisualizer {
       // Create analyzer with optimized settings for smoother visualization
       this.analyser = this.audioContext.createAnalyser();
       this.analyser.fftSize = 512; // Higher for more detailed frequency data
-      this.analyser.smoothingTimeConstant = 0.7; // Smooth frequency transitions
+      this.analyser.smoothingTimeConstant = 0.8; // Higher smoothing for less reactivity
       
       const source = this.audioContext.createMediaStreamSource(this.stream);
       source.connect(this.analyser);
@@ -258,7 +261,7 @@ class AudioVisualizer {
       this.visualizerWrapper.style.opacity = '1';
       
       // Initialize history and previous levels for smooth animation
-      const initialLevel = 20; // Start with a slight level
+      const initialLevel = 10; // Start with a slight level (lowered)
       this.history = Array(this.historyLength).fill(initialLevel);
       this.prevLevels = Array(10).fill(initialLevel); // For smoother transitions
       
@@ -362,42 +365,55 @@ class AudioVisualizer {
     // Process audio data with slightly more weight on mid-range frequencies
     // that are more common in speech
     let sum = 0;
-    for (let i = 0; i < bufferLength; i++) {
+    let totalWeight = 0;
+    
+    // Process only lower half of frequencies (better for speech) to reduce overreaction
+    const usableBufferLength = Math.floor(bufferLength * 0.5);
+    
+    for (let i = 0; i < usableBufferLength; i++) {
       // Apply bell curve weighting to emphasize mid frequencies (more common in speech)
-      const weight = Math.exp(-0.5 * Math.pow((i - bufferLength/3) / (bufferLength/4), 2));
-      sum += this.audioDataArray[i] * weight;
+      // while de-emphasizing higher frequencies that often cause peaks
+      const weight = Math.exp(-0.5 * Math.pow((i - usableBufferLength/4) / (usableBufferLength/4), 2));
+      
+      // Strong reduction in level for higher frequencies to prevent overreaction
+      const frequencyDamping = i < usableBufferLength/2 ? 1 : 0.5;
+      
+      sum += this.audioDataArray[i] * weight * frequencyDamping;
+      totalWeight += weight * frequencyDamping;
     }
     
-    let linearLevel = Math.max(0, sum / bufferLength + this.offset);
+    let linearLevel = Math.max(0, sum / totalWeight + this.offset);
     let nonLinearLevel = Math.pow(linearLevel, this.exponent);
     let rawLevel = Math.max(
       0,
-      Math.min(100, nonLinearLevel * (100 / Math.pow(this.scalingFactor, this.exponent)))
+      Math.min(this.maxLevelCap, nonLinearLevel * (100 / Math.pow(this.scalingFactor, this.exponent)))
     );
     
-    // Use previous levels for smoother transitions
+    // Use previous levels for smoother transitions with extra smoothing
     this.prevLevels.unshift(rawLevel);
     this.prevLevels = this.prevLevels.slice(0, 10); // Keep last 10 values
     
-    // Apply smoothing for a more flowing effect
+    // Apply extra smoothing for a much more gentle flow
     const smoothed = this.prevLevels.reduce((sum, level, i, arr) => {
-      // More recent values have higher weight
-      const weight = (arr.length - i) / arr.length;
+      // More recent values have higher weight but with stronger smoothing
+      const weight = (arr.length - i) / (arr.length * 1.5); // Reduced weight factor
       return sum + (level * weight);
-    }, 0) / this.prevLevels.reduce((sum, _, i, arr) => sum + ((arr.length - i) / arr.length), 0);
+    }, 0) / this.prevLevels.reduce((sum, _, i, arr) => sum + ((arr.length - i) / (arr.length * 1.5)), 0);
     
-    this.audioLevel = smoothed;
+    // Apply additional dampening to avoid excessive jumping
+    const dampeningFactor = 0.8; // Stronger dampening
+    this.audioLevel = this.audioLevel * (1 - dampeningFactor) + smoothed * dampeningFactor;
     
-    // Add slight random variation to some values for a more organic, water-like effect
+    // Add very slight random variation to some values for a subtle water-like effect
     const levelWithVariation = this.history.map(level => {
-      // 30% chance to add slight variation
-      if (Math.random() < 0.3) {
-        return level + (Math.random() * 3 - 1.5); // +/- 1.5%
+      // 20% chance to add slight variation (reduced from 30%)
+      if (Math.random() < 0.2) {
+        return level + (Math.random() * 2 - 1); // +/- 1% (reduced from 1.5%)
       }
       return level;
     });
     
-    // Update history with new level and apply some organic variation
+    // Update history with new level and apply subtle organic variation
     this.history = [this.audioLevel, ...levelWithVariation];
     if (this.history.length > this.historyLength) {
       this.history = this.history.slice(0, this.historyLength);
@@ -425,12 +441,12 @@ class AudioVisualizer {
       } else {
         bar.className = 'history-bar';
         
-        // Assign color class based on level
-        if (level < 25) {
+        // Assign color class based on level - adjusted thresholds for less peaking
+        if (level < 20) {
           bar.classList.add('low');
-        } else if (level < 50) {
+        } else if (level < 40) {
           bar.classList.add('medium');
-        } else if (level < 75) {
+        } else if (level < 60) {
           bar.classList.add('high');
         } else {
           bar.classList.add('peak');
