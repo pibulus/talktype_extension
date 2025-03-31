@@ -52,6 +52,10 @@ async function startRecording() {
   transcriptionText.textContent = '';
   transcriptionText.style.display = 'none'; // Hide text container while visualizer is active
   
+  // Reset any previous editable state
+  transcriptionText.style.pointerEvents = 'none';
+  transcriptionText.setAttribute('contenteditable', 'false');
+  
   // Start audio visualizer
   if (audioVisualizer) {
     audioVisualizer.start();
@@ -302,6 +306,17 @@ async function stopRecording() {
     transcriptionText.style.transition = 'opacity 0.3s ease';
     transcriptionText.textContent = transcription || 'No speech detected.';
     transcriptionText.style.display = 'block'; // Show text container
+    transcriptionText.style.pointerEvents = 'auto'; // Ensure it's interactive
+    transcriptionText.style.position = 'relative'; // Ensure proper stacking
+    transcriptionText.style.zIndex = '10'; // Higher than visualizer
+    
+    // Make the text selectable and editable with no outline
+    transcriptionText.setAttribute('contenteditable', 'true');
+    transcriptionText.style.userSelect = 'text';
+    transcriptionText.style.cursor = 'text';
+    transcriptionText.style.outline = 'none';
+    transcriptionText.style.border = 'none';
+    transcriptionText.style.boxShadow = 'none';
     
     // Force reflow to ensure animation works
     transcriptionText.offsetHeight;

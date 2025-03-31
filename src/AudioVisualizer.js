@@ -10,7 +10,7 @@ class AudioVisualizer {
     this.animationFrameId = null;
     this.audioLevel = 0;
     this.history = []; // Array to store audio level history
-    this.historyLength = 40; // More bars for smoother appearance
+    this.historyLength = 30; // Moderate number of bars for balanced flow speed
     this.analyser = null;
     this.audioContext = null;
     this.recording = false;
@@ -19,6 +19,8 @@ class AudioVisualizer {
     this.timerInterval = null;
     this.statusElement = document.getElementById('status');
     this.prevLevels = []; // Store previous levels for smoothing
+    this.updateFrequency = 3; // Update every 3 frames for slower, more gentle movement
+    this.frameCount = 0;
     
     // Determine device and set scaling factors
     const userAgent = navigator.userAgent;
@@ -26,30 +28,30 @@ class AudioVisualizer {
     this.isiPhone = /iPhone/i.test(userAgent);
     this.isMac = /Macintosh/i.test(userAgent);
     
-    // Set scaling factors - MEDIUM SENSITIVITY (between original and last version)
+    // Set scaling factors - increased sensitivity
     if (this.isAndroid) {
-      this.scalingFactor = 55; // Medium sensitivity
+      this.scalingFactor = 42; // Even more sensitive (reduced from 48)
       this.offset = 70;
-      this.exponent = 0.5;
+      this.exponent = 0.43; // Slightly reduced for higher sensitivity
     } else if (this.isiPhone) {
-      this.scalingFactor = 55;
-      this.offset = 70;
-      this.exponent = 0.25;
+      this.scalingFactor = 42; // More sensitive (reduced from 48)
+      this.offset = 72;
+      this.exponent = 0.23; // Slightly reduced for higher sensitivity
     } else if (this.isMac) {
-      this.scalingFactor = 40; // Medium sensitivity
+      this.scalingFactor = 28; // Even more sensitive (reduced from 32)
       this.offset = 85;
-      this.exponent = 0.5;
+      this.exponent = 0.43; // Slightly reduced for higher sensitivity
     } else {
-      this.scalingFactor = 3500; // Medium sensitivity
-      this.offset = 70;
-      this.exponent = 0.5;
+      this.scalingFactor = 2500; // Even more sensitive (reduced from 2800)
+      this.offset = 72;
+      this.exponent = 0.43; // Slightly reduced for higher sensitivity
     }
     
-    // Cap for max level percentage to avoid constant peaking
-    this.maxLevelCap = 90; // Allow slightly higher peaks
+    // Cap for max level percentage
+    this.maxLevelCap = 95; // Allow higher peaks for more expression
     
     this.frameSkipCounter = 0;
-    this.frameSkipRate = 1; 
+    this.frameSkipRate = 1;
     this.smoothingFactor = 0.7;
     
     // Create containers
@@ -105,8 +107,8 @@ class AudioVisualizer {
       height: 100%;
       z-index: 5;
       opacity: 0;
-      transition: opacity 0.3s ease-out;
-      pointer-events: auto;
+      transition: opacity 0.4s ease-out;
+      pointer-events: auto; /* Allow interaction only during recording */
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -155,7 +157,7 @@ class AudioVisualizer {
       }
     });
     
-    // Add styles for bars with smoother color flow
+    // Add styles for bars with enhanced flow
     const style = document.createElement('style');
     style.textContent = `
       .history-bar {
@@ -164,29 +166,55 @@ class AudioVisualizer {
         background: linear-gradient(
           to top,
           #ff7eb3,
-          #a368ed 60%,
+          #b368ed 50%,
           #7b68ee
         );
-        transition: height 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+        transition: height 0.3s cubic-bezier(0.34, 1.12, 0.64, 1); /* Smoother and slightly faster */
         border-radius: 4px 4px 0 0;
         margin-right: 0;
-        filter: blur(0.5px);
-        opacity: 0.92;
+        filter: blur(0.8px); /* Slight blur for smoother appearance */
+        opacity: 0.9;
       }
       
-      /* Wavy animation for some bars */
-      @keyframes slight-wave {
+      /* Wavy animation for bars with different phases */
+      @keyframes wave-1 {
         0%, 100% { transform: translateY(0); }
-        25% { transform: translateY(-1px); }
-        75% { transform: translateY(1px); }
+        30% { transform: translateY(-2.5px); }
+        70% { transform: translateY(2.5px); }
       }
       
-      .history-bar.wavy {
-        animation: slight-wave 2s infinite ease-in-out;
+      @keyframes wave-2 {
+        0%, 100% { transform: translateY(1.2px); }
+        50% { transform: translateY(-1.8px); }
       }
       
-      .history-bar.wavy-slow {
-        animation: slight-wave 3.5s infinite ease-in-out;
+      @keyframes wave-3 {
+        0%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-2px); }
+        75% { transform: translateY(2px); }
+      }
+      
+      @keyframes wave-4 {
+        0%, 100% { transform: translateY(-0.5px); }
+        35% { transform: translateY(1.5px); }
+        65% { transform: translateY(-1px); }
+      }
+      
+      /* Slower wave animations for more gentle flow */
+      .history-bar.wave-1 {
+        animation: wave-1 6.5s infinite ease-in-out; /* Slowed down even more */
+      }
+      
+      .history-bar.wave-2 {
+        animation: wave-2 7.8s infinite ease-in-out; /* Slowed down even more */
+      }
+      
+      .history-bar.wave-3 {
+        animation: wave-3 7.2s infinite ease-in-out; /* Slowed down even more */
+      }
+      
+      .history-bar.wave-4 {
+        animation: wave-4 5.9s infinite ease-in-out; /* Slowed down even more */
       }
       
       /* Dark theme support */
@@ -197,15 +225,13 @@ class AudioVisualizer {
       /* Flowing initial animation */
       @keyframes flow-up {
         0% { height: 0%; opacity: 0.7; }
-        20% { height: 20%; opacity: 0.85; }
-        40% { height: 15%; opacity: 0.9; }
-        60% { height: 25%; opacity: 0.95; }
-        80% { height: 18%; opacity: 0.97; }
+        40% { height: 20%; opacity: 0.85; }
+        70% { height: 18%; opacity: 0.95; }
         100% { height: 22%; opacity: 1; }
       }
       
       .history-bar.flow-up {
-        animation: flow-up 1.2s ease-out forwards;
+        animation: flow-up 1.7s ease-out forwards; /* Balanced initial animation speed */
       }
     `;
     document.head.appendChild(style);
@@ -227,17 +253,22 @@ class AudioVisualizer {
       // Create analyzer with optimized settings for smoother visualization
       this.analyser = this.audioContext.createAnalyser();
       this.analyser.fftSize = 512;
-      this.analyser.smoothingTimeConstant = 0.75; // Slightly less smoothing
+      this.analyser.smoothingTimeConstant = 0.7; // Balanced smoothing
       
       const source = this.audioContext.createMediaStreamSource(this.stream);
       source.connect(this.analyser);
       this.recording = true;
       
+      // Reset display properties
+      this.visualizerWrapper.style.display = 'flex';
+      this.visualizerWrapper.style.zIndex = '5';
+      this.visualizerWrapper.style.pointerEvents = 'auto';
+      
       // Show visualizer with fade-in
       this.visualizerWrapper.style.opacity = '1';
       
       // Initialize history and previous levels for smooth animation
-      const initialLevel = 15; // Start with moderate level
+      const initialLevel = 18;
       this.history = Array(this.historyLength).fill(initialLevel);
       this.prevLevels = Array(10).fill(initialLevel);
       
@@ -268,6 +299,9 @@ class AudioVisualizer {
     // Fade out visualizer
     this.visualizerWrapper.style.opacity = '0';
     
+    // Immediately disable pointer events to prevent interaction conflicts
+    this.visualizerWrapper.style.pointerEvents = 'none';
+    
     // Stop animation
     cancelAnimationFrame(this.animationFrameId);
     
@@ -285,6 +319,10 @@ class AudioVisualizer {
       while (this.visualizerElement.firstChild) {
         this.visualizerElement.removeChild(this.visualizerElement.firstChild);
       }
+      
+      // Ensure the wrapper is completely hidden and non-interactive
+      this.visualizerWrapper.style.display = 'none';
+      this.visualizerWrapper.style.zIndex = '-1';
       
       // Close audio context and stop stream
       if (this.audioContext) {
@@ -326,13 +364,15 @@ class AudioVisualizer {
   updateVisualizer() {
     if (!this.recording || !this.analyser) return;
     
-    // Process animation frame
-    this.frameSkipCounter++;
-    if (this.frameSkipCounter < this.frameSkipRate) {
+    // Increment frame counter
+    this.frameCount++;
+    
+    // Only update every few frames to moderate the movement
+    // Faster than before, but still keeps some smoothness
+    if (this.frameCount % Math.max(1, this.updateFrequency - 1) !== 0) { // Reduced from 2 to 1 for more updates
       this.animationFrameId = requestAnimationFrame(this.updateVisualizer.bind(this));
       return;
     }
-    this.frameSkipCounter = 0;
     
     const bufferLength = this.analyser.frequencyBinCount;
     this.audioDataArray = new Float32Array(bufferLength);
@@ -343,14 +383,14 @@ class AudioVisualizer {
     let totalWeight = 0;
     
     // Process frequencies with a focus on speech range
-    const usableBufferLength = Math.floor(bufferLength * 0.6); // Use slightly more frequencies
+    const usableBufferLength = Math.floor(bufferLength * 0.65); // Use more frequencies for better response
     
     for (let i = 0; i < usableBufferLength; i++) {
-      // Apply weighting to emphasize speech frequencies 
-      const weight = Math.exp(-0.5 * Math.pow((i - usableBufferLength/4) / (usableBufferLength/3), 2));
+      // Apply weighting to emphasize speech frequencies with broader range
+      const weight = Math.exp(-0.45 * Math.pow((i - usableBufferLength/4) / (usableBufferLength/3), 2)); // Less aggressive curve
       
-      // Modest reduction for higher frequencies
-      const frequencyDamping = i < usableBufferLength/2 ? 1 : 0.7; // Less aggressive damping
+      // Even less damping on higher frequencies for better reactivity to all sounds
+      const frequencyDamping = i < usableBufferLength/2 ? 1 : 0.9; // Higher value = more sensitivity
       
       sum += this.audioDataArray[i] * weight * frequencyDamping;
       totalWeight += weight * frequencyDamping;
@@ -367,17 +407,22 @@ class AudioVisualizer {
     this.prevLevels.unshift(rawLevel);
     this.prevLevels = this.prevLevels.slice(0, 10);
     
-    // Apply smoothing for a flowing effect
+    // Apply minimal smoothing for an even more flowing effect with better reactivity 
     const smoothed = this.prevLevels.reduce((sum, level, i, arr) => {
-      const weight = (arr.length - i) / (arr.length * 1.2); // Smoother weighting
+      const weight = (arr.length - i) / (arr.length * 1.05); // Even less smoothing for more reactivity
       return sum + (level * weight);
-    }, 0) / this.prevLevels.reduce((sum, _, i, arr) => sum + ((arr.length - i) / (arr.length * 1.2)), 0);
+    }, 0) / this.prevLevels.reduce((sum, _, i, arr) => sum + ((arr.length - i) / (arr.length * 1.05)), 0);
     
-    // Apply moderate dampening
-    const dampeningFactor = 0.65; // Less dampening
+    // Apply reduced dampening for more reactivity and flow
+    const dampeningFactor = 0.45; // Even lower dampening = faster, more reactive response
     this.audioLevel = this.audioLevel * (1 - dampeningFactor) + smoothed * dampeningFactor;
     
-    // Update history with new level and apply minimal organic variation
+    // Add enhanced random variation to some values for a more natural, flowing look
+    if (Math.random() < 0.15) { // 15% chance (increased from 10%)
+      this.audioLevel += (Math.random() * 2.5 - 1.2); // Slightly larger variation for more organic movement
+    }
+    
+    // Update history with new level
     this.history = [this.audioLevel, ...this.history];
     if (this.history.length > this.historyLength) {
       this.history = this.history.slice(0, this.historyLength);
@@ -405,16 +450,21 @@ class AudioVisualizer {
       } else {
         bar.className = 'history-bar';
         
-        // Add wavy animation to some bars for more fluid look
-        // Every 5th bar gets a slow wave, every 8th gets a regular wave
-        if (index % 8 === 0) {
-          bar.classList.add('wavy');
-        } else if (index % 5 === 0) {
-          bar.classList.add('wavy-slow');
+        // Give each bar a wave animation based on its position
+        // This creates a more natural flowing effect with different phases
+        // Using 4 different wave patterns for more organic movement
+        if (index % 4 === 0) {
+          bar.classList.add('wave-1');
+        } else if (index % 4 === 1) {
+          bar.classList.add('wave-2');
+        } else if (index % 4 === 2) {
+          bar.classList.add('wave-3');
+        } else {
+          bar.classList.add('wave-4');
         }
       }
       
-      // Adjust width for more bars
+      // Wider bars for smoother appearance
       const barWidth = 100 / this.historyLength;
       
       bar.style.height = initialAnimation ? '0%' : `${level}%`;
