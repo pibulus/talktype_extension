@@ -479,13 +479,26 @@
       }
     }
     
-    /* Ghost's eyes animation - only blinks in active state */
-    .recording-animation.active .ghost-eyes {
-      animation: blink 4s infinite;
+    /* Ghost's eyes animation - blinks in both states */
+    .recording-animation .ghost-eyes {
+      /* No default animation - will be added via JavaScript for randomness */
     }
     
-    @keyframes blink {
+    .recording-animation.active .ghost-eyes {
+      animation: active-blink 4s infinite;
+    }
+    
+    .recording-animation .ghost-eyes.idle-blink {
+      animation: idle-blink 0.2s;
+    }
+    
+    @keyframes active-blink {
       0%, 45%, 55%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    
+    @keyframes idle-blink {
+      0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
     

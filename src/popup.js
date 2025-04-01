@@ -874,6 +874,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize audio visualizer
   audioVisualizer = new AudioVisualizer(document.getElementById('transcription-container'));
   
+  // Add random blinking to ghost in idle state
+  const ghostEyes = document.querySelector('.ghost-eyes');
+  if (ghostEyes) {
+    // Function to trigger a random blink
+    const triggerRandomBlink = () => {
+      // Only blink if not recording
+      if (!isRecording) {
+        ghostEyes.classList.add('idle-blink');
+        
+        // Remove class after animation completes
+        setTimeout(() => {
+          ghostEyes.classList.remove('idle-blink');
+        }, 200); // Animation duration
+        
+        // Schedule next blink with random delay (between 4-15 seconds)
+        const nextBlinkDelay = 4000 + Math.random() * 11000;
+        setTimeout(triggerRandomBlink, nextBlinkDelay);
+      } else {
+        // If recording started, check again in a few seconds
+        setTimeout(triggerRandomBlink, 5000);
+      }
+    };
+    
+    // Start the random blinking with initial delay
+    setTimeout(triggerRandomBlink, 2000 + Math.random() * 3000);
+  }
+  
   // Set click-to-stop callback
   audioVisualizer.setStopRecordingCallback(() => {
     if (isRecording) {
