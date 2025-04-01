@@ -173,7 +173,7 @@ class AudioVisualizer {
           #b368ed 50%,
           #7b68ee
         );
-        transition: height 0.3s cubic-bezier(0.34, 1.12, 0.64, 1); /* Smoother and slightly faster */
+        transition: height 0.45s cubic-bezier(0.25, 0.1, 0.25, 1); /* Smoother transition for more fluid animation */
         border-radius: 4px 4px 0 0;
         margin-right: 0;
         filter: blur(0.8px); /* Slight blur for smoother appearance */
@@ -449,8 +449,8 @@ class AudioVisualizer {
       return sum + (level * weight);
     }, 0) / this.prevLevels.reduce((sum, _, i, arr) => sum + ((arr.length - i) / (arr.length * 1.05)), 0);
     
-    // Apply reduced dampening for more reactivity and flow
-    const dampeningFactor = 0.45; // Even lower dampening = faster, more reactive response
+    // Apply increased dampening for smoother, more fluid movement
+    const dampeningFactor = 0.65; // Higher dampening = smoother, less reactive response
     this.audioLevel = this.audioLevel * (1 - dampeningFactor) + smoothed * dampeningFactor;
     
     // Add enhanced random variation to some values for a more natural, flowing look
@@ -483,27 +483,27 @@ class AudioVisualizer {
       return;
     }
     
-    // Generate speech-like pattern with random peaks
+    // Generate smoother speech-like pattern with more gentle peaks
     // Simulate the waveform of natural speech
     
     // Calculate trend (whether we're going up or down in volume)
     const trendDirection = Math.random() > 0.5 ? 1 : -1;
     const trendMagnitude = Math.random() * this.fallbackVariation;
     
-    // Calculate random component for natural variations
-    const randomComponent = (Math.random() * 2 - 1) * this.fallbackVariation * 0.5;
+    // Calculate smoother random component for natural variations
+    const randomComponent = (Math.random() * 2 - 1) * this.fallbackVariation * 0.3; // Reduced randomness for smoothness
     
-    // Apply natural smoothing to previous value for continuity
-    let newLevel = this.fallbackLastValue * this.fallbackSmoothing + 
-                  (1 - this.fallbackSmoothing) * (
+    // Apply increased smoothing to previous value for more fluid continuity
+    let newLevel = this.fallbackLastValue * (this.fallbackSmoothing + 0.1) + // Increased smoothing
+                  (1 - (this.fallbackSmoothing + 0.1)) * (
                     this.fallbackBaseLevel + 
                     trendDirection * trendMagnitude + 
                     randomComponent
                   );
     
-    // Occasionally add speech "peaks" to simulate speech patterns
-    if (Math.random() < 0.12) { // 12% chance of a peak
-      newLevel += Math.random() * this.fallbackRange * 0.7;
+    // Occasionally add gentler speech "peaks" to simulate speech patterns
+    if (Math.random() < 0.1) { // 10% chance of a peak (reduced from 12%)
+      newLevel += Math.random() * this.fallbackRange * 0.5; // Reduced peak heights for smoother appearance
     }
     
     // Ensure we stay within reasonable visualization bounds
