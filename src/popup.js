@@ -56,18 +56,8 @@ async function startRecording() {
   transcriptionText.style.pointerEvents = 'none';
   transcriptionText.setAttribute('contenteditable', 'false');
   
-  // Get the ghost eyes element for special animation
-  const ghostElement = document.querySelector('.ghost-eyes');
-  
-  // Add special blink animation when recording starts (50% chance)
-  if (ghostElement && Math.random() > 0.5) {
-    ghostElement.classList.add('start-recording-blink');
-    
-    // Remove the animation class after it completes
-    setTimeout(() => {
-      ghostElement.classList.remove('start-recording-blink');
-    }, 700); // Same duration as the animation
-  }
+  // We no longer need special animation on recording start
+  // The original animation looks good as is
   
   // Start audio visualizer
   if (audioVisualizer) {

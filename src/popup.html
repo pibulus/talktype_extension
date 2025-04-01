@@ -479,36 +479,14 @@
       }
     }
     
-    /* Ghost's eyes animation - always blinks but at different rates */
-    .recording-animation .ghost-eyes {
-      animation: idle-blink 8s infinite;
-    }
-    
+    /* Ghost's eyes animation - only blinks in active state */
     .recording-animation.active .ghost-eyes {
-      animation: active-blink 4s infinite;
+      animation: blink 4s infinite;
     }
     
-    @keyframes idle-blink {
+    @keyframes blink {
       0%, 45%, 55%, 100% { opacity: 1; }
       50% { opacity: 0; }
-      /* Random extra blinks */
-      72%, 74% { opacity: 0; }
-      73% { opacity: 1; }
-    }
-    
-    @keyframes active-blink {
-      0%, 45%, 55%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-    
-    /* Special blink animation at start of recording */
-    .start-recording-blink {
-      animation: quick-double-blink 0.7s !important;
-    }
-    
-    @keyframes quick-double-blink {
-      0%, 30%, 50%, 70%, 100% { opacity: 1; }
-      20%, 60% { opacity: 0; }
     }
     
     .mic-icon {
