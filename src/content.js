@@ -101,6 +101,10 @@ function initializeExtensionCore() {
       console.log('TalkType: Setting up DOM mutation observer');
       observeDynamicInputs();
       
+      // Initialize focus tracking for contextual transcription
+      console.log('TalkType: Initializing focus tracking for contextual mode');
+      initializeFocusTracking();
+      
       console.log('TalkType: Extension initialized successfully');
       
       // Check for browser mic support as an early diagnostic
@@ -116,6 +120,9 @@ function initializeExtensionCore() {
         console.warn('TalkType: No API key found in storage.');
         showStatusNotification('Please set your API key in the extension options.', 'warning');
       }
+      
+      // Initialize focus tracking for contextual transcription
+      initializeFocusTracking();
     } catch (initError) {
       console.error('TalkType: Error during service initialization:', initError);
       showStatusNotification('Error initializing speech services: ' + initError.message, 'error');
@@ -2280,4 +2287,318 @@ function showStatusNotification(message, type = 'info') {
   }
   
   return notification;
+}
+
+// Keep track of processed request IDs to avoid duplication
+const processedRequests = new Set();
+
+// Enhanced input validation that checks if the input is usable
+function isValidAndAccessibleInput(element) {
+  // First check if it's a valid text input type
+  if (!isValidTextInputElement(element)) {
+    console.log('TalkType: Element is not a valid text input type');
+    return false;
+  }
+  
+  // Make sure element still exists in the DOM
+  if (!document.contains(element)) {
+    console.log('TalkType: Element is no longer in the DOM');
+    return false;
+  }
+  
+  // Check if the element is visible
+  if (element.offsetParent === null && getComputedStyle(element).display !== 'contents') {
+    // Note: offsetParent is null for elements with display:none, fixed, or hidden parents
+    // We make an exception for display:contents which is a legitimate case
+    console.log('TalkType: Element is not visible');
+    return false;
+  }
+  
+  // Check if the element is enabled and not read-only
+  if (element.disabled || element.readOnly) {
+    console.log('TalkType: Element is disabled or read-only');
+    return false;
+  }
+  
+  // If it has a form, check if the form is disabled
+  if (element.form && element.form.disabled) {
+    console.log('TalkType: Element form is disabled');
+    return false;
+  }
+  
+  // For inputs and textareas, ensure they're not hidden by type
+  if (element.tagName === 'INPUT' && element.type === 'hidden') {
+    console.log('TalkType: Input is of type hidden');
+    return false;
+  }
+  
+  // Check if element is in a modal or on top layer
+  // This is a heuristic and may need adjustment for specific sites
+  const zIndex = parseInt(getComputedStyle(element).zIndex) || 0;
+  const parentElements = [];
+  let parent = element.parentElement;
+  
+  // Build array of parent elements
+  while (parent) {
+    parentElements.push(parent);
+    parent = parent.parentElement;
+  }
+  
+  // Check if any parent has a very high z-index, indicating a modal
+  const isInModal = parentElements.some(p => {
+    const pZIndex = parseInt(getComputedStyle(p).zIndex) || 0;
+    return pZIndex > 100; // Arbitrary threshold
+  });
+  
+  console.log('TalkType: Element z-index:', zIndex, 'isInModal:', isInModal);
+  
+  return true; // If we've made it here, the input is valid and accessible
+}
+
+// Function to track focused input elements for contextual transcription
+function initializeFocusTracking() {
+  console.log('TalkType: Initializing focus tracking for contextual transcription');
+  
+  // Track focus events on the entire document
+  document.addEventListener('focusin', (event) => {
+    // Check if the focused element is a text input
+    if (isValidTextInputElement(event.target)) {
+      console.log('TalkType: Text input focused:', event.target);
+      activeInput = event.target;
+      
+      // For debugging
+      console.log('TalkType: Active input set with properties:', {
+        tagName: activeInput.tagName,
+        id: activeInput.id || '(no id)',
+        class: activeInput.className || '(no class)'
+      });
+    }
+  });
+  
+  // Track when inputs lose focus
+  document.addEventListener('focusout', (event) => {
+    // Only clear if this is the active input
+    if (activeInput === event.target) {
+      console.log('TalkType: Text input lost focus');
+      // Don't immediately clear - keep reference for a short time in case popup activates
+      setTimeout(() => {
+        // Check if focus moved to another input or is truly gone
+        if (activeInput === event.target && 
+            document.activeElement !== activeInput &&
+            !isValidTextInputElement(document.activeElement)) {
+          console.log('TalkType: Clearing active input reference after delay');
+          activeInput = null;
+        } else {
+          console.log('TalkType: Focus changed but keeping active input reference');
+        }
+      }, 1000); // Longer delay to ensure popup has time to process
+    }
+  });
+  
+  // Setup message listener if not already added
+  if (!window.talkTypeMessageListenerAdded) {
+    window.talkTypeMessageListenerAdded = true;
+    
+    // Listen for messages from the extension popup and background script
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      console.log('TalkType: Received message:', request);
+      
+      try {
+        if (request.action === 'confirmStopRecording') {
+          // Background script is requesting confirmation for stopping recording
+          const message = request.message || 'Stop recording and transcribe the captured audio?';
+          
+          // Create a more descriptive confirmation dialog
+          const confirmed = confirm(message + '\n\nSelecting "OK" will stop recording and transcribe what has been recorded so far.');
+          sendResponse(confirmed);
+          return true;
+        }
+        else if (request.action === 'stopRecording') {
+          // Background script is requesting to stop recording
+          // Forward this message to the popup if it's open
+          chrome.runtime.sendMessage({ action: 'forceStopRecording' })
+            .catch(err => {
+              // If the popup isn't open, this will fail, which is fine
+              console.log('TalkType: Unable to forward stop recording to popup:', err);
+            });
+          sendResponse({ success: true });
+          return true;
+        }
+        else if (request.action === 'getActiveInput') {
+          // Return info about the currently focused input element
+          const hasActiveInput = activeInput !== null;
+          console.log('TalkType: Popup requested active input status:', hasActiveInput);
+          
+          let response = {
+            hasActiveInput: hasActiveInput,
+            inputInfo: null
+          };
+          
+          if (hasActiveInput) {
+            response.inputInfo = {
+              type: activeInput.tagName,
+              id: activeInput.id || '(no id)',
+              className: activeInput.className || '(no class)'
+            };
+          }
+          
+          console.log('TalkType: Sending response:', response);
+          sendResponse(response);
+          return true;
+        }
+        else if (request.action === 'insertTranscription') {
+          // Check if this is a duplicate request we've already processed
+          const requestId = request.requestId || 'no-id';
+          
+          if (processedRequests.has(requestId)) {
+            console.log('TalkType: Ignoring duplicate request:', requestId);
+            sendResponse({ 
+              success: false, 
+              error: 'Duplicate request', 
+              isDuplicate: true 
+            });
+            return true;
+          }
+          
+          // Add this request to our processed set
+          processedRequests.add(requestId);
+          
+          // Cleanup old request IDs to prevent memory leaks (keep only last 10)
+          if (processedRequests.size > 10) {
+            const toRemove = Array.from(processedRequests).slice(0, processedRequests.size - 10);
+            toRemove.forEach(id => processedRequests.delete(id));
+          }
+          
+          // Popup is requesting to insert transcription text into the focused input
+          console.log('TalkType: Processing transcription request (ID:', requestId, '):', request.text?.substring(0, 20) + '...');
+          
+          // Use a flag to track if insertion was successful
+          let insertionHandled = false;
+          let responseData = { success: false, error: 'Unknown error' };
+          
+          // We're getting multiple insertions, so let's be very deliberate about our approach
+          // Only try insertion once, and be very cautious about how we do it
+          
+          // Track if we've attempted insertion
+          let insertionAttempted = false;
+          
+          // First, check if we have an active input and it's valid
+          if (activeInput && isValidAndAccessibleInput(activeInput) && !insertionHandled && !insertionAttempted) {
+            insertionAttempted = true; // Mark that we've tried an insertion
+            console.log('TalkType: Using tracked active input for insertion');
+            
+            try {
+              // Focus the input first to ensure it's ready for insertion
+              activeInput.focus();
+              
+              // Do the insertion with ONE simple method only - no multiple attempts
+              if (activeInput.tagName === 'TEXTAREA' || 
+                  (activeInput.tagName === 'INPUT' && 
+                   (activeInput.type === 'text' || activeInput.type === 'search' || !activeInput.type))) {
+                
+                // For standard inputs, use ONLY simple value insertion - nothing else
+                const currentValue = activeInput.value || '';
+                activeInput.value = currentValue + request.text;
+                activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                console.log('TalkType: Text inserted via direct value assignment ONLY');
+                insertionHandled = true;
+                responseData = { success: true, method: 'direct-value' };
+              } 
+              else if (activeInput.isContentEditable || activeInput.getAttribute('contenteditable') === 'true') {
+                // For contentEditable elements, use ONLY execCommand - nothing else
+                activeInput.focus();
+                document.execCommand('insertText', false, request.text);
+                console.log('TalkType: Text inserted via execCommand for contentEditable ONLY');
+                insertionHandled = true;
+                responseData = { success: true, method: 'exec-command' };
+              }
+              
+              // For all other element types - which should be rare - don't try insertion
+              // This avoids the triple text issue by preventing fallback to complex methods
+              if (!insertionHandled) {
+                console.log('TalkType: Unsupported input type - not attempting insertion');
+                responseData = { success: false, error: 'Unsupported input type' };
+              }
+            } catch (insertError) {
+              console.error('TalkType: Error inserting text:', insertError);
+              responseData = { 
+                success: false, 
+                error: 'Error inserting text: ' + insertError.message
+              };
+            }
+          }
+          
+          // Only try fallback if we haven't already handled insertion and haven't attempted insertion yet
+          if (!insertionHandled && !insertionAttempted) {
+            insertionAttempted = true; // Mark that we've tried an insertion
+            
+            // Try to use document.activeElement as a fallback, but only if different from activeInput
+            const fallbackInput = document.activeElement;
+            
+            if (fallbackInput && fallbackInput !== activeInput && 
+                isValidAndAccessibleInput(fallbackInput)) {
+              
+              console.log('TalkType: Using document.activeElement as fallback');
+              
+              try {
+                // Use ONLY the simplest insertion method to avoid duplication - no alternatives
+                if (fallbackInput.tagName === 'TEXTAREA' || 
+                    (fallbackInput.tagName === 'INPUT' && 
+                    (fallbackInput.type === 'text' || fallbackInput.type === 'search' || !fallbackInput.type))) {
+                  
+                  // For standard inputs, use ONLY simple value insertion
+                  const currentValue = fallbackInput.value || '';
+                  fallbackInput.value = currentValue + request.text;
+                  fallbackInput.dispatchEvent(new Event('input', { bubbles: true }));
+                  
+                  console.log('TalkType: Text inserted via direct fallback value assignment ONLY');
+                  insertionHandled = true;
+                  responseData = { success: true, method: 'fallback-direct-value' };
+                } 
+                else if (fallbackInput.isContentEditable || fallbackInput.getAttribute('contenteditable') === 'true') {
+                  // For contentEditable elements, use ONLY execCommand
+                  fallbackInput.focus();
+                  document.execCommand('insertText', false, request.text);
+                  console.log('TalkType: Text inserted via execCommand for contentEditable fallback ONLY');
+                  insertionHandled = true;
+                  responseData = { success: true, method: 'fallback-exec-command' };
+                }
+                else {
+                  // Don't attempt insertion for other types
+                  console.log('TalkType: Unsupported fallback input type - not attempting insertion');
+                  responseData = { success: false, error: 'Unsupported fallback input type' };
+                }
+              } catch (fallbackError) {
+                console.error('TalkType: Error inserting text in fallback:', fallbackError);
+                responseData = { 
+                  success: false, 
+                  error: 'Fallback insertion error: ' + fallbackError.message
+                };
+              }
+            } else {
+              console.warn('TalkType: No valid fallback input found for insertion');
+              responseData = { success: false, error: 'No valid input element found' };
+            }
+          }
+          
+          // Send the response
+          sendResponse(responseData);
+          return true; // Ensure we return true for async response
+        } else {
+          console.warn('TalkType: Unknown action received:', request.action);
+          sendResponse({ success: false, error: 'Unknown action' });
+        }
+      } catch (error) {
+        console.error('TalkType: Error processing message:', error);
+        sendResponse({ 
+          success: false, 
+          error: 'Error processing message: ' + error.message 
+        });
+      }
+      
+      // Return true to indicate we'll respond asynchronously
+      return true;
+    });
+  }
 }

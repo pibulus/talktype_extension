@@ -1421,7 +1421,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set click-to-stop callback
   audioVisualizer.setStopRecordingCallback(() => {
     if (isRecording) {
-      stopRecording();
+      stopRecording(false); // No confirmation needed when clicking on visualizer
     }
   });
   
@@ -1429,7 +1429,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const recordButton = document.getElementById('startRecording');
   recordButton.addEventListener('click', async () => {
     if (isRecording) {
-      await stopRecording();
+      await stopRecording(false); // No confirmation needed when clicking stop button directly
     } else {
       await startRecording();
     }
@@ -1440,7 +1440,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (ghostMic) {
     ghostMic.addEventListener('click', async () => {
       if (isRecording) {
-        await stopRecording();
+        await stopRecording(false); // No confirmation needed when clicking directly on ghost mic
       } else {
         await startRecording();
       }
