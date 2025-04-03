@@ -6,7 +6,6 @@ let apiService = null;
 let audioVisualizer = null;
 let isRecording = false;
 let recordingTimeout = null;
-let countdownInterval = null; // New global variable for countdown timer
 let activeTabInput = null; // Track active input on the current tab
 let contextualMode = false; // Flag for contextual transcription mode
 const MAX_RECORDING_TIME = 30000; // 30 seconds
@@ -44,56 +43,6 @@ function openOptions() {
   chrome.runtime.openOptionsPage();
 }
 
-// Start a countdown timer for recording
-function startRecordingCountdown(statusElement) {
-  // Clear any existing interval
-  if (countdownInterval) {
-    clearInterval(countdownInterval);
-  }
-  
-  let secondsRemaining = MAX_RECORDING_TIME / 1000; // Convert ms to seconds
-  
-  // Update the status immediately with initial time
-  const minutes = Math.floor(secondsRemaining / 60);
-  const seconds = secondsRemaining % 60;
-  const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  
-  statusElement.innerHTML = `
-    <div class="status-indicator status-recording">
-      <span class="pulse-dot"></span>
-      <span class="status-text">Recording: ${formattedTime}</span>
-    </div>
-  `;
-  
-  // Start the interval to update the countdown
-  countdownInterval = setInterval(() => {
-    // Only update if we're still recording
-    if (!isRecording) {
-      clearInterval(countdownInterval);
-      return;
-    }
-    
-    secondsRemaining--;
-    
-    // Format the time as minutes:seconds
-    const minutes = Math.floor(secondsRemaining / 60);
-    const seconds = secondsRemaining % 60;
-    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    
-    // Update the status text
-    statusElement.innerHTML = `
-      <div class="status-indicator status-recording">
-        <span class="pulse-dot"></span>
-        <span class="status-text">Recording: ${formattedTime}</span>
-      </div>
-    `;
-    
-    // If we've reached 0, stop the countdown (recording will be auto-stopped by timeout)
-    if (secondsRemaining <= 0) {
-      clearInterval(countdownInterval);
-    }
-  }, 1000);
-}
 
 // Start recording immediately
 async function startRecording() {
@@ -173,8 +122,13 @@ async function startRecording() {
       Stop Recording
     `;
     
-    // Start the countdown timer instead of a static recording message
-    startRecordingCountdown(statusElement);
+    // Update status
+    statusElement.innerHTML = `
+      <div class="status-indicator status-recording">
+        <span class="pulse-dot"></span>
+        <span class="status-text">Recording...</span>
+      </div>
+    `;
     
     // Hide settings button while recording
     const settingsButton = document.getElementById('options');
@@ -392,12 +346,6 @@ async function stopRecording() {
     recordingTimeout = null;
   }
   
-  // Clear countdown interval
-  if (countdownInterval) {
-    clearInterval(countdownInterval);
-    countdownInterval = null;
-  }
-  
   const statusElement = document.getElementById('status');
   const recordButton = document.getElementById('startRecording');
   const recordingAnimation = document.getElementById('recording-animation');
@@ -412,9 +360,9 @@ async function stopRecording() {
     // Hide recording animation
     recordingAnimation.classList.remove('active');
     
-    // Use a static processing message instead of a random one
-    const processingMessage = "Processing";
-    statusElement.innerHTML = `<div class="status-indicator status-processing"><span class="pulse-dot"></span><span class="status-text">${processingMessage}...</span></div>`;
+    // Update status indicator with a random fun message
+    const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
+    statusElement.innerHTML = `<div class="status-indicator status-processing"><span class="pulse-dot"></span><span class="status-text">${randomMessage}...</span></div>`;
     
     // Stop recording and get audio data
     const audioBlob = await audioService.stopRecording();
@@ -726,15 +674,15 @@ function transformButtonToProgressBar(button) {
   button.classList.add('button-progress-container');
   button.disabled = true;
   
-  // Create progress structure with a static message
-  const processingMessage = "Processing";
+  // Create progress structure with a random fun message
+  const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
   button.innerHTML = `
     <div id="progress-bar" class="button-progress-bar"></div>
     <div class="button-progress-content">
       <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path fill="currentColor" d="M6 2l12 10-12 10V2z"/>
       </svg>
-      <span>${processingMessage}...</span>
+      <span>${randomMessage}...</span>
     </div>
   `;
   
@@ -754,6 +702,7 @@ function transformButtonToProgressBar(button) {
 // Start fake progress animation
 function startFakeProgressAnimation() {
   let fakeProgress = 0;
+  let lastMessageUpdateTime = Date.now();
   
   window.progressInterval = setInterval(() => {
     if (fakeProgress < 30) {
@@ -777,19 +726,27 @@ function startFakeProgressAnimation() {
     if (progressBar) {
       progressBar.style.width = fakeProgress + '%';
       
-      // We no longer update messages to avoid conflicts with countdown timer
-      // Just keep the static "Processing..." message
+      // Occasionally update the message (every ~2.5 seconds)
+      const now = Date.now();
+      if (now - lastMessageUpdateTime > 2500) {
+        const messageElement = document.querySelector('.button-progress-content span');
+        if (messageElement) {
+          const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
+          messageElement.textContent = `${randomMessage}...`;
+        }
+        lastMessageUpdateTime = now;
+      }
     }
   }, 40); // Slightly slower interval for smoother animation
 }
 
-// Show transcribing status with a static message
+// Show transcribing status with animation and random fun messages
 function showTranscribingStatus(container, randomMessage = false) {
   // Update the status to indicate processing is happening
   const statusElement = document.getElementById('status');
   if (statusElement) {
-    // Use a static message to avoid conflicts with countdown
-    const message = "Processing";
+    // Always choose a random fun message
+    const message = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
     
     statusElement.innerHTML = `
       <div class="status-indicator status-processing">
