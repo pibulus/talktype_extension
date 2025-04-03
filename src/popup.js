@@ -553,11 +553,8 @@ async function stopRecording() {
     recordButton.disabled = false;
     recordButton.classList.remove('button-progress-container');
     
-    // Show settings button again
-    const settingsButton = document.getElementById('options');
-    if (settingsButton) {
-      settingsButton.style.display = 'block';
-    }
+    // Keep settings button hidden to maintain layout consistency
+    // Once recording has been attempted, we don't show settings button again
   }
 }
 
@@ -823,11 +820,8 @@ function completeProgressAnimation() {
             }
           });
           
-          // Make settings button visible again
-          const settingsButton = document.getElementById('options');
-          if (settingsButton) {
-            settingsButton.style.display = 'block';
-          }
+          // Keep settings button permanently hidden after first recording
+          // This maintains layout stability and prevents UI shifts
         }
       }, 1200); // Slightly longer delay to ensure user sees "Complete" state
     }, 800); // Wait for animation to complete
