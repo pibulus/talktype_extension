@@ -751,6 +751,114 @@
       transform: translateX(-50%) translateY(-15px);
       opacity: 1;
     }
+    
+    /* Contextual Mode Badge Styles */
+    .context-badge {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 14px;
+      background: rgba(230, 230, 240, 0.5);
+      margin: 10px 0;
+      position: relative;
+      border: 1px solid rgba(111, 66, 193, 0.2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+    
+    .dark-theme .context-badge {
+      background: rgba(60, 60, 80, 0.5);
+      border-color: rgba(111, 66, 193, 0.3);
+    }
+    
+    .context-badge:hover {
+      background: rgba(230, 230, 240, 0.7);
+      border-color: rgba(111, 66, 193, 0.3);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(111, 66, 193, 0.1);
+    }
+    
+    .dark-theme .context-badge:hover {
+      background: rgba(70, 70, 90, 0.6);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .context-badge.active {
+      background: rgba(111, 66, 193, 0.15);
+      border-color: rgba(111, 66, 193, 0.4);
+      box-shadow: 0 3px 12px rgba(111, 66, 193, 0.15);
+    }
+    
+    .dark-theme .context-badge.active {
+      background: rgba(111, 66, 193, 0.3);
+      border-color: rgba(111, 66, 193, 0.5);
+      box-shadow: 0 3px 12px rgba(111, 66, 193, 0.2);
+    }
+    
+    .context-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      color: rgba(111, 66, 193, 0.7);
+      background: rgba(111, 66, 193, 0.08);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    
+    .context-badge:hover .context-icon {
+      transform: scale(1.1);
+      background: rgba(111, 66, 193, 0.12);
+    }
+    
+    .context-badge.active .context-icon {
+      background: rgba(111, 66, 193, 0.2);
+      color: rgba(111, 66, 193, 0.9);
+    }
+    
+    .dark-theme .context-icon {
+      background: rgba(111, 66, 193, 0.15);
+      color: rgba(156, 126, 255, 0.9);
+    }
+    
+    .dark-theme .context-badge:hover .context-icon {
+      background: rgba(111, 66, 193, 0.25);
+    }
+    
+    .dark-theme .context-badge.active .context-icon {
+      background: rgba(111, 66, 193, 0.3);
+      color: rgba(156, 126, 255, 1);
+    }
+    
+    .context-tooltip {
+      flex: 1;
+      color: var(--text-primary);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .context-tooltip strong {
+      margin-bottom: 3px;
+      color: rgba(111, 66, 193, 0.9);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .dark-theme .context-tooltip strong {
+      color: rgba(156, 126, 255, 0.9);
+    }
+    
+    .context-tooltip span {
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--text-secondary);
+    }
   </style>
 </head>
 <body>
@@ -764,6 +872,33 @@
         <span class="pulse-dot"></span>
         <span class="status-text">Ready</span>
       </div>
+    </div>
+  </div>
+  
+  <!-- Context Mode Badge -->
+  <div id="contextual-mode-badge" class="context-badge" style="display: none;">
+    <span class="context-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+        <path fill="currentColor" d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"></path>
+      </svg>
+    </span>
+    <div id="contextual-tooltip" class="context-tooltip">
+      <strong>Standard mode</strong>
+      <span>Text will appear in this popup</span>
+    </div>
+  </div>
+  
+  <!-- Auto-Record Badge -->
+  <div id="auto-record-badge" class="context-badge" style="display: none; margin-top: 5px;">
+    <span class="context-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+        <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+      </svg>
+    </span>
+    <div class="auto-record-tooltip context-tooltip">
+      <strong>Auto-record</strong>
+      <span>Auto-record disabled</span>
     </div>
   </div>
   

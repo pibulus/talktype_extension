@@ -8,6 +8,7 @@ let isRecording = false;
 let recordingTimeout = null;
 let activeTabInput = null; // Track active input on the current tab
 let contextualMode = false; // Flag for contextual transcription mode
+let autoRecordEnabled = false; // Flag for auto-record on popup open
 const MAX_RECORDING_TIME = 30000; // 30 seconds
 
 // Fun processing messages - used in multiple places
@@ -35,6 +36,52 @@ async function checkApiKey() {
     recordButton.classList.remove('disabled');
     recordButton.disabled = false;
     return true;
+  }
+}
+
+// Check if auto-record is enabled
+async function checkAutoRecord() {
+  try {
+    const result = await chrome.storage.sync.get(['autoRecord']);
+    autoRecordEnabled = result.autoRecord === true;
+    console.log('Auto-record enabled:', autoRecordEnabled);
+    
+    // Update UI to reflect current setting
+    const autoRecordBadge = document.getElementById('auto-record-badge');
+    if (autoRecordBadge) {
+      if (autoRecordEnabled) {
+        autoRecordBadge.classList.add('active');
+        autoRecordBadge.querySelector('.auto-record-tooltip span').textContent = 'Auto-record enabled';
+      } else {
+        autoRecordBadge.classList.remove('active');
+        autoRecordBadge.querySelector('.auto-record-tooltip span').textContent = 'Auto-record disabled';
+      }
+    }
+    
+    return autoRecordEnabled;
+  } catch (error) {
+    console.error('Error checking auto-record setting:', error);
+    return false;
+  }
+}
+
+// Toggle auto-record setting
+async function toggleAutoRecord() {
+  try {
+    autoRecordEnabled = !autoRecordEnabled;
+    await chrome.storage.sync.set({ autoRecord: autoRecordEnabled });
+    
+    // Update UI
+    await checkAutoRecord();
+    
+    // Show feedback
+    showStatusNotification(`Auto-record ${autoRecordEnabled ? 'enabled' : 'disabled'}`, 'info');
+    
+    return autoRecordEnabled;
+  } catch (error) {
+    console.error('Error toggling auto-record:', error);
+    showStatusNotification('Failed to update setting', 'error');
+    return false;
   }
 }
 
@@ -1097,7 +1144,7 @@ function updateContextualModeUI(isContextual) {
       if (tooltip) {
         tooltip.innerHTML = `
           <strong>Smart mode active</strong>
-          <span>Text will be inserted directly into the selected field</span>
+          <span>Text inserts into selected field</span>
         `;
       }
     }
@@ -1109,7 +1156,7 @@ function updateContextualModeUI(isContextual) {
     if (tooltip) {
       tooltip.innerHTML = `
         <strong>Standard mode</strong>
-        <span>Text will appear in this popup</span>
+        <span>Text appears in popup</span>
       `;
     }
   }
@@ -1136,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.style.opacity = '1';
   
   // Check API key in parallel with rendering
-  checkApiKey();
+  const hasApiKey = await checkApiKey();
   
   // Apply theme based on user preference or system preference
   initializeTheme();
@@ -1149,6 +1196,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeTabInput = null;
     contextualMode = false;
     // No need to show notification on initial load
+  }
+  
+  // Check for auto-record setting
+  const autoRecordBadge = document.getElementById('auto-record-badge');
+  if (autoRecordBadge) {
+    autoRecordBadge.style.display = 'flex';
+    
+    // Check auto-record setting
+    const isAutoRecordEnabled = await checkAutoRecord();
+    
+    // Setup click handler for auto-record badge
+    autoRecordBadge.addEventListener('click', toggleAutoRecord);
+    
+    // Start recording automatically if enabled and API key is set
+    if (isAutoRecordEnabled && hasApiKey && !isRecording) {
+      console.log('Auto-recording enabled, starting recording...');
+      // Use a small delay to allow UI to initialize first
+      setTimeout(() => {
+        startRecording();
+      }, 300);
+    }
   }
   
   // Setup context badge click handler
