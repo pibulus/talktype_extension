@@ -41,11 +41,12 @@
       width: 320px;
       min-height: 320px; /* Reduced minimum height */
       height: auto; /* Let it adjust to content */
-      max-height: 450px; /* Cap maximum height */
+      max-height: 600px; /* Increased maximum height to accommodate long transcriptions */
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      overflow: hidden; /* Prevent scrolling */
+      overflow-x: hidden; /* Prevent horizontal scrolling */
+      overflow-y: auto; /* Allow vertical scrolling when content exceeds max height */
     }
     
     body {
@@ -506,13 +507,15 @@
       padding: 14px; /* Slightly more padding */
       margin-top: 8px; /* Reduced margin */
       min-height: 70px; /* Smaller min-height */
-      max-height: 170px; /* Increased max-height for longer content */
+      max-height: 300px; /* Significantly increased max-height for longer content */
       overflow-y: auto;
       color: var(--text-primary);
       font-size: 14px;
       transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
       position: relative;
+      height: auto; /* Allow height to adjust to content */
+      overflow-y: hidden; /* Start with no scroll, will show when needed */
     }
     
     /* Add subtle background gradient to the container */
@@ -555,11 +558,14 @@
       color: var(--text-primary);
       position: relative;
       z-index: 1;
-      max-height: 120px;
+      max-height: 250px; /* Increase max height for more text */
       overflow-y: auto;
       padding-right: 30px; /* More room for copy button */
       scrollbar-width: thin; /* Firefox */
       scrollbar-color: rgba(111, 66, 193, 0.3) rgba(255, 255, 255, 0.1); /* Firefox */
+      white-space: pre-wrap; /* Ensure line breaks and spacing are preserved */
+      overflow-wrap: break-word; /* Break words that would overflow */
+      word-wrap: break-word; /* Legacy support */
     }
     
     /* Custom scrollbar for webkit browsers */

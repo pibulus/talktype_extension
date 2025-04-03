@@ -252,6 +252,46 @@ async function stopRecording() {
     // Complete the progress animation
     completeProgressAnimation();
     
+    // Dynamically adjust the transcription container height based on content
+    const adjustTranscriptionContainer = (text) => {
+      const transcriptionContainer = document.getElementById('transcription-container');
+      const transcriptionText = document.getElementById('transcription-text');
+      
+      if (!transcriptionContainer || !transcriptionText) return;
+      
+      // Reset any previous inline styles to get natural height
+      transcriptionText.style.maxHeight = '';
+      
+      // Set the text content first
+      transcriptionText.textContent = text || 'No speech detected.';
+      
+      // Calculate optimal height based on content
+      const textHeight = transcriptionText.scrollHeight;
+      const maxHeight = 250; // Match CSS max-height value
+      
+      // Set an appropriate max-height
+      if (textHeight > maxHeight) {
+        // If content is larger than max height, enable scrolling
+        transcriptionText.style.maxHeight = `${maxHeight}px`;
+        transcriptionText.style.overflowY = 'auto';
+        
+        // Ensure the container expands to max allowed height
+        transcriptionContainer.style.height = 'auto';
+        transcriptionContainer.style.overflowY = 'auto';
+      } else {
+        // If content fits, disable scrolling and set exact height
+        transcriptionText.style.maxHeight = `${textHeight}px`;
+        transcriptionText.style.overflowY = 'hidden';
+        
+        // Adjust container height to fit content exactly
+        transcriptionContainer.style.height = 'auto';
+        transcriptionContainer.style.overflowY = 'hidden';
+      }
+      
+      // Force reflow to ensure animation works
+      transcriptionContainer.offsetHeight;
+    };
+    
     // Try to insert text into the active input field if in smart mode
     if (smartModeEnabled && hasActiveInput && transcription && transcription.trim()) {
       try {
@@ -284,11 +324,13 @@ async function stopRecording() {
             // Show success indicator
             statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Inserted</span></div>';
             
-            // Still show the text in the popup
+            // Still show the text in the popup with dynamic height adjustment
             transcriptionText.style.opacity = '0';
             transcriptionText.style.transition = 'opacity 0.3s ease';
-            transcriptionText.textContent = transcription;
-            transcriptionText.offsetHeight; // Force reflow
+            
+            // Apply dynamic height adjustment
+            adjustTranscriptionContainer(transcription);
+            
             transcriptionText.style.opacity = '1';
             
             // Show copy button
@@ -338,13 +380,12 @@ async function stopRecording() {
       }
     }, 3000);
     
-    // Animate the transcription text
+    // Animate the transcription text with dynamic height
     transcriptionText.style.opacity = '0';
     transcriptionText.style.transition = 'opacity 0.3s ease';
-    transcriptionText.textContent = transcription || 'No speech detected.';
     
-    // Force reflow to ensure animation works
-    transcriptionText.offsetHeight;
+    // Apply dynamic height adjustment
+    adjustTranscriptionContainer(transcription);
     
     // Show with animation
     transcriptionText.style.opacity = '1';
