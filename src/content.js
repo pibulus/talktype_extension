@@ -8,6 +8,7 @@ let apiService = null;
 let isRecording = false;
 let activeInput = null;
 let apiKey = ''; // This should be set through extension options
+let smartModeEnabled = true; // Default to enabled
 
 // Initialize immediately AND ensure it runs on all DOM changes
 console.log('TalkType content script loading...');
@@ -68,7 +69,7 @@ function initializeExtensionCore() {
   }
   
   // Get API key directly from storage for more reliable access
-  chrome.storage.sync.get(['apiKey'], function(result) {
+  chrome.storage.sync.get(['apiKey', 'smartModeEnabled'], function(result) {
     if (chrome.runtime.lastError) {
       console.error('TalkType: Error accessing storage:', chrome.runtime.lastError);
       showStatusNotification('Error accessing extension storage. Try reloading the page.', 'error');
@@ -77,6 +78,12 @@ function initializeExtensionCore() {
     
     console.log('TalkType: Got API key from storage:', result.apiKey ? 'Valid key' : 'Empty key');
     apiKey = result.apiKey || '';
+    
+    // Get smart mode setting if available
+    if (result.smartModeEnabled !== undefined) {
+      smartModeEnabled = result.smartModeEnabled;
+      console.log('TalkType: Smart Mode setting loaded:', smartModeEnabled);
+    }
     
     // Initialize services - even with empty API key to allow detection of inputs
     try {
@@ -96,6 +103,10 @@ function initializeExtensionCore() {
       // Initialize input detection - do this regardless of API key status
       console.log('TalkType: Initializing input detection');
       initializeInputDetection();
+      
+      // Initialize focus tracking for smart mode
+      console.log('TalkType: Initializing focus tracking for smart mode');
+      initializeFocusTracking();
       
       // Add observer to detect dynamically added inputs
       console.log('TalkType: Setting up DOM mutation observer');
@@ -174,6 +185,64 @@ window.addEventListener('load', () => {
     initializeInputDetection();
   }, 1000);
 });
+
+// Function to initialize focus tracking for smart mode
+function initializeFocusTracking() {
+  console.log('TalkType: Initializing focus tracking for contextual transcription');
+  
+  // Track focus events on the entire document
+  document.addEventListener('focusin', (event) => {
+    // Check if the focused element is a text input
+    if (isValidTextInputElement(event.target)) {
+      console.log('TalkType: Text input focused:', event.target);
+      activeInput = event.target;
+      
+      // For debugging
+      console.log('TalkType: Active input set with properties:', {
+        tagName: activeInput.tagName,
+        id: activeInput.id || '(no id)',
+        class: activeInput.className || '(no class)'
+      });
+      
+      // Notify popup about active input change if smart mode is enabled
+      if (smartModeEnabled) {
+        chrome.runtime.sendMessage({
+          action: 'activeInputChanged',
+          hasActiveInput: true,
+          inputInfo: {
+            type: activeInput.tagName,
+            id: activeInput.id || '(no id)',
+            className: activeInput.className || '(no class)'
+          }
+        });
+      }
+    }
+  });
+  
+  // Track when inputs lose focus
+  document.addEventListener('focusout', (event) => {
+    // Only clear if this is the active input losing focus
+    if (activeInput === event.target) {
+      // Use a small delay to allow for clicking within the same input
+      // or switching quickly between inputs
+      setTimeout(() => {
+        // Check if a new focus event happened during the delay
+        if (activeInput === event.target) {
+          console.log('TalkType: Active input lost focus, clearing');
+          activeInput = null;
+          
+          // Notify popup that no input is active
+          if (smartModeEnabled) {
+            chrome.runtime.sendMessage({
+              action: 'activeInputChanged',
+              hasActiveInput: false
+            });
+          }
+        }
+      }, 100);
+    }
+  });
+}
 
 // Function to initialize input detection
 function initializeInputDetection() {
@@ -2109,4 +2178,105 @@ function showStatusNotification(message, type = 'info') {
   }
   
   return notification;
+}
+
+// Add message listener for smart mode functionality
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  try {
+    if (request.action === 'checkActiveInput') {
+      // Return info about the currently focused input element
+      const hasActiveInput = activeInput !== null && smartModeEnabled;
+      console.log('TalkType: Popup requested active input status:', hasActiveInput);
+      
+      let response = {
+        hasActiveInput: hasActiveInput,
+        inputInfo: null
+      };
+      
+      if (hasActiveInput) {
+        response.inputInfo = {
+          type: activeInput.tagName,
+          id: activeInput.id || '(no id)',
+          className: activeInput.className || '(no class)'
+        };
+      }
+      
+      console.log('TalkType: Sending response:', response);
+      sendResponse(response);
+      return true;
+    }
+    else if (request.action === 'insertTranscription') {
+      // Popup is requesting to insert transcription text into the focused input
+      const text = request.text || '';
+      console.log('TalkType: Received request to insert transcription:', text.substring(0, 30) + (text.length > 30 ? '...' : ''));
+      const success = insertTranscriptionIntoActiveInput(text);
+      sendResponse({ success });
+      return true;
+    }
+    else if (request.action === 'toggleSmartMode') {
+      // Update smart mode setting
+      smartModeEnabled = request.enabled;
+      // Save to storage for persistence
+      chrome.storage.sync.set({ smartModeEnabled: smartModeEnabled });
+      console.log('TalkType: Smart mode toggled to:', smartModeEnabled);
+      sendResponse({ success: true });
+      return true;
+    }
+  } catch (error) {
+    console.error('TalkType: Error processing message:', error);
+    sendResponse({ 
+      success: false, 
+      error: 'Error processing message: ' + error.message 
+    });
+  }
+  
+  // Return true to indicate we'll respond asynchronously
+  return true;
+});
+
+// Function to insert transcription into active input element
+function insertTranscriptionIntoActiveInput(text) {
+  if (!activeInput) {
+    console.error('TalkType: No active input to insert transcription into');
+    showStatusNotification('Error: No active input element', 'error');
+    return false;
+  }
+  
+  try {
+    if (activeInput.isContentEditable) {
+      // For contentEditable elements (like in Gmail, Google Docs, etc.)
+      activeInput.textContent = text;
+      activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+      console.log('TalkType: Inserted text into contenteditable element');
+    } 
+    else if (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA') {
+      // For standard input/textarea elements
+      activeInput.value = text;
+      activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+      activeInput.dispatchEvent(new Event('change', { bubbles: true }));
+      console.log('TalkType: Inserted text into input/textarea element');
+      
+      // Focus the input and place cursor at the end
+      activeInput.focus();
+      
+      // Set selection range if supported
+      if (typeof activeInput.setSelectionRange === 'function') {
+        activeInput.setSelectionRange(text.length, text.length);
+      }
+    } 
+    else {
+      // Fallback for other elements - try innerText
+      activeInput.innerText = text;
+      activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+      console.log('TalkType: Inserted text using innerText fallback');
+    }
+    
+    // Show success notification
+    showStatusNotification('Text inserted successfully', 'success');
+    return true;
+  } catch (e) {
+    console.error('TalkType: Unable to set text on element:', e);
+    showStatusNotification('Failed to insert text: ' + e.message, 'error');
+    return false;
+  }
 }

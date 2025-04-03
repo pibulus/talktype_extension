@@ -5,6 +5,9 @@ let audioService = null;
 let apiService = null;
 let isRecording = false;
 let recordingTimeout = null;
+let hasActiveInput = false;
+let activeInputInfo = null;
+let smartModeEnabled = true; // Default to enabled
 const MAX_RECORDING_TIME = 30000; // 30 seconds
 
 // Check if API key is set
@@ -249,6 +252,70 @@ async function stopRecording() {
     // Complete the progress animation
     completeProgressAnimation();
     
+    // Try to insert text into the active input field if in smart mode
+    if (smartModeEnabled && hasActiveInput && transcription && transcription.trim()) {
+      try {
+        console.log('Smart Mode enabled and active input detected, attempting to insert text');
+        
+        // Send message to content script to insert the transcription
+        const activeTab = await new Promise(resolve => {
+          chrome.tabs.query({active: true, currentWindow: true}, tabs => {
+            resolve(tabs[0]);
+          });
+        });
+        
+        if (activeTab && activeTab.id) {
+          // Try to insert the transcription into the active input
+          const response = await chrome.tabs.sendMessage(activeTab.id, {
+            action: 'insertTranscription',
+            text: transcription
+          });
+          
+          console.log('Insertion response:', response);
+          
+          if (response && response.success) {
+            // If successful, still copy to clipboard as a backup
+            try {
+              await navigator.clipboard.writeText(transcription);
+            } catch (clipErr) {
+              console.warn('Failed to copy text after insertion: ', clipErr);
+            }
+            
+            // Show success indicator
+            statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Inserted</span></div>';
+            
+            // Still show the text in the popup
+            transcriptionText.style.opacity = '0';
+            transcriptionText.style.transition = 'opacity 0.3s ease';
+            transcriptionText.textContent = transcription;
+            transcriptionText.offsetHeight; // Force reflow
+            transcriptionText.style.opacity = '1';
+            
+            // Show copy button
+            const copyButtonWrapper = document.getElementById('copy-button-wrapper');
+            if (copyButtonWrapper) {
+              copyButtonWrapper.style.display = 'block';
+            }
+            
+            // Reset status after a delay
+            setTimeout(() => {
+              if (!isRecording) {
+                statusElement.innerHTML = '<div class="status-indicator status-ready"><span class="pulse-dot"></span><span class="status-text">Ready</span></div>';
+                updateSmartModeUI(); // Update to show current smart mode status
+              }
+            }, 3000);
+            
+            return; // Exit early as we've handled the insertion
+          }
+        }
+      } catch (insertErr) {
+        console.error('Error inserting transcription into active input:', insertErr);
+        // Continue with normal flow if insertion fails
+      }
+    }
+    
+    // If smart mode insertion failed or was not attempted, handle normally
+    
     // Copy to clipboard
     if (transcription && transcription.trim()) {
       try {
@@ -267,6 +334,7 @@ async function stopRecording() {
     setTimeout(() => {
       if (!isRecording) {
         statusElement.innerHTML = '<div class="status-indicator status-ready"><span class="pulse-dot"></span><span class="status-text">Ready</span></div>';
+        updateSmartModeUI(); // Update to show current smart mode status
       }
     }, 3000);
     
@@ -807,6 +875,99 @@ const startInit = () => {
 // Run pre-initialization immediately
 startInit();
 
+// Function to update UI based on smart mode and active input state
+function updateSmartModeUI() {
+  const statusElement = document.getElementById('status');
+  if (!statusElement) return;
+  
+  // Don't override status if recording
+  if (isRecording) return;
+  
+  // Get current smart mode status
+  chrome.storage.sync.get(['smartModeEnabled'], (result) => {
+    // Update global variable
+    smartModeEnabled = result.smartModeEnabled !== false;
+    
+    // Update UI based on smart mode and active input
+    if (smartModeEnabled) {
+      if (hasActiveInput) {
+        // Smart mode is on and has active input
+        statusElement.innerHTML = `
+          <div class="status-indicator status-ready">
+            <span class="pulse-dot"></span>
+            <span class="status-text">Smart Mode: Ready</span>
+          </div>
+        `;
+      } else {
+        // Smart mode is on but no active input
+        statusElement.innerHTML = `
+          <div class="status-indicator">
+            <span class="pulse-dot"></span>
+            <span class="status-text">Smart Mode (No Input)</span>
+          </div>
+        `;
+      }
+    } else {
+      // Smart mode is off
+      statusElement.innerHTML = `
+        <div class="status-indicator status-ready">
+          <span class="pulse-dot"></span>
+          <span class="status-text">Ready</span>
+        </div>
+      `;
+    }
+  });
+}
+
+// Function to check for active input in the current page
+async function checkActiveInputStatus() {
+  try {
+    // Get the active tab
+    const tabs = await new Promise(resolve => {
+      chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        resolve(tabs);
+      });
+    });
+    
+    if (!tabs || !tabs[0]) {
+      console.log('No active tab found');
+      hasActiveInput = false;
+      return;
+    }
+    
+    // Ask content script if there's an active input
+    const response = await new Promise(resolve => {
+      chrome.tabs.sendMessage(tabs[0].id, {action: 'checkActiveInput'}, (response) => {
+        if (chrome.runtime.lastError) {
+          console.warn('Error checking active input:', chrome.runtime.lastError);
+          resolve(null);
+        } else {
+          resolve(response);
+        }
+      });
+    });
+    
+    if (response) {
+      hasActiveInput = response.hasActiveInput;
+      activeInputInfo = response.inputInfo;
+      console.log('Active input status:', hasActiveInput, activeInputInfo);
+      
+      // Update UI based on active input status
+      updateSmartModeUI();
+    } else {
+      hasActiveInput = false;
+      activeInputInfo = null;
+      
+      // Update UI for no active input
+      updateSmartModeUI();
+    }
+  } catch (error) {
+    console.error('Error checking active input status:', error);
+    hasActiveInput = false;
+    activeInputInfo = null;
+  }
+}
+
 // Initialize the popup
 document.addEventListener('DOMContentLoaded', async () => {
   // Force immediate rendering
@@ -816,8 +977,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check API key in parallel with rendering
   checkApiKey();
   
+  // Get smart mode setting
+  chrome.storage.sync.get(['smartModeEnabled'], (result) => {
+    smartModeEnabled = result.smartModeEnabled !== false; // Default to true if not set
+    console.log('Smart mode enabled:', smartModeEnabled);
+    
+    // Check for active input in the current page
+    checkActiveInputStatus();
+  });
+  
   // Apply theme based on user preference or system preference
   initializeTheme();
+  
+  // Listen for message updates from the background script about active input changes
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.action === 'updateSmartModeStatus') {
+      console.log('Received smart mode status update:', message);
+      hasActiveInput = message.hasActiveInput;
+      activeInputInfo = message.inputInfo;
+      
+      // Update UI based on new status
+      updateSmartModeUI();
+    }
+  });
   
   // Set up RECORD BUTTON
   const recordButton = document.getElementById('startRecording');
@@ -862,6 +1044,122 @@ document.addEventListener('DOMContentLoaded', async () => {
     copyButton.addEventListener('mouseup', () => {
       copyButton.style.transform = 'scale(1.15)';
     });
+  }
+  
+  // Add Smart Mode toggle to the UI
+  const buttonsContainer = document.querySelector('.buttons');
+  if (buttonsContainer) {
+    // Add Smart Mode toggle button at the top
+    const smartModeButton = document.createElement('button');
+    smartModeButton.id = 'smartModeToggle';
+    smartModeButton.className = 'smart-mode-button';
+    smartModeButton.innerHTML = `
+      <div class="toggle-container">
+        <span>Smart Mode</span>
+        <label class="switch">
+          <input type="checkbox" id="smartModeCheckbox" ${smartModeEnabled ? 'checked' : ''}>
+          <span class="slider round"></span>
+        </label>
+      </div>
+    `;
+    
+    // Add button at the beginning of the container
+    buttonsContainer.insertBefore(smartModeButton, buttonsContainer.firstChild);
+    
+    // Add styles for the toggle
+    const style = document.createElement('style');
+    style.textContent = `
+      .smart-mode-button {
+        background: linear-gradient(135deg, rgba(111, 66, 193, 0.6), rgba(70, 174, 247, 0.5)) !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 10px 15px !important;
+      }
+      
+      .toggle-container {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 24px;
+      }
+      
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.3);
+        transition: .4s;
+      }
+      
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+      }
+      
+      input:checked + .slider {
+        background-color: rgba(70, 230, 130, 0.7);
+      }
+      
+      input:checked + .slider:before {
+        transform: translateX(16px);
+      }
+      
+      .slider.round {
+        border-radius: 34px;
+      }
+      
+      .slider.round:before {
+        border-radius: 50%;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Add event listener for smart mode toggle
+    const checkbox = document.getElementById('smartModeCheckbox');
+    if (checkbox) {
+      checkbox.addEventListener('change', (e) => {
+        smartModeEnabled = e.target.checked;
+        
+        // Save setting to storage
+        chrome.storage.sync.set({ smartModeEnabled });
+        
+        // Update smart mode UI
+        updateSmartModeUI();
+        
+        // Notify content script about the change
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'toggleSmartMode',
+              enabled: smartModeEnabled
+            });
+          }
+        });
+      });
+    }
   }
   
   // Set up SETTINGS BUTTON

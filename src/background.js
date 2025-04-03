@@ -69,15 +69,21 @@ chrome.runtime.onInstalled.addListener(async () => {
   preloadPopupResources();
   
   // Set default settings if not already set
-  const settings = await chrome.storage.sync.get(['apiKey']);
+  const settings = await chrome.storage.sync.get(['apiKey', 'smartModeEnabled']);
   if (!settings.apiKey) {
     await chrome.storage.sync.set({
       apiKey: '',
-      enabledSites: ['*'] // Enable on all sites by default
+      enabledSites: ['*'], // Enable on all sites by default
+      smartModeEnabled: true // Enable smart mode by default
     });
     
     // Open options page on first install
     chrome.runtime.openOptionsPage();
+  } else if (settings.smartModeEnabled === undefined) {
+    // Ensure smartModeEnabled is set if apiKey exists but smartModeEnabled doesn't
+    await chrome.storage.sync.set({
+      smartModeEnabled: true // Enable smart mode by default
+    });
   }
 });
 
@@ -103,6 +109,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     });
     return true; // Indicates async response is coming
+  }
+  
+  // Forward active input status from content script to popup
+  if (message.action === 'activeInputChanged') {
+    console.log('Active input changed in content script, forwarding to popup');
+    
+    // Forward message to popup if it's open
+    chrome.runtime.sendMessage({
+      action: 'updateSmartModeStatus',
+      hasActiveInput: message.hasActiveInput,
+      inputInfo: message.inputInfo
+    }).catch(error => {
+      // This likely means the popup isn't open, which is fine
+      if (!error.message.includes('receiving end does not exist')) {
+        console.error('Error forwarding active input status:', error);
+      }
+    });
+    
+    return true;
   }
   
   if (message.action === 'checkSiteEnabled') {
