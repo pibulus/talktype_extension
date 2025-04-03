@@ -6,6 +6,9 @@ let apiService = null;
 let audioVisualizer = null;
 let isRecording = false;
 let recordingTimeout = null;
+let countdownInterval = null; // New global variable for countdown timer
+let activeTabInput = null; // Track active input on the current tab
+let contextualMode = false; // Flag for contextual transcription mode
 const MAX_RECORDING_TIME = 30000; // 30 seconds
 
 // Fun processing messages - used in multiple places
@@ -39,6 +42,57 @@ async function checkApiKey() {
 // Open options page
 function openOptions() {
   chrome.runtime.openOptionsPage();
+}
+
+// Start a countdown timer for recording
+function startRecordingCountdown(statusElement) {
+  // Clear any existing interval
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
+  
+  let secondsRemaining = MAX_RECORDING_TIME / 1000; // Convert ms to seconds
+  
+  // Update the status immediately with initial time
+  const minutes = Math.floor(secondsRemaining / 60);
+  const seconds = secondsRemaining % 60;
+  const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  
+  statusElement.innerHTML = `
+    <div class="status-indicator status-recording">
+      <span class="pulse-dot"></span>
+      <span class="status-text">Recording: ${formattedTime}</span>
+    </div>
+  `;
+  
+  // Start the interval to update the countdown
+  countdownInterval = setInterval(() => {
+    // Only update if we're still recording
+    if (!isRecording) {
+      clearInterval(countdownInterval);
+      return;
+    }
+    
+    secondsRemaining--;
+    
+    // Format the time as minutes:seconds
+    const minutes = Math.floor(secondsRemaining / 60);
+    const seconds = secondsRemaining % 60;
+    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    // Update the status text
+    statusElement.innerHTML = `
+      <div class="status-indicator status-recording">
+        <span class="pulse-dot"></span>
+        <span class="status-text">Recording: ${formattedTime}</span>
+      </div>
+    `;
+    
+    // If we've reached 0, stop the countdown (recording will be auto-stopped by timeout)
+    if (secondsRemaining <= 0) {
+      clearInterval(countdownInterval);
+    }
+  }, 1000);
 }
 
 // Start recording immediately
@@ -119,13 +173,8 @@ async function startRecording() {
       Stop Recording
     `;
     
-    // Update status
-    statusElement.innerHTML = `
-      <div class="status-indicator status-recording">
-        <span class="pulse-dot"></span>
-        <span class="status-text">Recording...</span>
-      </div>
-    `;
+    // Start the countdown timer instead of a static recording message
+    startRecordingCountdown(statusElement);
     
     // Hide settings button while recording
     const settingsButton = document.getElementById('options');
@@ -150,8 +199,115 @@ async function startRecording() {
   }
 }
 
+// Function to show status notification
+function showStatusNotification(message, type = 'info') {
+  // Remove any existing notification
+  const existingNotification = document.querySelector('.status-notification');
+  if (existingNotification) {
+    document.body.removeChild(existingNotification);
+  }
+  
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = 'status-notification';
+  
+  // Determine icon based on type
+  let icon = '';
+  let bgColor = '';
+  
+  switch(type) {
+    case 'error':
+      icon = '<path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>';
+      bgColor = 'rgba(255, 82, 82, 0.95)';
+      break;
+    case 'warning':
+      icon = '<path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>';
+      bgColor = 'rgba(255, 152, 0, 0.95)';
+      break;
+    case 'success':
+      icon = '<path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>';
+      bgColor = 'rgba(75, 203, 156, 0.95)';
+      break;
+    default: // info
+      icon = '<path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>';
+      bgColor = 'rgba(70, 174, 247, 0.95)';
+  }
+  
+  notification.innerHTML = `
+    <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      ${icon}
+    </svg>
+    <span>${message}</span>
+  `;
+  
+  // Add styles if not already added
+  if (!document.getElementById('status-notification-style')) {
+    const style = document.createElement('style');
+    style.id = 'status-notification-style';
+    style.textContent = `
+      .status-notification {
+        position: fixed;
+        bottom: 10px !important;
+        top: auto !important;
+        left: 50%;
+        transform: translateX(-50%) translateY(40px);
+        background: ${bgColor};
+        color: white;
+        padding: 10px 18px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        z-index: 1000;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        width: 90%;
+      }
+      .status-notification.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .status-notification .icon {
+        width: 18px;
+        height: 18px;
+        margin-right: 8px;
+      }
+    `;
+    document.head.appendChild(style);
+  } else {
+    // Update background color for the current notification
+    document.getElementById('status-notification-style').textContent = 
+      document.getElementById('status-notification-style').textContent.replace(
+        /background:[^;]+;/, 
+        `background: ${bgColor};`
+      );
+  }
+  
+  document.body.appendChild(notification);
+  
+  // Animate in
+  setTimeout(() => {
+    notification.classList.add('show');
+  }, 10);
+  
+  // Animate out and remove
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    }, 300);
+  }, 3000);
+}
+
 // Function to show clipboard notification
-function showClipboardNotification() {
+function showClipboardNotification(message = 'Copied to clipboard') {
   // Remove any existing notification first
   const existingNotification = document.querySelector('.clipboard-notification');
   if (existingNotification) {
@@ -236,6 +392,12 @@ async function stopRecording() {
     recordingTimeout = null;
   }
   
+  // Clear countdown interval
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  
   const statusElement = document.getElementById('status');
   const recordButton = document.getElementById('startRecording');
   const recordingAnimation = document.getElementById('recording-animation');
@@ -250,9 +412,9 @@ async function stopRecording() {
     // Hide recording animation
     recordingAnimation.classList.remove('active');
     
-    // Update status indicator with a random fun message
-    const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
-    statusElement.innerHTML = `<div class="status-indicator status-processing"><span class="pulse-dot"></span><span class="status-text">${randomMessage}...</span></div>`;
+    // Use a static processing message instead of a random one
+    const processingMessage = "Processing";
+    statusElement.innerHTML = `<div class="status-indicator status-processing"><span class="pulse-dot"></span><span class="status-text">${processingMessage}...</span></div>`;
     
     // Stop recording and get audio data
     const audioBlob = await audioService.stopRecording();
@@ -283,19 +445,115 @@ async function stopRecording() {
     // Complete the progress animation
     completeProgressAnimation();
     
-    // Copy to clipboard
-    if (transcription && transcription.trim()) {
+    // Handle transcription based on mode
+    if (contextualMode && activeTabInput) {
+      // In contextual mode, send transcription to the active input in the tab
       try {
-        await navigator.clipboard.writeText(transcription);
-        // Clipboard notification will be shown by completeProgressAnimation
-        // No need to call showClipboardNotification() here to avoid duplicate notifications
-      } catch (err) {
-        console.error('Failed to copy text: ', err);
+        // Get the current active tab
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tabs || tabs.length === 0) throw new Error('No active tab found');
+        
+        const currentTab = tabs[0];
+        
+        // Only send the message once - this is the first point where we might get duplicate insertion
+        console.log('Sending single insertion request to tab');
+        
+        // Send message to content script to insert transcription - with timeout to ensure response
+        const insertResult = await Promise.race([
+          chrome.tabs.sendMessage(currentTab.id, {
+            action: 'insertTranscription',
+            text: transcription,
+            requestId: Date.now() // Add unique request ID to prevent duplicate processing
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Tab message timeout')), 5000))
+        ]);
+        
+        console.log('Insertion result:', insertResult);
+        
+        // Still copy to clipboard for convenience
+        if (transcription && transcription.trim()) {
+          try {
+            await navigator.clipboard.writeText(transcription);
+            // Show a "Text inserted" notification
+            showClipboardNotification('Text inserted in input field');
+          } catch (err) {
+            console.error('Failed to copy text: ', err);
+          }
+        }
+        
+        // Update status to show contextual insertion was successful
+        statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Inserted in field</span></div>';
+        
+        // Also show in popup what was transcribed
+        transcriptionText.style.opacity = '0';
+        transcriptionText.style.transition = 'opacity 0.3s ease';
+        transcriptionText.textContent = transcription || 'No speech detected.';
+        transcriptionText.style.display = 'block'; // Show text container
+        transcriptionText.style.pointerEvents = 'auto';
+        transcriptionText.style.position = 'relative';
+        transcriptionText.style.zIndex = '10';
+        
+      } catch (error) {
+        console.error('Error inserting transcription into input:', error);
+        
+        // Show error notification
+        showStatusNotification('Failed to insert text. Displaying in popup instead.', 'error');
+        
+        // Fall back to standard mode if insertion fails
+        contextualMode = false;
+        updateContextualModeUI(false);
+        
+        // Show in popup
+        transcriptionText.style.opacity = '0';
+        transcriptionText.style.transition = 'opacity 0.3s ease';
+        transcriptionText.textContent = transcription || 'No speech detected.';
+        transcriptionText.style.display = 'block';
+        transcriptionText.style.pointerEvents = 'auto';
+        transcriptionText.style.position = 'relative';
+        transcriptionText.style.zIndex = '10';
+        
+        // Force redisplay with animation
+        setTimeout(() => {
+          transcriptionText.style.opacity = '1';
+        }, 10);
+        
+        // Update status to show standard mode fallback
+        statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Complete</span></div>';
+        
+        // Copy to clipboard as fallback
+        if (transcription && transcription.trim()) {
+          try {
+            await navigator.clipboard.writeText(transcription);
+            showClipboardNotification('Copied to clipboard instead');
+          } catch (err) {
+            console.error('Failed to copy text: ', err);
+          }
+        }
       }
+    } else {
+      // Standard mode - show in popup and copy to clipboard
+      if (transcription && transcription.trim()) {
+        try {
+          await navigator.clipboard.writeText(transcription);
+          // Clipboard notification will be shown by completeProgressAnimation
+          // No need to call showClipboardNotification() here to avoid duplicate notifications
+        } catch (err) {
+          console.error('Failed to copy text: ', err);
+        }
+      }
+      
+      // Show the transcription with "Complete" status
+      statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Complete</span></div>';
+      
+      // Animate the transcription text
+      transcriptionText.style.opacity = '0';
+      transcriptionText.style.transition = 'opacity 0.3s ease';
+      transcriptionText.textContent = transcription || 'No speech detected.';
+      transcriptionText.style.display = 'block'; // Show text container
+      transcriptionText.style.pointerEvents = 'auto'; // Ensure it's interactive
+      transcriptionText.style.position = 'relative'; // Ensure proper stacking
+      transcriptionText.style.zIndex = '10'; // Higher than visualizer
     }
-    
-    // Show the transcription with "Complete" status
-    statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Complete</span></div>';
     
     // Reset status to "Ready" after 3 seconds
     setTimeout(() => {
@@ -303,15 +561,6 @@ async function stopRecording() {
         statusElement.innerHTML = '<div class="status-indicator status-ready"><span class="pulse-dot"></span><span class="status-text">Ready</span></div>';
       }
     }, 3000);
-    
-    // Animate the transcription text
-    transcriptionText.style.opacity = '0';
-    transcriptionText.style.transition = 'opacity 0.3s ease';
-    transcriptionText.textContent = transcription || 'No speech detected.';
-    transcriptionText.style.display = 'block'; // Show text container
-    transcriptionText.style.pointerEvents = 'auto'; // Ensure it's interactive
-    transcriptionText.style.position = 'relative'; // Ensure proper stacking
-    transcriptionText.style.zIndex = '10'; // Higher than visualizer
     
     // Make the text selectable and editable with no outline
     transcriptionText.setAttribute('contenteditable', 'true');
@@ -356,8 +605,11 @@ async function stopRecording() {
     recordButton.disabled = false;
     recordButton.classList.remove('button-progress-container');
     
-    // Keep settings button hidden to maintain layout consistency
-    // Once recording has been attempted, we don't show settings button again
+    // Show settings button again
+    const settingsButton = document.getElementById('options');
+    if (settingsButton) {
+      settingsButton.style.display = 'block';
+    }
   }
 }
 
@@ -474,15 +726,15 @@ function transformButtonToProgressBar(button) {
   button.classList.add('button-progress-container');
   button.disabled = true;
   
-  // Create progress structure with a random fun message
-  const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
+  // Create progress structure with a static message
+  const processingMessage = "Processing";
   button.innerHTML = `
     <div id="progress-bar" class="button-progress-bar"></div>
     <div class="button-progress-content">
       <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path fill="currentColor" d="M6 2l12 10-12 10V2z"/>
       </svg>
-      <span>${randomMessage}...</span>
+      <span>${processingMessage}...</span>
     </div>
   `;
   
@@ -502,7 +754,6 @@ function transformButtonToProgressBar(button) {
 // Start fake progress animation
 function startFakeProgressAnimation() {
   let fakeProgress = 0;
-  let lastMessageUpdateTime = Date.now();
   
   window.progressInterval = setInterval(() => {
     if (fakeProgress < 30) {
@@ -526,27 +777,19 @@ function startFakeProgressAnimation() {
     if (progressBar) {
       progressBar.style.width = fakeProgress + '%';
       
-      // Occasionally update the message (every ~2.5 seconds)
-      const now = Date.now();
-      if (now - lastMessageUpdateTime > 2500) {
-        const messageElement = document.querySelector('.button-progress-content span');
-        if (messageElement) {
-          const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
-          messageElement.textContent = `${randomMessage}...`;
-        }
-        lastMessageUpdateTime = now;
-      }
+      // We no longer update messages to avoid conflicts with countdown timer
+      // Just keep the static "Processing..." message
     }
   }, 40); // Slightly slower interval for smoother animation
 }
 
-// Show transcribing status with animation and random fun messages
+// Show transcribing status with a static message
 function showTranscribingStatus(container, randomMessage = false) {
   // Update the status to indicate processing is happening
   const statusElement = document.getElementById('status');
   if (statusElement) {
-    // Always choose a random fun message
-    const message = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
+    // Use a static message to avoid conflicts with countdown
+    const message = "Processing";
     
     statusElement.innerHTML = `
       <div class="status-indicator status-processing">
@@ -623,8 +866,11 @@ function completeProgressAnimation() {
             }
           });
           
-          // Keep settings button permanently hidden after first recording
-          // This maintains layout stability and prevents UI shifts
+          // Make settings button visible again
+          const settingsButton = document.getElementById('options');
+          if (settingsButton) {
+            settingsButton.style.display = 'block';
+          }
         }
       }, 1200); // Slightly longer delay to ensure user sees "Complete" state
     }, 800); // Wait for animation to complete
@@ -841,10 +1087,92 @@ function openPermissionFix() {
   };
 }
 
+// Check if there's an active input field in the current tab
+async function checkForActiveInputInTab() {
+  try {
+    // Get the current active tab
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tabs || tabs.length === 0) return false;
+    
+    const currentTab = tabs[0];
+    
+    // Send a message to the content script to check for active inputs
+    const response = await chrome.tabs.sendMessage(currentTab.id, { action: 'getActiveInput' });
+    
+    if (response && response.hasActiveInput) {
+      activeTabInput = response.inputInfo;
+      contextualMode = true;
+      
+      // Update UI to show contextual mode is active
+      updateContextualModeUI(true);
+      
+      console.log('Active input found in tab:', activeTabInput);
+      return true;
+    } else {
+      activeTabInput = null;
+      contextualMode = false;
+      
+      // Update UI to show standard mode
+      updateContextualModeUI(false);
+      
+      console.log('No active input found in tab');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error checking for active input:', error);
+    
+    // If error occurs (like content script not loaded), fall back to standard mode
+    activeTabInput = null;
+    contextualMode = false;
+    updateContextualModeUI(false);
+    return false;
+  }
+}
+
+// Update UI to reflect contextual mode status
+function updateContextualModeUI(isContextual) {
+  const contextBadge = document.getElementById('contextual-mode-badge');
+  if (!contextBadge) return;
+  
+  // Always make sure badge is visible
+  contextBadge.style.display = 'flex'; 
+  
+  if (isContextual) {
+    contextBadge.classList.add('active');
+    
+    // Show tooltip with input info if available
+    if (activeTabInput) {
+      const tooltip = document.getElementById('contextual-tooltip');
+      if (tooltip) {
+        tooltip.innerHTML = `
+          <strong>Smart mode active</strong>
+          <span>Text will be inserted directly into the selected field</span>
+        `;
+      }
+    }
+  } else {
+    contextBadge.classList.remove('active');
+    
+    // Update tooltip for standard mode
+    const tooltip = document.getElementById('contextual-tooltip');
+    if (tooltip) {
+      tooltip.innerHTML = `
+        <strong>Standard mode</strong>
+        <span>Text will appear in this popup</span>
+      `;
+    }
+  }
+}
+
 // Pre-load initialization - start without waiting for DOM content
 const startInit = () => {
   // Pre-initialize global services
-  audioService = new AudioRecordingService();
+  try {
+    audioService = new AudioRecordingService();
+  } catch (error) {
+    console.error('Error in pre-initialization:', error);
+    // We'll handle this later in the DOMContentLoaded event
+  }
 };
 
 // Run pre-initialization immediately
@@ -861,6 +1189,44 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Apply theme based on user preference or system preference
   initializeTheme();
+  
+  // Check for active input field in the current tab
+  try {
+    await checkForActiveInputInTab();
+  } catch (error) {
+    console.error('Error checking for active input during initialization:', error);
+    activeTabInput = null;
+    contextualMode = false;
+    // No need to show notification on initial load
+  }
+  
+  // Setup context badge click handler
+  const contextBadge = document.getElementById('contextual-mode-badge');
+  if (contextBadge) {
+    contextBadge.addEventListener('click', async () => {
+      // Toggle contextual mode
+      contextualMode = !contextualMode;
+      
+      // If turning on contextual mode, check if there's an active input
+      if (contextualMode) {
+        try {
+          const hasActiveInput = await checkForActiveInputInTab();
+          if (!hasActiveInput) {
+            // If no active input is found, show a notification
+            showStatusNotification('No text input selected. Focus a text field on the page first.');
+            contextualMode = false;
+          }
+        } catch (error) {
+          console.error('Error checking for active input:', error);
+          showStatusNotification('Unable to detect text inputs. Please reload the page.');
+          contextualMode = false;
+        }
+      }
+      
+      // Update UI
+      updateContextualModeUI(contextualMode);
+    });
+  }
   
   // Initialize audio visualizer
   audioVisualizer = new AudioVisualizer(document.getElementById('transcription-container'));
