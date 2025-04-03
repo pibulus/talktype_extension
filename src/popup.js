@@ -9,7 +9,15 @@ let recordingTimeout = null;
 let activeTabInput = null; // Track active input on the current tab
 let contextualMode = false; // Flag for contextual transcription mode
 let autoRecordEnabled = false; // Flag for auto-record on popup open
+let stopRecordingConfirmationNeeded = false; // Flag to control confirmation dialog
 const MAX_RECORDING_TIME = 30000; // 30 seconds
+
+// Extension icon states
+const ICON_STATE = {
+  IDLE: 'idle',        // Default state
+  RECORDING: 'recording', // When actively recording
+  AUTO_RECORD: 'auto_record' // When auto-record is enabled
+};
 
 // Fun processing messages - used in multiple places
 const PROCESSING_MESSAGES = [
@@ -52,9 +60,19 @@ async function checkAutoRecord() {
       if (autoRecordEnabled) {
         autoRecordBadge.classList.add('active');
         autoRecordBadge.querySelector('.auto-record-tooltip span').textContent = 'Auto-record enabled';
+        
+        // Update icon if not recording
+        if (!isRecording) {
+          updateExtensionIcon(ICON_STATE.AUTO_RECORD);
+        }
       } else {
         autoRecordBadge.classList.remove('active');
         autoRecordBadge.querySelector('.auto-record-tooltip span').textContent = 'Auto-record disabled';
+        
+        // Update icon if not recording
+        if (!isRecording) {
+          updateExtensionIcon(ICON_STATE.IDLE);
+        }
       }
     }
     
@@ -74,6 +92,15 @@ async function toggleAutoRecord() {
     // Update UI
     await checkAutoRecord();
     
+    // Update extension icon based on current state
+    if (isRecording) {
+      // If we're recording, keep showing recording icon
+      updateExtensionIcon(ICON_STATE.RECORDING);
+    } else {
+      // Otherwise show auto-record or idle icon
+      updateExtensionIcon(autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE);
+    }
+    
     // Show feedback
     showStatusNotification(`Auto-record ${autoRecordEnabled ? 'enabled' : 'disabled'}`, 'info');
     
@@ -88,6 +115,64 @@ async function toggleAutoRecord() {
 // Open options page
 function openOptions() {
   chrome.runtime.openOptionsPage();
+}
+
+// Update extension icon to reflect the current state
+function updateExtensionIcon(state = ICON_STATE.IDLE) {
+  try {
+    let iconPath = {};
+    let badgeText = '';
+    let badgeColor = '#FFFFFF';
+    
+    switch(state) {
+      case ICON_STATE.RECORDING:
+        // Red icon for recording state
+        iconPath = {
+          "16": "icons/icon_recording/favicon-16x16.png",
+          "32": "icons/icon_recording/favicon-32x32.png",
+          "48": "icons/icon_recording/android-icon-48x48.png",
+          "128": "icons/icon_recording/android-icon-144x144.png"
+        };
+        badgeText = '●';
+        badgeColor = '#d32f2f'; // Red badge
+        break;
+        
+      case ICON_STATE.AUTO_RECORD:
+        // Blue icon for auto-record mode
+        // Using standard icons with a blue badge for now
+        iconPath = {
+          "16": "icons/icon_white/favicon-16x16.png",
+          "32": "icons/icon_white/favicon-32x32.png",
+          "48": "icons/icon_white/android-icon-48x48.png",
+          "128": "icons/icon_white/android-icon-144x144.png"
+        };
+        badgeText = 'A';
+        badgeColor = '#2196F3'; // Blue badge
+        break;
+        
+      default: // ICON_STATE.IDLE
+        // Default icon (white/black based on theme)
+        iconPath = {
+          "16": "icons/icon_white/favicon-16x16.png",
+          "32": "icons/icon_white/favicon-32x32.png",
+          "48": "icons/icon_white/android-icon-48x48.png",
+          "128": "icons/icon_white/android-icon-144x144.png"
+        };
+        badgeText = '';
+        break;
+    }
+    
+    // Update the extension icon
+    chrome.action.setIcon({ path: iconPath });
+    
+    // Update badge
+    chrome.action.setBadgeText({ text: badgeText });
+    chrome.action.setBadgeBackgroundColor({ color: badgeColor });
+    
+    console.log(`Extension icon updated to ${state} state`);
+  } catch (error) {
+    console.error('Error updating extension icon:', error);
+  }
 }
 
 
@@ -186,11 +271,21 @@ async function startRecording() {
     // Start recording
     await audioService.startRecording();
     isRecording = true;
+    stopRecordingConfirmationNeeded = true; // Enable confirmation dialog for stopping recording
+    
+    // Update extension icon to recording state
+    updateExtensionIcon(ICON_STATE.RECORDING);
+    
+    // Notify background script about recording state
+    chrome.runtime.sendMessage({ 
+      action: 'updateRecordingState', 
+      isRecording: true 
+    });
     
     // Auto-stop after MAX_RECORDING_TIME
     recordingTimeout = setTimeout(() => {
       if (isRecording) {
-        stopRecording();
+        stopRecording(false); // Don't need confirmation for auto-stop
       }
     }, MAX_RECORDING_TIME);
     
@@ -384,7 +479,20 @@ function showClipboardNotification(message = 'Copied to clipboard') {
 }
 
 // Stop recording and transcribe
-async function stopRecording() {
+async function stopRecording(showConfirmation = true) {
+  // Check if we need to show confirmation
+  if (showConfirmation && stopRecordingConfirmationNeeded) {
+    // Display confirmation dialog
+    if (!confirm('Are you sure you want to stop recording?')) {
+      // User clicked cancel, don't stop recording
+      console.log('Recording stop cancelled by user');
+      return;
+    }
+  }
+  
+  // Reset confirmation flag
+  stopRecordingConfirmationNeeded = false;
+  
   if (!isRecording || !audioService) return;
   
   // Clear timeout
@@ -414,6 +522,15 @@ async function stopRecording() {
     // Stop recording and get audio data
     const audioBlob = await audioService.stopRecording();
     isRecording = false;
+    
+    // Set icon back to normal or auto-record state
+    updateExtensionIcon(autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE);
+    
+    // Notify background script about recording state
+    chrome.runtime.sendMessage({ 
+      action: 'updateRecordingState', 
+      isRecording: false 
+    });
     
     // Transform recording button into progress bar
     transformButtonToProgressBar(recordButton);
@@ -944,6 +1061,19 @@ function handleRecordingError(error) {
   const statusElement = document.getElementById('status');
   const recordButton = document.getElementById('startRecording');
   
+  // Reset recording state
+  isRecording = false;
+  stopRecordingConfirmationNeeded = false;
+  
+  // Reset extension icon
+  updateExtensionIcon(autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE);
+  
+  // Notify background script about recording state
+  chrome.runtime.sendMessage({ 
+    action: 'updateRecordingState', 
+    isRecording: false 
+  });
+  
   // Reset button state
   recordButton.innerHTML = `
     <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1177,6 +1307,17 @@ const startInit = () => {
 startInit();
 
 // Initialize the popup
+// Listen for messages from the background script
+chrome.runtime.onMessage.addListener((message) => {
+  console.log('Received message in popup:', message);
+  
+  if (message.action === 'forceStopRecording' && isRecording) {
+    console.log('Received force stop recording command');
+    // Stop recording without confirmation (passing false to skip confirmation)
+    stopRecording(false);
+  }
+});
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Force immediate rendering
   document.body.style.display = 'block';

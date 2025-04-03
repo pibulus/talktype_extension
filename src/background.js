@@ -151,3 +151,182 @@ chrome.runtime.onStartup.addListener(() => {
 
 // Periodically preload popup resources to keep them warm in cache
 setInterval(preloadPopupResources, 60 * 60 * 1000); // Refresh cache every hour
+
+// Global state to track current recording status
+let isRecording = false;
+let autoRecordEnabled = false;
+
+// Extension icon states
+const ICON_STATE = {
+  IDLE: 'idle',        // Default state
+  RECORDING: 'recording', // When actively recording
+  AUTO_RECORD: 'auto_record' // When auto-record is enabled
+};
+
+// Function to update extension icon based on state
+function updateExtensionIcon(state = ICON_STATE.IDLE) {
+  try {
+    let iconPath = {};
+    let badgeText = '';
+    let badgeColor = '#FFFFFF';
+    
+    switch(state) {
+      case ICON_STATE.RECORDING:
+        // Red icon for recording state
+        iconPath = {
+          "16": "icons/icon_white/favicon-16x16.png", // Fallback to white icons
+          "32": "icons/icon_white/favicon-32x32.png",
+          "48": "icons/icon_white/android-icon-48x48.png",
+          "128": "icons/icon_white/android-icon-144x144.png"
+        };
+        badgeText = '●';
+        badgeColor = '#d32f2f'; // Red badge for recording
+        break;
+        
+      case ICON_STATE.AUTO_RECORD:
+        // Blue badge for auto-record mode
+        iconPath = {
+          "16": "icons/icon_white/favicon-16x16.png",
+          "32": "icons/icon_white/favicon-32x32.png",
+          "48": "icons/icon_white/android-icon-48x48.png",
+          "128": "icons/icon_white/android-icon-144x144.png"
+        };
+        badgeText = 'A';
+        badgeColor = '#2196F3'; // Blue badge
+        break;
+        
+      default: // ICON_STATE.IDLE
+        // Use system theme detection for idle state
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        iconPath = isDark
+          ? {
+              "16": "icons/icon_white/favicon-16x16.png",
+              "32": "icons/icon_white/favicon-32x32.png",
+              "48": "icons/icon_white/android-icon-48x48.png",
+              "128": "icons/icon_white/android-icon-144x144.png"
+            }
+          : {
+              "16": "icons/icon_black/favicon-16x16.png",
+              "32": "icons/icon_black/favicon-32x32.png",
+              "48": "icons/icon_black/android-icon-48x48.png",
+              "128": "icons/icon_black/android-icon-144x144.png"
+            };
+        badgeText = '';
+        break;
+    }
+    
+    // Update the extension icon
+    chrome.action.setIcon({ path: iconPath });
+    
+    // Update badge
+    chrome.action.setBadgeText({ text: badgeText });
+    chrome.action.setBadgeBackgroundColor({ color: badgeColor });
+    
+    console.log(`Extension icon updated to ${state} state`);
+  } catch (error) {
+    console.error('Error updating extension icon:', error);
+  }
+}
+
+// Load auto-record setting on startup
+chrome.storage.sync.get(['autoRecord'], (result) => {
+  autoRecordEnabled = result.autoRecord === true;
+  console.log('Auto-record mode loaded:', autoRecordEnabled);
+  
+  // Set initial icon state based on auto-record setting
+  if (autoRecordEnabled) {
+    updateExtensionIcon(ICON_STATE.AUTO_RECORD);
+  }
+});
+
+// Listen for changes to storage
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.autoRecord) {
+    autoRecordEnabled = changes.autoRecord.newValue === true;
+    console.log('Auto-record mode updated:', autoRecordEnabled);
+    
+    // Update icon if not currently recording
+    if (!isRecording) {
+      updateExtensionIcon(autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE);
+    }
+  }
+});
+
+// Message from popup about recording state
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'updateRecordingState') {
+    isRecording = message.isRecording === true;
+    console.log('Recording state updated:', isRecording);
+    
+    // Update icon based on recording state
+    if (isRecording) {
+      updateExtensionIcon(ICON_STATE.RECORDING);
+    } else {
+      updateExtensionIcon(autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE);
+    }
+    
+    sendResponse({ success: true });
+    return true;
+  }
+});
+
+// Add action icon click handler for toggle functionality
+chrome.action.onClicked.addListener(async (tab) => {
+  // If this is triggered, it means the popup didn't open (user clicked extension button while recording)
+  // Only handle clicks when auto-record is enabled or when already recording
+  console.log('Extension icon clicked. Current state:', { isRecording, autoRecordEnabled });
+  
+  // We only want to handle the click if we're in a state where the popup won't open
+  if (isRecording) {
+    try {
+      // Check if the current tab has the popup open
+      const views = chrome.extension.getViews({ type: 'popup' });
+      
+      // If popup is not open, send message to the tab to stop recording
+      if (views.length === 0) {
+        console.log('Sending stop recording message to tab');
+        
+        // Show confirmation dialog via content script
+        const confirmed = await chrome.tabs.sendMessage(tab.id, {
+          action: 'confirmStopRecording',
+          message: 'Are you sure you want to stop recording?'
+        });
+        
+        if (confirmed) {
+          console.log('User confirmed stopping recording');
+          
+          // Send stop recording message to all tabs (since we don't know which has the recording)
+          chrome.tabs.query({}, (tabs) => {
+            tabs.forEach(tab => {
+              chrome.tabs.sendMessage(tab.id, {
+                action: 'stopRecording'
+              }).catch(err => {
+                // Ignore errors from tabs that don't have content script
+                console.log('Error sending message to tab:', err);
+              });
+            });
+          });
+          
+          // Update state
+          isRecording = false;
+          
+          // Update icon to reflect the current state
+          updateExtensionIcon(autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE);
+        } else {
+          console.log('User cancelled stopping recording');
+        }
+      }
+    } catch (error) {
+      console.error('Error in action click handler:', error);
+    }
+  } else if (autoRecordEnabled) {
+    // If auto-record is enabled but we're not recording, try to start recording
+    try {
+      console.log('Auto-record enabled, attempting to start recording');
+      // Open the popup which will auto-record
+      chrome.action.openPopup();
+    } catch (error) {
+      console.error('Error starting auto-record:', error);
+    }
+  }
+});
