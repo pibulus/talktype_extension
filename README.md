@@ -82,10 +82,15 @@ TalkType takes your privacy seriously:
 
 ## License
 
-[MIT License](LICENSE)
+This software is licensed under a [proprietary license](LICENSE.md) that protects the intellectual property rights of the creators while allowing users to benefit from the functionality. Please review the license terms before use.
 
 ## Acknowledgements
 
 - Uses the [Gemini API](https://ai.google.dev/) for speech transcription
 - Icons based on Material Design principles
-- Created with ❤️ for easier web interaction
+
+## About the Creators
+
+TalkType is created by Pablo Alvarado and Dennis, made with ❤️ in Melbourne and Sydney, Australia (2025).
+
+© 2025 TalkType. All rights reserved.

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About TalkType</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      color: #333;
+      background: #f5f5f7;
+    }
+
+    .glass-container {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      display: block;
+      width: 120px;
+      margin: 0 auto 20px;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #2d2d2d;
+    }
+
+    .creators {
+      display: flex;
+      justify-content: center;
+      margin: 30px 0;
+    }
+
+    .creator {
+      text-align: center;
+      margin: 0 15px;
+    }
+
+    .creator img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 10px;
+    }
+
+    .heart {
+      color: #ff3860;
+      font-size: 20px;
+      animation: beat 1s infinite alternate;
+      display: inline-block;
+      transform-origin: center;
+    }
+
+    @keyframes beat {
+      to {
+        transform: scale(1.2);
+      }
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    .links {
+      display: flex;
+      justify-content: space-around;
+      margin: 20px 0;
+    }
+
+    .links a {
+      color: #0066cc;
+      text-decoration: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    .links a:hover {
+      background-color: rgba(0, 102, 204, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="glass-container">
+    <img src="icons/icon_black/android-icon-192x192.png" alt="TalkType Logo" class="logo">
+    <h1>TalkType</h1>
+    <p>Premium voice-to-text for any website. Speak naturally and see your words appear instantly with our beautiful interface.</p>
+    
+    <h2>About the Creators</h2>
+    <div class="creators">
+      <div class="creator">
+        <img src="https://via.placeholder.com/80/cccccc/2d2d2d?text=P" alt="Pablo">
+        <p><strong>Pablo Alvarado</strong></p>
+      </div>
+      <div class="creator">
+        <img src="https://via.placeholder.com/80/cccccc/2d2d2d?text=D" alt="Dennis">
+        <p><strong>Dennis</strong></p>
+      </div>
+    </div>
+    
+    <p style="text-align: center;">Made with <span class="heart">❤️</span> in Melbourne and Sydney, Australia</p>
+    
+    <div class="links">
+      <a href="https://github.com/pabloalvarado" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="PRIVACY.md" target="_blank">Privacy Policy</a>
+      <a href="LICENSE.md" target="_blank">License</a>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>© 2025 TalkType. All rights reserved.</p>
+    <p>Version 1.2.1</p>
+  </div>
+
+  <script>
+    // Get links to open in new tab or in Chrome's extensions manager
+    document.querySelectorAll('a[href$=".md"]').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const url = chrome.runtime.getURL(this.getAttribute('href'));
+        chrome.tabs.create({ url });
+      });
+    });
+  </script>
+</body>
+</html>

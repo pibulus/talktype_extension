@@ -1,8 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "TalkType",
-  "version": "1.2",
-  "description": "Sleek voice-to-text for any text input with a modern glass interface",
+  "name": "TalkType - Voice to Text",
+  "version": "1.2.1",
+  "description": "Premium voice-to-text for any website. Speak naturally and see your words appear instantly with our beautiful interface.",
+  "author": "Pablo Alvarado and Dennis",
+  "short_name": "TalkType",
   "permissions": ["activeTab", "scripting", "storage", "tabCapture"],
   "host_permissions": ["<all_urls>"],
   "action": {
@@ -56,7 +58,11 @@
         "styles.css",
         "audio-service.js",
         "api-service.js",
-        "AudioVisualizer.js"
+        "AudioVisualizer.js",
+        "about.html",
+        "LICENSE.md",
+        "PRIVACY.md",
+        "robots.txt"
       ],
       "matches": ["<all_urls>"]
     }

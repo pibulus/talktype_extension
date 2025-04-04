@@ -117,6 +117,11 @@ function openOptions() {
   chrome.runtime.openOptionsPage();
 }
 
+// Open about page
+function openAbout() {
+  chrome.tabs.create({url: chrome.runtime.getURL('about.html')});
+}
+
 // Update extension icon to reflect the current state
 function updateExtensionIcon(state = ICON_STATE.IDLE) {
   try {
@@ -2039,6 +2044,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
   
+  // Add About header click listener
+  const aboutHeader = document.getElementById('about-header');
+  if (aboutHeader) {
+    aboutHeader.addEventListener('click', openAbout);
+  }
+
   // Create permission fix button
   const permButton = document.createElement('button');
   permButton.id = 'fixPermissions';

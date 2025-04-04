@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Sitemap: https://chrome.google.com/webstore/detail/talktype/EXTENSION_ID/sitemap.xml
+
+# TalkType Chrome Extension
+# Copyright (c) 2025 Pablo Alvarado and Dennis
