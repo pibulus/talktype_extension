@@ -58,6 +58,37 @@ function preloadPopupResources() {
   imageToPreload.src = chrome.runtime.getURL('icons/favicon-32x32.png');
 }
 
+// Function to create context menu - centralized for reuse
+function createContextMenu() {
+  console.log('TalkType: Creating context menu');
+  
+  // First remove any existing items to prevent duplicates
+  chrome.contextMenus.removeAll(() => {
+    // Check if feature is enabled in settings
+    chrome.storage.sync.get(['contextMenu'], (result) => {
+      // Default to enabled if setting doesn't exist
+      const contextMenuEnabled = result.contextMenu !== false;
+      
+      if (contextMenuEnabled) {
+        chrome.contextMenus.create({
+          id: "talktype-transcribe",
+          title: "Transcribe with TalkType",
+          contexts: ["editable", "selection"] // Use only standard, supported types
+        }, () => {
+          // Check for creation errors
+          if (chrome.runtime.lastError) {
+            console.error('TalkType: Error creating context menu:', chrome.runtime.lastError);
+          } else {
+            console.log('TalkType: Context menu created successfully');
+          }
+        });
+      } else {
+        console.log('TalkType: Context menu disabled by user preference');
+      }
+    });
+  });
+}
+
 // Initialize extension when installed
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('TalkType extension installed');
@@ -68,29 +99,22 @@ chrome.runtime.onInstalled.addListener(async () => {
   // Preload resources for faster popup display
   preloadPopupResources();
   
-  // Remove existing context menu items first to prevent duplicates
-  chrome.contextMenus.removeAll();
-  
-  // Create context menu items with more specific contexts
-  chrome.contextMenus.create({
-    id: "talktype-transcribe",
-    title: "Transcribe with TalkType",
-    contexts: ["editable", "frame", "selection", "input", "textarea"]
-  });
-  
-  console.log('TalkType: Context menu item created');
-  
   // Set default settings if not already set
-  const settings = await chrome.storage.sync.get(['apiKey']);
+  const settings = await chrome.storage.sync.get(['apiKey', 'contextMenu']);
   if (!settings.apiKey) {
     await chrome.storage.sync.set({
       apiKey: '',
+      autoRecord: false,
+      contextMenu: true, // Enable context menu by default
       enabledSites: ['*'] // Enable on all sites by default
     });
     
     // Open options page on first install
     chrome.runtime.openOptionsPage();
   }
+  
+  // Create context menu
+  createContextMenu();
 });
 
 // Handle messages from content scripts
@@ -154,8 +178,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Preload popup when browser starts
 chrome.runtime.onStartup.addListener(() => {
+  console.log('TalkType: Browser started');
+  
   // Set icon based on current system theme
   setIconBasedOnTheme();
+  
+  // Create context menu
+  createContextMenu();
   
   // Delay preloading slightly to prioritize browser startup
   setTimeout(preloadPopupResources, 1000);
@@ -167,6 +196,10 @@ setInterval(preloadPopupResources, 60 * 60 * 1000); // Refresh cache every hour
 // Global state to track current recording status
 let isRecording = false;
 let autoRecordEnabled = false;
+
+// Create context menu immediately as a fallback in case neither onStartup nor onInstalled is triggered
+// This happens during development or after service worker updates
+setTimeout(createContextMenu, 500);
 
 // Extension icon states
 const ICON_STATE = {
@@ -262,6 +295,14 @@ chrome.storage.onChanged.addListener((changes) => {
       updateExtensionIcon(autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE);
     }
   }
+  
+  // Handle context menu toggle changes
+  if (changes.contextMenu) {
+    console.log('TalkType: Context menu setting updated:', changes.contextMenu.newValue);
+    
+    // Use the centralized function to update the context menu
+    createContextMenu();
+  }
 });
 
 // Message from popup about recording state
@@ -351,21 +392,49 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "talktype-transcribe") {
     console.log('TalkType: Sending message to content script for tab:', tab.id);
     
-    // Send message to content script to start recording
+    // Check if tab and tab ID are valid
+    if (!tab || !tab.id || tab.id === -1) {
+      console.error('TalkType: Invalid tab for context menu action');
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon_white/android-icon-96x96.png',
+        title: 'TalkType Error',
+        message: 'Cannot start transcription on this page. Try a standard web page instead.'
+      });
+      return;
+    }
+    
+    // Send message to content script to start recording with enhanced error handling
     chrome.tabs.sendMessage(tab.id, {
       action: "startTranscriptionFromContextMenu",
       info: info // Pass the context info to help with debugging
     }).then(response => {
       console.log('TalkType: Content script responded:', response);
+      
+      // Check if the response indicates a problem
+      if (response && response.error) {
+        console.error('TalkType: Error from content script:', response.error);
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icons/icon_white/android-icon-96x96.png',
+          title: 'TalkType Error',
+          message: response.error || 'Error starting transcription'
+        });
+      }
     }).catch(error => {
       console.error('TalkType: Error sending message to content script:', error);
+      
+      // Check if it's a missing content script error
+      const isMissingContentScript = error.message && error.message.includes("Could not establish connection");
       
       // If content script messaging fails, show notification
       chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icons/icon_white/android-icon-96x96.png',
         title: 'TalkType Error',
-        message: 'Could not start transcription. Please try again or reload the page.'
+        message: isMissingContentScript 
+          ? 'Content script not loaded. Please reload the page and try again.'
+          : 'Could not start transcription. Please try again or reload the page.'
       });
     });
   }
