@@ -3,19 +3,25 @@
 // Save options to Chrome storage
 function saveOptions() {
   const apiKey = document.getElementById('apiKey').value;
+  const autoRecord = document.getElementById('autoRecord').checked;
+  const contextMenu = document.getElementById('contextMenu').checked;
   
   chrome.storage.sync.set(
-    { apiKey },
+    { 
+      apiKey,
+      autoRecord,
+      contextMenu
+    },
     () => {
       // Update status to let user know options were saved
       const status = document.getElementById('status');
-      status.textContent = 'Options saved.';
+      status.textContent = 'Settings saved successfully!';
       status.className = 'status success';
       status.style.display = 'block';
       
       setTimeout(() => {
         status.style.display = 'none';
-      }, 2000);
+      }, 3000);
     }
   );
 }
@@ -194,9 +200,15 @@ function requestMicrophonePermission() {
 // Restore options from Chrome storage
 function restoreOptions() {
   chrome.storage.sync.get(
-    { apiKey: '' },
+    { 
+      apiKey: '',
+      autoRecord: false,
+      contextMenu: true 
+    },
     (items) => {
       document.getElementById('apiKey').value = items.apiKey;
+      document.getElementById('autoRecord').checked = items.autoRecord;
+      document.getElementById('contextMenu').checked = items.contextMenu;
     }
   );
   
@@ -211,8 +223,32 @@ function openChromeSettings() {
   });
 }
 
+// Open About page
+function openAboutPage() {
+  chrome.tabs.create({
+    url: chrome.runtime.getURL('about.html')
+  });
+}
+
+// Open Context Menu Test page
+function openContextMenuTestPage() {
+  // For Chrome extensions, we need to use the correct path relative to the extension root
+  chrome.tabs.create({
+    url: chrome.runtime.getURL('test-context-menu.html')
+  });
+}
+
 // Initialize the page
 document.addEventListener('DOMContentLoaded', restoreOptions);
 document.getElementById('save').addEventListener('click', saveOptions);
 document.getElementById('requestPermission').addEventListener('click', requestMicrophonePermission);
 document.getElementById('openChromeSettings').addEventListener('click', openChromeSettings);
+document.getElementById('openAboutPage').addEventListener('click', openAboutPage);
+
+// Add context menu test page link if the element exists
+document.addEventListener('DOMContentLoaded', () => {
+  const testContextMenuLink = document.getElementById('testContextMenu');
+  if (testContextMenuLink) {
+    testContextMenuLink.addEventListener('click', openContextMenuTestPage);
+  }
+});

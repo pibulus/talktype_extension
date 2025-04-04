@@ -43,7 +43,7 @@
   },
   "options_ui": {
     "page": "options.html",
-    "open_in_tab": false
+    "open_in_tab": true
   },
   "web_accessible_resources": [
     {
@@ -62,7 +62,8 @@
         "about.html",
         "LICENSE.md",
         "PRIVACY.md",
-        "robots.txt"
+        "robots.txt",
+        "test-context-menu.html"
       ],
       "matches": ["<all_urls>"]
     }
