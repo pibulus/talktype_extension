@@ -221,8 +221,8 @@
 
     <div style="text-align: center; margin-top: 30px;">
         <p>If you encounter any issues, check the browser console (F12) for error messages.</p>
-        <button class="btn" onclick="runTests()">Run Automated Tests</button>
-        <button class="btn" style="margin-left: 10px;" onclick="window.location.reload()">Reload Page</button>
+        <button class="btn" id="run-tests-btn">Run Automated Tests</button>
+        <button class="btn" style="margin-left: 10px;" id="reload-page-btn">Reload Page</button>
     </div>
 
     <script>
@@ -383,8 +383,15 @@
             }
         });
         
-        // Run detection on load
-        window.addEventListener('DOMContentLoaded', detectBrowser);
+        // Add event listeners instead of inline handlers
+        window.addEventListener('DOMContentLoaded', () => {
+            // Run browser detection
+            detectBrowser();
+            
+            // Setup button event listeners
+            document.getElementById('run-tests-btn').addEventListener('click', runTests);
+            document.getElementById('reload-page-btn').addEventListener('click', () => window.location.reload());
+        });
     </script>
 </body>
 </html>
