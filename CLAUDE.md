@@ -26,6 +26,16 @@
 - **Status Indicators**: Include animated pulse dots with appropriate status colors
 - **Button Styling**: Apply subtle shine/glow effects on hover with scale transforms
 
+## Copy & Tone Guidelines
+- **Reference Document**: See [Tone and Style Guide](/docs/TONE_AND_STYLE_GUIDE.md) for comprehensive guidelines
+- **Core Tone**: Confident but not cocky, smart but never smug, friendly but not patronizing
+- **Philosophy**: "Chonk & Charm" - bold and simple exterior with rich, soulful depth
+- **Typography**: Large, bold headings with generous spacing; monospace for transcriptions
+- **Personality**: Breezy, clever, whimsical but professional
+- **Copywriting**: Short, direct phrases with personality; avoid corporate jargon
+- **Voice**: Write as if you're a helpful friend giving advice, not a corporate entity
+- **Tagline**: "You click the ghost, we do the most."
+
 ## Best Practices
 - Test across multiple sites (especially Gmail, Facebook, Reddit) before each release
 - Keep status messages concise (≤2 words) for consistent UI
@@ -35,3 +45,4 @@
 - Include delicate particle backgrounds for depth (subtle-drift animation)
 - Ensure all interactive elements have appropriate hover/active states
 - Add subtle inner shadows for inset elements to enhance the glass effect
+- Follow the Soft Stack philosophy for all UI and copy decisions
