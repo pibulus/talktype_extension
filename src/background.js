@@ -68,6 +68,13 @@ chrome.runtime.onInstalled.addListener(async () => {
   // Preload resources for faster popup display
   preloadPopupResources();
   
+  // Create context menu items
+  chrome.contextMenus.create({
+    id: "talktype-transcribe",
+    title: "Transcribe with TalkType",
+    contexts: ["editable"]
+  });
+  
   // Set default settings if not already set
   const settings = await chrome.storage.sync.get(['apiKey']);
   if (!settings.apiKey) {
@@ -328,5 +335,27 @@ chrome.action.onClicked.addListener(async (tab) => {
     } catch (error) {
       console.error('Error starting auto-record:', error);
     }
+  }
+});
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  console.log('Context menu clicked:', info.menuItemId);
+  
+  if (info.menuItemId === "talktype-transcribe") {
+    // Send message to content script to start recording
+    chrome.tabs.sendMessage(tab.id, {
+      action: "startTranscriptionFromContextMenu"
+    }).catch(error => {
+      console.error('Error sending message to content script:', error);
+      
+      // If content script messaging fails, show notification
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon_white/android-icon-96x96.png',
+        title: 'TalkType Error',
+        message: 'Could not start transcription. Please try again.'
+      });
+    });
   }
 });
