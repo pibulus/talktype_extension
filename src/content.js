@@ -575,19 +575,28 @@ window.addEventListener('load', () => {
 
 // Function to initialize input detection
 function initializeInputDetection() {
-  console.log('TalkType: Initializing input detection for mic buttons...');
+  console.log('TalkType: Initializing input detection...');
   
-  // Focus on standard inputs first - these are most reliable
+  // NOTE: Mic buttons are now disabled in favor of the context menu approach
+  // This improves reliability and eliminates positioning issues
+  
+  // Track inputs for contextual features, but don't add mic buttons
   const standardInputs = document.querySelectorAll('input[type="text"], input[type="search"], input:not([type]), textarea');
   console.log(`TalkType: Found ${standardInputs.length} standard input elements`);
   
-  // Process standard inputs first - these are the most reliable
+  /* 
+  // DISABLED: No longer adding mic buttons to inputs
   standardInputs.forEach(input => {
     if (!input.dataset.hasMicButton) {
       addMicrophoneToInput(input);
     }
   });
+  */
   
+  /* 
+  // DISABLED: No longer adding mic buttons to rich text editors
+  // We now use the context menu instead
+
   // Then handle specific known text editor types with careful selection
   const knownEditors = document.querySelectorAll(`
     /* Gmail compose area - enhanced for better detection */
@@ -639,16 +648,20 @@ function initializeInputDetection() {
     .monaco-editor .view-lines
   `);
   
-  console.log(`TalkType: Found ${knownEditors.length} known rich text editors`);
+  console.log(`TalkType: Found ${knownEditors.length} known rich text editors (for tracking purposes only)`);
   
-  // Process specific known editors
+  // Just track editors but don't add buttons
+  /* 
   knownEditors.forEach(editor => {
     if (!editor.dataset.hasMicButton) {
       addMicrophoneToInput(editor);
     }
   });
+  */
+  */
   
   // Finally, look for elements with specific attributes that strongly suggest they are text inputs
+  // NOTE: We're no longer adding mic buttons to these but still tracking them for context menu support
   const clearTextInputs = document.querySelectorAll(`
     /* Elements with explicit textbox role */
     [role="textbox"]:not([aria-readonly="true"]):not([aria-disabled="true"]),
@@ -682,14 +695,17 @@ function initializeInputDetection() {
     div[contenteditable="true"][role="textbox"][spellcheck="true"]
   `);
   
-  console.log(`TalkType: Found ${clearTextInputs.length} additional text inputs with specific attributes`);
+  console.log(`TalkType: Found ${clearTextInputs.length} additional text inputs with specific attributes (for tracking only)`);
   
-  // Process these as well
+  /* 
+  // DISABLED: No longer adding mic buttons to these elements
+  // We now use the context menu instead for a more reliable experience
   clearTextInputs.forEach(element => {
     if (!element.dataset.hasMicButton && isValidTextInputElement(element)) {
       addMicrophoneToInput(element);
     }
   });
+  */
   
   // Special case for Messenger and other chat inputs which often have special classes
   const chatInputs = document.querySelectorAll(`
@@ -700,13 +716,17 @@ function initializeInputDetection() {
     [data-testid*="message-composer"]
   `);
   
-  console.log(`TalkType: Found ${chatInputs.length} chat input elements`);
+  console.log(`TalkType: Found ${chatInputs.length} chat input elements (for tracking only)`);
   
+  /* 
+  // DISABLED: No longer adding mic buttons to chat inputs
+  // We now use the context menu instead for a more reliable experience
   chatInputs.forEach(input => {
     if (!input.dataset.hasMicButton && isValidTextInputElement(input)) {
       addMicrophoneToInput(input);
     }
   });
+  */
   
   // Clean up log messages
   console.log('TalkType: Input detection completed');
