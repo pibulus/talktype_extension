@@ -6,6 +6,8 @@
   <title>About TalkType</title>
   <link rel="stylesheet" href="styles.css">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
+    
     :root {
       --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
       --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
@@ -16,7 +18,7 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       max-width: 800px;
       margin: 0 auto;
       padding: 30px;
@@ -25,6 +27,7 @@
       line-height: 1.6;
       position: relative;
       overflow-x: hidden;
+      letter-spacing: -0.01em;
     }
 
     /* Particle background */
@@ -72,7 +75,7 @@
       backdrop-filter: blur(15px);
       -webkit-backdrop-filter: blur(15px);
       border-radius: 24px;
-      padding: 40px;
+      padding: 50px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.7);
       margin-bottom: 40px;
@@ -98,7 +101,7 @@
 
     .header {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 50px;
       position: relative;
     }
 
@@ -116,23 +119,25 @@
     }
 
     h1 {
-      font-size: 42px;
-      margin: 10px 0;
+      font-size: 48px;
+      margin: 10px 0 20px;
       background: var(--primary-gradient);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      letter-spacing: -0.5px;
-      font-weight: 700;
+      letter-spacing: -0.03em;
+      font-weight: 900;
       text-shadow: 0 5px 15px rgba(111, 66, 193, 0.1);
     }
 
     h2 {
-      font-size: 28px;
-      margin: 40px 0 20px;
+      font-size: 30px;
+      margin: 35px 0 15px;
       color: var(--accent-color);
       position: relative;
       display: inline-block;
+      letter-spacing: -0.02em;
+      font-weight: 800;
     }
 
     h2::after {
@@ -147,18 +152,41 @@
     }
 
     .tagline {
-      font-size: 18px;
+      font-size: 21px;
       color: var(--text-secondary);
-      max-width: 600px;
-      margin: 15px auto 30px;
-      line-height: 1.7;
+      max-width: 620px;
+      margin: 0 auto 40px;
+      line-height: 1.8;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      position: relative;
+      padding: 0 20px;
+    }
+    
+    .tagline::before, .tagline::after {
+      content: '"';
+      position: absolute;
+      font-size: 42px;
+      color: rgba(111, 66, 193, 0.2);
+      font-family: Georgia, serif;
+      line-height: 0;
+    }
+    
+    .tagline::before {
+      left: 0;
+      top: 15px;
+    }
+    
+    .tagline::after {
+      right: 0;
+      bottom: 0;
     }
 
     .feature-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 25px;
-      margin: 30px 0;
+      gap: 20px;
+      margin: 25px 0;
     }
 
     .feature {
@@ -168,33 +196,50 @@
       border: 1px solid rgba(255, 255, 255, 0.7);
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
       transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
 
     .feature:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 20px rgba(111, 66, 193, 0.15);
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 8px 25px rgba(111, 66, 193, 0.2);
+      border-color: rgba(111, 66, 193, 0.2);
     }
 
     .feature h3 {
       margin-top: 0;
+      margin-bottom: 5px;
       color: var(--accent-color);
-      font-size: 18px;
+      font-size: 20px;
       display: flex;
       align-items: center;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
     .feature-icon {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       margin-right: 10px;
       color: var(--accent-color);
+      filter: drop-shadow(0 2px 3px rgba(111, 66, 193, 0.2));
+      position: relative;
+      top: -1px;
+    }
+    
+    .feature p {
+      margin-top: 15px;
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      font-weight: 450;
     }
 
     .creators {
       display: flex;
       justify-content: center;
-      gap: 40px;
-      margin: 40px 0;
+      gap: 30px;
+      margin: 30px 0;
       flex-wrap: wrap;
     }
 
@@ -248,14 +293,14 @@
     .creator-name {
       font-size: 18px;
       font-weight: 600;
-      margin: 10px 0 5px;
+      margin: 15px 0 8px;
       color: var(--accent-color);
     }
 
     .creator-role {
       font-size: 14px;
       color: var(--text-secondary);
-      margin: 0 0 10px;
+      margin: 0 0 15px;
     }
 
     .creator-location {
@@ -277,7 +322,7 @@
 
     .heart-container {
       text-align: center;
-      margin: 40px 0;
+      margin: 30px 0;
       position: relative;
     }
 
@@ -299,15 +344,48 @@
     }
 
     .made-with {
-      font-size: 20px;
-      font-weight: 500;
+      font-size: 22px;
+      font-weight: 600;
       color: var(--text-secondary);
       display: inline-block;
       background: rgba(255, 255, 255, 0.6);
-      padding: 10px 25px;
+      padding: 14px 30px;
       border-radius: 50px;
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.6);
+      letter-spacing: -0.01em;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .made-with::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      background: var(--primary-gradient);
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.4s ease;
+      border-radius: 50px;
+    }
+    
+    .made-with:hover {
+      color: white;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(111, 66, 193, 0.25);
+    }
+    
+    .made-with:hover::before {
+      opacity: 1;
+    }
+    
+    .made-with:hover .heart {
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
     }
 
     .city {
@@ -322,7 +400,7 @@
       display: flex;
       justify-content: center;
       gap: 20px;
-      margin: 40px 0;
+      margin: 30px 0;
       flex-wrap: wrap;
     }
 
@@ -354,7 +432,7 @@
 
     .footer {
       text-align: center;
-      margin-top: 50px;
+      margin-top: 40px;
       color: var(--text-secondary);
       font-size: 14px;
       background: rgba(255, 255, 255, 0.4);
@@ -364,6 +442,21 @@
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .footer::before {
+      content: '';
+      position: absolute;
+      width: 200px;
+      height: 2px;
+      background: var(--primary-gradient);
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 100%;
+      filter: blur(1px);
     }
 
     .version-badge {
@@ -373,8 +466,33 @@
       padding: 4px 12px;
       border-radius: 30px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       margin-left: 10px;
+      letter-spacing: 0.03em;
+      box-shadow: 0 2px 8px rgba(111, 66, 193, 0.15);
+      border: 1px solid rgba(111, 66, 193, 0.1);
+      position: relative;
+      top: -1px;
+    }
+    
+    .footer p {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .footer p::after {
+      content: '👻';
+      font-size: 12px;
+      position: absolute;
+      bottom: -18px;
+      left: 50%;
+      transform: translateX(-50%) scale(0);
+      transition: transform 0.3s ease;
+      opacity: 0.7;
+    }
+    
+    .footer p:hover::after {
+      transform: translateX(-50%) scale(1);
     }
 
     @media (max-width: 600px) {
@@ -410,7 +528,7 @@
     <div class="header">
       <img src="icons/icon_black/android-icon-192x192.png" alt="TalkType Logo" class="logo">
       <h1>TalkType</h1>
-      <p class="tagline">TalkType's the best. Kick out the rest. Clean, sweet, and stupidly easy. Use it anywhere, talk into any box on any site, and watch your words fly onto the screen with freaky good accuracy.</p>
+      <p class="tagline">TalkType's the best. Kick out the rest. <span style="font-weight: 600;">Clean, sweet, and stupidly easy.</span> Use it anywhere, talk into any box on any site, and watch your words fly onto the screen with freaky good accuracy.</p>
     </div>
     
     <div class="feature-grid">
@@ -421,7 +539,7 @@
           </svg>
           Smart Mode
         </h3>
-        <p>Seamlessly integrates with text fields across any website. Works perfectly with Gmail, Google Docs, and anywhere else you need to type.</p>
+        <p>Seamlessly integrates with text fields across <span style="border-bottom: 1px dashed rgba(111, 66, 193, 0.3);">any website</span>. Works perfectly with Gmail, Google Docs, and anywhere else you need to type.</p>
       </div>
       
       <div class="feature">
@@ -431,7 +549,7 @@
           </svg>
           Freaky Good Transcription
         </h3>
-        <p>Powered by Gemini API for highly accurate speech recognition. Captures your words with precision, just the way you said them.</p>
+        <p>Powered by <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.9em; background: rgba(111, 66, 193, 0.1); padding: 2px 5px; border-radius: 4px;">Gemini API</span> for highly accurate speech recognition. Captures your words with precision, just the way you said them.</p>
       </div>
       
       <div class="feature">
@@ -441,7 +559,7 @@
           </svg>
           Chonky &amp; Charming
         </h3>
-        <p>Beautiful glass UI with responsive animations and automatic dark mode. Clean design that feels right at home in your browser.</p>
+        <p>Beautiful <span style="position:relative; z-index:1"><span style="position:absolute; display:block; top:-5px; left:-10px; right:-10px; bottom:-5px; background:rgba(255,255,255,0.7); filter:blur(5px); z-index:-1; border-radius:5px"></span>glass UI</span> with responsive animations and automatic dark mode. Clean design that feels right at home in your browser.</p>
       </div>
       
       <div class="feature">
@@ -451,7 +569,7 @@
           </svg>
           Privacy First
         </h3>
-        <p>We only listen when you click. Your audio is processed securely and never stored. Simple, transparent, and respectful.</p>
+        <p>We only listen when you click. Your audio is processed securely and <span style="position:relative;"><span style="text-decoration: line-through; opacity: 0.3; position: absolute; left:0;">stored</span> <span style="font-weight: 600; color: var(--accent-color);">never stored</span></span>. Simple, transparent, and respectful.</p>
       </div>
     </div>
     
@@ -461,7 +579,7 @@
         <div class="creator-avatar">
           <img src="icons/icon_black/android-icon-192x192.png" alt="Pablo Alvarado Avatar">
         </div>
-        <div class="creator-name">Pablo Alvarado</div>
+        <div class="creator-name">Pablo Alvarado <span style="font-size: 14px; vertical-align: middle; margin-left: 3px;">👑</span></div>
         <div class="creator-role">Code Wizard & Pixel Perfectionist</div>
         <div class="creator-location">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -475,7 +593,7 @@
         <div class="creator-avatar">
           <img src="icons/icon_black/android-icon-192x192.png" alt="Dennis Jordan Avatar">
         </div>
-        <div class="creator-name">Dennis Jordan</div>
+        <div class="creator-name">Dennis Jordan <span style="font-size: 14px; vertical-align: middle; margin-left: 3px;">🧠</span></div>
         <div class="creator-role">UX Sorcerer & Bug Whisperer</div>
         <div class="creator-location">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -488,7 +606,7 @@
     
     <div class="heart-container">
       <div class="made-with">
-        You click the ghost <span class="heart">❤️</span> we do the most
+        You click the ghost <span class="heart">❤️</span> we do the most <span style="font-size: 0.8em; opacity: 0.8; vertical-align: 2px;">✨</span>
       </div>
     </div>
     
@@ -510,7 +628,7 @@
   </div>
 
   <div class="footer">
-    <p>© 2025 TalkType. Save your breath, keep the vibe. <span class="version-badge">v1.2.1</span></p>
+    <p>© 2025 TalkType. <span style="font-style: italic; letter-spacing: 0.02em;">Save your breath, keep the vibe.</span> <span class="version-badge">v1.3.0</span></p>
   </div>
 
   <script>
