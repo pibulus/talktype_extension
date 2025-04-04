@@ -3742,9 +3742,21 @@ let targetInputElement = null;
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('TalkType: Context menu message received:', request);
   
+  // Send an immediate response to ensure the connection is acknowledged
+  sendResponse({ received: true, status: "processing" });
+  
   if (request.action === "startTranscriptionFromContextMenu") {
+    // Show notification that we received the message
+    showStatusNotification('Context menu action received!', 'info');
+    
     // Get the active element (where the user right-clicked)
     targetInputElement = document.activeElement;
+    console.log('TalkType: Active element is:', targetInputElement);
+    
+    // Add debug information
+    if (request.info && request.info.editable) {
+      console.log('TalkType: Context menu was triggered on an editable element according to Chrome');
+    }
     
     // Validate if it's a proper input element
     if (!isValidTextInputElement(targetInputElement)) {

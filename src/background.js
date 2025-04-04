@@ -68,12 +68,17 @@ chrome.runtime.onInstalled.addListener(async () => {
   // Preload resources for faster popup display
   preloadPopupResources();
   
-  // Create context menu items
+  // Remove existing context menu items first to prevent duplicates
+  chrome.contextMenus.removeAll();
+  
+  // Create context menu items with more specific contexts
   chrome.contextMenus.create({
     id: "talktype-transcribe",
     title: "Transcribe with TalkType",
-    contexts: ["editable"]
+    contexts: ["editable", "frame", "selection", "input", "textarea"]
   });
+  
+  console.log('TalkType: Context menu item created');
   
   // Set default settings if not already set
   const settings = await chrome.storage.sync.get(['apiKey']);
@@ -340,21 +345,27 @@ chrome.action.onClicked.addListener(async (tab) => {
 
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  console.log('Context menu clicked:', info.menuItemId);
+  console.log('TalkType: Context menu clicked:', info.menuItemId);
+  console.log('TalkType: Context info:', JSON.stringify(info));
   
   if (info.menuItemId === "talktype-transcribe") {
+    console.log('TalkType: Sending message to content script for tab:', tab.id);
+    
     // Send message to content script to start recording
     chrome.tabs.sendMessage(tab.id, {
-      action: "startTranscriptionFromContextMenu"
+      action: "startTranscriptionFromContextMenu",
+      info: info // Pass the context info to help with debugging
+    }).then(response => {
+      console.log('TalkType: Content script responded:', response);
     }).catch(error => {
-      console.error('Error sending message to content script:', error);
+      console.error('TalkType: Error sending message to content script:', error);
       
       // If content script messaging fails, show notification
       chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icons/icon_white/android-icon-96x96.png',
         title: 'TalkType Error',
-        message: 'Could not start transcription. Please try again.'
+        message: 'Could not start transcription. Please try again or reload the page.'
       });
     });
   }
