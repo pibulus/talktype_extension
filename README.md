@@ -11,7 +11,7 @@ A sleek, modern browser extension that adds voice-to-text functionality to any t
 - **Smart Microphone**: Click once to start recording, with visual feedback
 - **Instant Transcription**: Using the powerful Gemini API for accurate speech recognition
 - **Clipboard Integration**: Automatically copies transcriptions to clipboard
-- **Focus-Based**: Elegantly positions microphone buttons near text fields
+- **Context Menu Integration**: Easy access to transcription via right-click menu on any text field
 - **Theme Options**: Toggle between light and dark themes
 - **Responsive Design**: Works across devices and screen sizes
 - **Dynamic Content Support**: Works with dynamically loaded content on any website
@@ -32,9 +32,9 @@ A sleek, modern browser extension that adds voice-to-text functionality to any t
 2. Go to Settings and enter your Gemini API key
    - You can get a Gemini API key from [Google AI Studio](https://ai.google.dev/)
 3. Navigate to any website with text inputs
-4. Click on the microphone icon that appears next to text inputs when focused
-5. Speak your text and it will be transcribed into the input field
-6. The transcription is automatically copied to your clipboard for convenience
+4. Right-click in any text field and select "Transcribe with TalkType" from the context menu
+5. Speak your text and click anywhere to stop recording
+6. Your transcription will be automatically inserted into the text field
 
 ## Key Features in Detail
 
@@ -47,8 +47,8 @@ Simply click the "Record & Transcribe" button to immediately start recording. A 
 ### Adaptive Theming
 The extension icon automatically adapts to your system's light or dark theme, ensuring good visibility in both modes. You can also toggle between light and dark themes within the extension.
 
-### Smart Positioning
-Microphone buttons are intelligently positioned next to text fields, appearing when needed and staying out of your way when not in use.
+### Context Menu Transcription
+Right-click on any text field and select "Transcribe with TalkType" from the context menu. A sleek recording indicator appears to show recording status, and clicking anywhere stops recording and inserts your transcription.
 
 ## Development
 
@@ -74,7 +74,8 @@ Microphone buttons are intelligently positioned next to text fields, appearing w
 ## Privacy
 
 TalkType takes your privacy seriously:
-- Microphone access is only activated when you explicitly click to record
+- Microphone access is only activated when you explicitly choose to record
+- Recording starts only after you select "Transcribe with TalkType" from the context menu
 - Audio is only sent to the Gemini API for transcription
 - No audio data or transcriptions are stored
 - Uses your personal Gemini API key which you control
