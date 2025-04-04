@@ -63,7 +63,8 @@
         "LICENSE.md",
         "PRIVACY.md",
         "robots.txt",
-        "test-context-menu.html"
+        "test-context-menu.html",
+        "test-context-menu.js"
       ],
       "matches": ["<all_urls>"]
     }
