@@ -2,82 +2,186 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>TalkType - Options</title>
+  <title>TalkType - Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
-      --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
-      --glass-bg: rgba(255, 255, 255, 0.25);
-      --glass-border: rgba(255, 255, 255, 0.4);
-      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      --text-primary: rgba(255, 255, 255, 0.95);
-      --text-secondary: rgba(255, 255, 255, 0.85);
-      --accent: rgba(64, 112, 244, 1);
+      /* Colors */
+      --primary-color: #6f42c1; /* Purple */
+      --primary-light: #8a70d6;
+      --primary-dark: #5a32a3;
+      --text-dark: #333333;
+      --text-light: #ffffff;
+      --text-muted: #666666;
+      --bg-light: #ffffff;
+      --bg-dark: #222230;
+      --border-light: #dddddd;
+      --border-dark: #444455;
+      --success: #22c55e;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+      
+      /* Text variables for light mode */
+      --text-primary: var(--text-dark);
+      --text-secondary: var(--text-muted);
+    }
+    
+    /* Dark mode variables */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --text-primary: var(--text-light);
+        --text-secondary: rgba(255, 255, 255, 0.7);
+      }
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
       padding: 0;
-      background-attachment: fixed;
-      background: linear-gradient(225deg, #4568DC, #7474BF, #348AC7, #56CCF2);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
-      color: var(--text-primary);
+      background-color: #f7f7fa;
+      color: var(--text-dark);
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
+      position: relative;
     }
     
-    @keyframes gradientBG {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+      }
     }
+    
     
     .container {
-      max-width: 600px;
+      max-width: 800px;
       width: 100%;
       padding: 0 20px;
       box-sizing: border-box;
+      margin: 0 auto;
+    }
+    
+    .content {
+      padding: 40px 0;
+    }
+    
+    /* Header style */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 0 30px;
+      position: relative;
+      margin-bottom: 20px;
     }
     
     h1 {
-      font-size: 28px;
-      font-weight: 600;
+      font-size: 42px;
+      font-weight: 800;
+      color: var(--primary-color);
       text-align: center;
-      margin: 40px 0 30px;
-      color: white;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
     
+    /* Card styles */
     .card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 16px;
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
-      padding: 25px;
+      background: var(--bg-light);
+      border-radius: 12px;
+      border: 1px solid var(--border-light);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      padding: 24px;
       margin-bottom: 20px;
-      transition: all 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .card:hover {
+      box-shadow: 0 8px 20px rgba(111, 66, 193, 0.1);
+      transform: translateY(-2px);
+      border-color: rgba(111, 66, 193, 0.15);
+    }
+    
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border-radius: 12px 12px 0 0;
+    }
+    
+    .card:hover::before {
+      opacity: 1;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .card {
+        background: var(--bg-dark);
+        border-color: var(--border-dark);
+      }
     }
     
     .card-header {
       font-size: 20px;
-      font-weight: 500;
+      font-weight: 700;
       margin-bottom: 20px;
-      color: white;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      color: var(--primary-color);
       display: flex;
       align-items: center;
+      gap: 12px;
+      position: relative;
     }
     
-    .card-header svg {
-      margin-right: 10px;
+    .card-header::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      width: 40px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+      border-radius: 3px;
     }
     
+    @media (prefers-color-scheme: dark) {
+      .card-header {
+        color: var(--primary-light);
+      }
+    }
+    
+    .card p {
+      line-height: 1.6;
+      margin-bottom: 16px;
+      font-size: 15px;
+      color: var(--text-dark);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .card p {
+        color: var(--text-light);
+      }
+    }
+    
+    /* Form styles */
     .form-group {
       margin-bottom: 20px;
     }
@@ -86,45 +190,182 @@
       display: block;
       margin-bottom: 8px;
       font-weight: 500;
-      color: white;
+      color: var(--text-dark);
     }
     
     input[type="text"] {
       width: 100%;
-      padding: 12px;
+      padding: 10px 16px;
       border-radius: 8px;
-      border: 1px solid var(--glass-border);
-      background: rgba(255, 255, 255, 0.07);
-      color: white;
+      border: 1px solid var(--border-light);
+      background: var(--bg-light);
+      color: var(--text-dark);
       font-size: 15px;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
       box-sizing: border-box;
       transition: all 0.2s ease;
+      font-family: inherit;
     }
     
     input[type="text"]:focus {
       outline: none;
-      border-color: rgba(255, 255, 255, 0.6);
-      background: rgba(255, 255, 255, 0.15);
-      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
     }
     
-    button {
-      background: var(--primary-gradient);
-      color: white;
-      border: 1px solid var(--glass-border);
-      padding: 12px 20px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 500;
+    @media (prefers-color-scheme: dark) {
+      label {
+        color: var(--text-light);
+      }
+      
+      input[type="text"] {
+        background-color: #333344;
+        color: var(--text-light);
+        border-color: var(--border-dark);
+      }
+      
+      input[type="text"]:focus {
+        border-color: var(--primary-light);
+      }
+    }
+    
+    /* Toggle/Switch styles */
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      padding: 16px;
+      background-color: #f5f5fa;
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
       transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+    }
+    
+    .toggle-content {
+      flex: 1;
+      padding-right: 16px;
+    }
+    
+    .toggle-row label {
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--text-dark);
+      display: block;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cccccc;
+      transition: .3s;
+      border-radius: 26px;
+      overflow: hidden;
+    }
+    
+    .toggle-slider::before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      z-index: 2;
+    }
+    
+    input:checked + .toggle-slider {
+      background-color: var(--primary-color);
+    }
+    
+    input:checked + .toggle-slider::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      left: -100%;
+      animation: shimmer 1s forwards;
+    }
+    
+    @keyframes shimmer {
+      to { left: 100%; }
+    }
+    
+    input:checked + .toggle-slider:before {
+      transform: translateX(22px);
+    }
+    
+    
+    .toggle-description {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin: 0;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .toggle-row {
+        background-color: #2c2c3c;
+        border-color: var(--border-dark);
+      }
+      
+      .toggle-row label {
+        color: var(--text-light);
+      }
+      
+      .toggle-description {
+        color: rgba(255, 255, 255, 0.7);
+      }
+      
+      .toggle-slider {
+        background-color: #555555;
+      }
+      
+      .toggle-slider:before {
+        background-color: #f5f5f5;
+      }
+    }
+    
+    /* Button styles */
+    button {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 10px rgba(111, 66, 193, 0.2);
       font-size: 15px;
-      letter-spacing: 0.5px;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 120px;
+      justify-content: center;
       position: relative;
       overflow: hidden;
     }
@@ -140,222 +381,874 @@
       transition: all 0.6s ease;
     }
     
-    button:hover {
-      background: var(--hover-gradient);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
-    }
-    
     button:hover::before {
       left: 100%;
     }
     
+    button:hover {
+      background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+      box-shadow: 0 6px 14px rgba(111, 66, 193, 0.3);
+      transform: translateY(-1px);
+    }
+    
     button:active {
       transform: translateY(1px);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 1px 3px rgba(111, 66, 193, 0.2);
     }
     
-    .status {
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 15px;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      border: 1px solid var(--glass-border);
-      display: none;
+    .secondary-button {
+      background: rgba(111, 66, 193, 0.1);
+      color: var(--primary-color);
+      border: 1px solid rgba(111, 66, 193, 0.2);
+      box-shadow: 0 2px 6px rgba(111, 66, 193, 0.05);
     }
     
-    .success {
-      background-color: rgba(76, 175, 80, 0.2);
-      color: rgba(255, 255, 255, 0.9);
-      border-color: rgba(76, 175, 80, 0.3);
+    .secondary-button:hover {
+      background: rgba(111, 66, 193, 0.15);
+      color: var(--primary-light);
     }
     
-    .error {
-      background-color: rgba(244, 67, 54, 0.2);
-      color: rgba(255, 255, 255, 0.9);
-      border-color: rgba(244, 67, 54, 0.3);
-    }
-    
-    .info {
-      background: var(--glass-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 12px;
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
-      padding: 20px;
-      margin-bottom: 40px;
-      font-size: 15px;
-      line-height: 1.5;
-    }
-    
-    .info ol {
-      margin-left: 20px;
-      padding-left: 0;
-    }
-    
-    .info li {
-      margin-bottom: 8px;
-    }
-    
-    .permission-status {
-      margin-top: 15px;
-      padding: 15px;
-      border-radius: 10px;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid var(--glass-border);
-    }
-    
-    .granted {
-      background-color: rgba(76, 175, 80, 0.2);
-      color: rgba(255, 255, 255, 0.9);
-      border-color: rgba(76, 175, 80, 0.3);
-    }
-    
-    .denied {
-      background-color: rgba(244, 67, 54, 0.2);
-      color: rgba(255, 255, 255, 0.9);
-      border-color: rgba(244, 67, 54, 0.3);
-    }
-    
-    .unknown {
-      background-color: rgba(255, 152, 0, 0.2);
-      color: rgba(255, 255, 255, 0.9);
-      border-color: rgba(255, 152, 0, 0.3);
-    }
-    
-    .note {
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border-radius: 8px;
-      border: 1px solid var(--glass-border);
-      padding: 12px;
-      margin-top: 15px;
-      font-size: 14px;
-      line-height: 1.5;
-      color: var(--text-secondary);
+    @media (prefers-color-scheme: dark) {
+      .secondary-button {
+        color: var(--primary-light);
+      }
     }
     
     .btn-group {
       display: flex;
       gap: 10px;
-      margin-top: 15px;
+      margin-top: 20px;
+      flex-wrap: wrap;
     }
     
+    /* Status and notification styles */
+    .status {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-top: 16px;
+      border: 1px solid transparent;
+      display: none;
+      animation: fadeIn 0.3s ease-out;
+      font-weight: 500;
+      text-align: center;
+      font-size: 14px;
+      position: relative;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .status::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: currentColor;
+    }
+    
+    .success {
+      background-color: #F0FDF4;
+      color: #16A34A;
+      border-color: #BBF7D0;
+    }
+    
+    .error {
+      background-color: #FEF2F2;
+      color: #DC2626;
+      border-color: #FECACA;
+    }
+    
+    .warning {
+      background-color: #FFFBEB;
+      color: #D97706;
+      border-color: #FEF3C7;
+    }
+    
+    .info {
+      background-color: #EFF6FF;
+      color: #2563EB;
+      border-color: #BFDBFE;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .success {
+        background-color: rgba(22, 163, 74, 0.1);
+        color: #4ade80;
+        border-color: rgba(22, 163, 74, 0.3);
+      }
+      
+      .error {
+        background-color: rgba(220, 38, 38, 0.1);
+        color: #f87171;
+        border-color: rgba(220, 38, 38, 0.3);
+      }
+      
+      .warning {
+        background-color: rgba(217, 119, 6, 0.1);
+        color: #fbbf24;
+        border-color: rgba(217, 119, 6, 0.3);
+      }
+      
+      .info {
+        background-color: rgba(37, 99, 235, 0.1);
+        color: #60a5fa;
+        border-color: rgba(37, 99, 235, 0.3);
+      }
+    }
+    
+    /* Feature boxes */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .feature-card {
+      padding: 16px;
+      border-radius: 16px;
+      background: var(--bg-light);
+      border: 1px solid var(--border-light);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(111, 66, 193, 0.1);
+      border-color: rgba(111, 66, 193, 0.2);
+    }
+    
+    .feature-card h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .feature-card {
+        background: var(--bg-dark);
+        border-color: var(--border-dark);
+      }
+      
+      .feature-card h3 {
+        color: var(--primary-light);
+      }
+      
+      .feature-card p {
+        color: var(--text-light);
+      }
+    }
+    
+    /* Permission status styling */
+    .permission-status {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      position: relative;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .permission-status::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 12px;
+    }
+    
+    .granted {
+      background-color: #F0FDF4;
+      color: #16A34A;
+      border-color: #BBF7D0;
+    }
+    
+    .granted::before {
+      background-color: #16A34A;
+    }
+    
+    .denied {
+      background-color: #FEF2F2;
+      color: #DC2626;
+      border-color: #FECACA;
+    }
+    
+    .denied::before {
+      background-color: #DC2626;
+    }
+    
+    .unknown {
+      background-color: #FFFBEB;
+      color: #D97706;
+      border-color: #FEF3C7;
+    }
+    
+    .unknown::before {
+      background-color: #D97706;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .granted {
+        background-color: rgba(22, 163, 74, 0.1);
+        color: #4ade80;
+        border-color: rgba(22, 163, 74, 0.3);
+      }
+      
+      .granted::before {
+        background-color: #4ade80;
+      }
+      
+      .denied {
+        background-color: rgba(220, 38, 38, 0.1);
+        color: #f87171;
+        border-color: rgba(220, 38, 38, 0.3);
+      }
+      
+      .denied::before {
+        background-color: #f87171;
+      }
+      
+      .unknown {
+        background-color: rgba(217, 119, 6, 0.1);
+        color: #fbbf24;
+        border-color: rgba(217, 119, 6, 0.3);
+      }
+      
+      .unknown::before {
+        background-color: #fbbf24;
+      }
+    }
+    
+    /* Note style */
+    .note {
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+      background-color: #f5f5fa;
+      padding: 16px;
+      margin-top: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .note {
+        background-color: #2c2c3c;
+        border-color: var(--border-dark);
+        color: rgba(255, 255, 255, 0.7);
+      }
+      
+      .note a {
+        color: var(--primary-light);
+      }
+    }
+    
+    /* Usage guide section */
+    .guide {
+      background: var(--bg-light);
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border: 1px solid var(--border-light);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s ease;
+    }
+    
+    .guide h3 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: var(--primary-color);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .guide ol {
+      margin-left: 20px;
+      padding-left: 0;
+    }
+    
+    .guide li {
+      margin-bottom: 12px;
+      line-height: 1.6;
+      font-size: 15px;
+      color: var(--text-dark);
+    }
+    
+    .guide li strong {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .guide {
+        background: var(--bg-dark);
+        border-color: var(--border-dark);
+      }
+      
+      .guide h3 {
+        color: var(--primary-light);
+      }
+      
+      .guide li {
+        color: var(--text-light);
+      }
+      
+      .guide li strong {
+        color: var(--primary-light);
+      }
+    }
+    
+    /* Footer style */
     .footer {
       text-align: center;
-      margin: 30px 0;
-      font-size: 14px;
+      margin: 40px 0 30px;
       color: var(--text-secondary);
-      opacity: 0.8;
+      font-size: 14px;
+      padding: 16px;
+      position: relative;
+    }
+    
+    .footer a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    
+    .footer a:hover {
+      text-decoration: underline;
+    }
+    
+    .version-badge {
+      display: inline-block;
+      background: rgba(111, 66, 193, 0.08);
+      color: var(--primary-color);
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+      position: relative;
+      top: -1px;
+    }
+    
+    .footer p {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .footer p:hover::after {
+      content: '👻';
+      font-size: 12px;
+      position: absolute;
+      right: -20px;
+      top: 0;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .footer {
+        color: rgba(255, 255, 255, 0.8);
+      }
+      
+      .footer a {
+        color: var(--primary-light);
+      }
+      
+      .version-badge {
+        background: rgba(111, 66, 193, 0.15);
+        color: var(--primary-light);
+      }
     }
     
     /* Icon styles */
     .icon {
-      display: inline-block;
-      vertical-align: middle;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       width: 24px;
       height: 24px;
-      fill: white;
-      margin-right: 6px;
+      fill: currentColor;
+      transition: all 0.3s ease;
+    }
+    
+    .icon.animated {
+      transform: scale(1.2);
+      filter: drop-shadow(0 0 3px rgba(111, 66, 193, 0.5));
+    }
+    
+    .header .icon {
+      filter: drop-shadow(0 10px 15px rgba(111, 66, 193, 0.2));
+      transition: all 0.3s ease;
+      animation: float 6s ease-in-out infinite;
+      position: relative;
+    }
+    
+    .header .icon::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: radial-gradient(circle at center, rgba(111, 66, 193, 0.2) 0%, transparent 70%);
+      border-radius: 50%;
+      z-index: -1;
+      filter: blur(10px);
+      animation: pulse 3s ease-in-out infinite alternate;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(0.8); opacity: 0.3; }
+      100% { transform: scale(1.3); opacity: 0.5; }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    /* Context menu highlight section */
+    .feature-highlight {
+      background: #f9f1ff;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border: 1px solid rgba(111, 66, 193, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: relative;
+    }
+    
+    .feature-highlight-icon {
+      width: 48px;
+      height: 48px;
+      background: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid rgba(111, 66, 193, 0.2);
+    }
+    
+    .feature-highlight-icon svg {
+      width: 24px;
+      height: 24px;
+      color: var(--primary-color);
+    }
+    
+    .feature-highlight-content {
+      flex: 1;
+    }
+    
+    .feature-highlight-content h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: var(--primary-color);
+      display: inline-flex;
+      align-items: center;
+      font-weight: 600;
+    }
+    
+    .feature-highlight-content h3::before {
+      content: 'NEW';
+      display: inline-block;
+      font-size: 11px;
+      background: var(--primary-color);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 8px;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+    }
+    
+    .feature-highlight-content p {
+      margin: 0;
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .feature-highlight {
+        background: rgba(111, 66, 193, 0.15);
+        border-color: rgba(111, 66, 193, 0.3);
+      }
+      
+      .feature-highlight-icon {
+        background: rgba(111, 66, 193, 0.25);
+        border-color: rgba(111, 66, 193, 0.4);
+      }
+      
+      .feature-highlight-icon svg {
+        color: var(--primary-light);
+      }
+      
+      .feature-highlight-content h3 {
+        color: var(--primary-light);
+      }
+      
+      .feature-highlight-content h3::before {
+        background: var(--primary-light);
+        color: var(--bg-dark);
+      }
+      
+      .feature-highlight-content p {
+        color: var(--text-light);
+      }
+    }
+    
+    /* Media queries for responsiveness */
+    @media (max-width: 600px) {
+      .card {
+        padding: 24px;
+      }
+      
+      h1 {
+        font-size: 24px;
+      }
+      
+      .content {
+        padding: 24px 0;
+      }
+      
+      .btn-group {
+        flex-direction: column;
+      }
+      
+      .btn-group button {
+        width: 100%;
+      }
+      
+      .feature-highlight {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .feature-highlight-icon {
+        margin: 0 0 12px;
+      }
+      
+      .toggle-row {
+        flex-direction: column-reverse;
+        align-items: flex-start;
+      }
+      
+      .toggle-switch {
+        margin-bottom: 12px;
+      }
+      
+      .toggle-content {
+        padding-right: 0;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>
-      <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28">
-        <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-        <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-        <line x1="12" x2="12" y1="19" y2="23" stroke="currentColor" stroke-width="2"></line>
-        <line x1="8" x2="16" y1="23" y2="23" stroke="currentColor" stroke-width="2"></line>
-      </svg>
-      TalkType Settings
-    </h1>
-    
-    <div class="card">
-      <div class="card-header">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 10a2 2 0 0 1 2 2c0 .74-.4 1.38-1 1.72V16a1 1 0 0 1-2 0v-2.28c-.6-.34-1-.98-1-1.72a2 2 0 0 1 2-2zm10 2c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10zm-2 0c0-4.42-3.58-8-8-8s-8 3.58-8 8 3.58 8 8 8 8-3.58 8-8z"/>
-        </svg>
-        API Configuration
-      </div>
-      
-      <div class="form-group">
-        <label for="apiKey">API Key</label>
-        <input type="text" id="apiKey" placeholder="Enter any text as API key for the demo">
-      </div>
-      
-      <div class="note">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1s1 .45 1 1v4c0 .55-.45 1-1 1zm1-8h-2V7h2v2z"/>
-        </svg>
-        <span>For this demo, the transcription is simulated so any text will work as an API key.</span>
-      </div>
-      
-      <button id="save" class="primary">Save Settings</button>
-      <div id="status" class="status"></div>
-    </div>
-    
-    <div class="card">
-      <div class="card-header">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-          <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          <line x1="12" x2="12" y1="19" y2="23" stroke="currentColor" stroke-width="2"></line>
-          <line x1="8" x2="16" y1="23" y2="23" stroke="currentColor" stroke-width="2"></line>
-        </svg>
-        Microphone Access
-      </div>
-      
-      <p>TalkType needs microphone access to convert your speech to text.</p>
-      
-      <div id="permissionStatus" class="permission-status unknown">
-        Checking permission status...
-      </div>
-      
-      <div class="btn-group">
-        <button id="requestPermission">
-          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <div class="content">
+      <div class="header">
+        <h1>
+          <svg class="icon" style="width: 36px; height: 36px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
             <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" x2="12" y1="19" y2="23" stroke="currentColor" stroke-width="2"></line>
+            <line x1="8" x2="16" y1="23" y2="23" stroke="currentColor" stroke-width="2"></line>
           </svg>
-          Test Microphone
-        </button>
+          TalkType
+        </h1>
+      </div>
+      
+      <!-- API Key Section -->
+      <div class="card">
+        <div class="card-header">
+          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M12 10a2 2 0 0 1 2 2c0 .74-.4 1.38-1 1.72V16a1 1 0 0 1-2 0v-2.28c-.6-.34-1-.98-1-1.72a2 2 0 0 1 2-2zm10 2c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10zm-2 0c0-4.42-3.58-8-8-8s-8 3.58-8 8 3.58 8 8 8 8-3.58 8-8z"/>
+          </svg>
+          API Configuration
+        </div>
         
-        <button id="openChromeSettings">
+        <div class="form-group">
+          <label for="apiKey">Gemini API Key</label>
+          <input type="text" id="apiKey" placeholder="Paste your magic key here...">
+        </div>
+        
+        <div class="note">
+          <svg class="icon" style="color: var(--info); margin-top: 2px; flex-shrink: 0;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1s1 .45 1 1v4c0 .55-.45 1-1 1zm1-8h-2V7h2v2z"/>
+          </svg>
+          <div>
+            <p style="margin: 0; font-weight: 500; margin-bottom: 4px;">Paste your Gemini API Key to use your own transcription model.</p>
+            <p style="margin: 0;">You'll need a Gemini API key for speech transcription. <a href="https://ai.google.dev/" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Get a free key at Google AI Studio <span style="font-size: 14px;">↗</span></a>. Once created, paste your API key here.</p>
+          </div>
+        </div>
+        
+        <div style="display: flex; justify-content: center; width: 100%; margin-top: 16px;">
+          <button id="save" class="primary">
+            <svg class="icon" style="width: 18px; height: 18px;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
+            </svg>
+            Save API Key
+          </button>
+        </div>
+        <div id="status" class="status"></div>
+      </div>
+      
+      <!-- Feature Configuration -->
+      <div class="card">
+        <div class="card-header">
           <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
           </svg>
-          Chrome Settings
-        </button>
-      </div>
-    </div>
-    
-    <div class="info">
-      <div class="card-header" style="margin-bottom: 10px;">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-4h2v2h-2zm1.61-9.96c-2.06-.3-3.88.97-4.43 2.79-.18.58.26 1.17.87 1.17.43 0 .82-.27.94-.68.32-1.03 1.37-1.74 2.49-1.54 1.31.26 2.21 1.73 1.87 3.03-.34 1.29-1.49 1.7-2.59 2.4-.3.19-.48.51-.48.85V16c0 .55.45 1 1 1s1-.45 1-1v-.35c1.3-.65 2.9-1.29 3.41-3.14.82-2.96-1.07-5.96-4.08-6.47z"/>
-        </svg>
-        How to Use TalkType
+          Feature Configuration
+        </div>
+        
+        <div class="toggle-row">
+          <div class="toggle-content">
+            <label for="autoRecord">Auto-Record Mode</label>
+            <p class="toggle-description">Starts recording as soon as you open TalkType. One less click.</p>
+          </div>
+          <div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="autoRecord">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="toggle-row">
+          <div class="toggle-content">
+            <label for="contextMenu">Context Menu Transcription</label>
+            <p class="toggle-description">Right-click on any text field to start transcribing. Simple and direct.</p>
+          </div>
+          <div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="contextMenu" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="feature-highlight">
+          <div class="feature-highlight-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M12 7c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0-14a2 2 0 1 0 0 4 2 2 0 1 0 0-4z"/>
+              <path fill="currentColor" d="M4 7c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0-14a2 2 0 1 0 0 4 2 2 0 1 0 0-4zm16 0a2 2 0 1 0 0 4 2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4z"/>
+            </svg>
+          </div>
+          <div class="feature-highlight-content">
+            <h3>Context Menu</h3>
+            <p>Right-click in any text field, select "Transcribe with TalkType," and start speaking. Click anywhere to stop. Your text appears right where you need it.</p>
+          </div>
+        </div>
       </div>
       
-      <ol>
-        <li>Enter your API key above and click <strong>Save Settings</strong></li>
-        <li>Grant microphone access by clicking <strong>Test Microphone</strong></li>
-        <li>Visit any website with text inputs</li>
-        <li>Click the microphone icon that appears next to text inputs</li>
-        <li>Start speaking and your words will be converted to text</li>
-      </ol>
-    </div>
-    
-    <div class="footer">
-      TalkType &copy; 2025
+      <!-- Microphone Access -->
+      <div class="card">
+        <div class="card-header">
+          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" x2="12" y1="19" y2="23" stroke="currentColor" stroke-width="2"></line>
+            <line x1="8" x2="16" y1="23" y2="23" stroke="currentColor" stroke-width="2"></line>
+          </svg>
+          Microphone Access
+        </div>
+        
+        <p>TalkType needs mic access to turn your voice into text. Quick setup below.</p>
+        
+        <div id="permissionStatus" class="permission-status unknown">
+          Checking permission status...
+        </div>
+        
+        <div class="btn-group" style="justify-content: center;">
+          <button id="requestPermission">
+            <svg class="icon" style="width: 18px; height: 18px;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            </svg>
+            Test Microphone
+          </button>
+          
+          <button id="openChromeSettings" class="secondary-button">
+            <svg class="icon" style="width: 18px; height: 18px;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            Chrome Settings
+          </button>
+        </div>
+      </div>
+      
+      <!-- Usage Guide -->
+      <div class="card">
+        <div class="card-header">
+          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-4h2v2h-2zm1.61-9.96c-2.06-.3-3.88.97-4.43 2.79-.18.58.26 1.17.87 1.17.43 0 .82-.27.94-.68.32-1.03 1.37-1.74 2.49-1.54 1.31.26 2.21 1.73 1.87 3.03-.34 1.29-1.49 1.7-2.59 2.4-.3.19-.48.51-.48.85V16c0 .55.45 1 1 1s1-.45 1-1v-.35c1.3-.65 2.9-1.29 3.41-3.14.82-2.96-1.07-5.96-4.08-6.47z"/>
+          </svg>
+          How to Use TalkType
+        </div>
+        
+        <div class="guide">
+          <h3>
+            <svg class="icon" style="width: 24px; height: 24px; margin-right: 8px;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M12 7c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0-14a2 2 0 1 0 0 4 2 2 0 1 0 0-4z"/>
+              <path fill="currentColor" d="M4 7c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0-14a2 2 0 1 0 0 4 2 2 0 1 0 0-4zm16 0a2 2 0 1 0 0 4 2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4z"/>
+            </svg>
+            Context Menu Method
+          </h3>
+          <ol>
+            <li>Add your API key above and hit <strong>Save</strong></li>
+            <li>Test your mic by clicking <strong>Test Microphone</strong></li>
+            <li>Go to any website with text fields</li>
+            <li>Right-click in a text field and select <strong>"Transcribe with TalkType"</strong></li>
+            <li>Start speaking - the indicator shows it's recording</li>
+            <li>Click anywhere to stop and insert your text</li>
+          </ol>
+        </div>
+        
+        <div class="guide">
+          <h3>
+            <svg class="icon" style="width: 24px; height: 24px; margin-right: 8px;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"/>
+            </svg>
+            Popup Method
+          </h3>
+          <ol>
+            <li>Click the TalkType icon in your browser toolbar</li>
+            <li>Hit the "Record & Transcribe" button</li>
+            <li>Speak while the visualizer shows your voice levels</li>
+            <li>Click "Stop Recording" when finished</li>
+            <li>Your text appears and gets copied to clipboard</li>
+            <li>Paste anywhere you need it</li>
+          </ol>
+        </div>
+      </div>
+      
+      <div class="footer">
+        <p>© 2025 TalkType. All rights reserved. <span class="version-badge">Version 1.3.0</span> · <a href="#" id="openAboutPage">About Us</a></p>
+      </div>
     </div>
   </div>
   
   <script src="options.js"></script>
+  <script>
+    // Add a smooth fade-in effect when the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      // Create a style element
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes shimmerBg {
+          0% { background-position: -100% 0; }
+          100% { background-position: 200% 0; }
+        }
+        
+        .card {
+          opacity: 0;
+          animation: fadeInUp 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+        
+        .card-header {
+          background: linear-gradient(90deg, transparent, rgba(111, 66, 193, 0.05), transparent);
+          background-size: 200% 100%;
+          animation: shimmerBg 3s infinite;
+        }
+        
+        body::before {
+          content: '';
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: radial-gradient(ellipse at top left, rgba(111, 66, 193, 0.03) 0%, transparent 60%), 
+                      radial-gradient(ellipse at bottom right, rgba(111, 66, 193, 0.03) 0%, transparent 60%);
+          pointer-events: none;
+          z-index: -1;
+        }
+        
+        .toggle-row:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+        }
+        
+        .feature-highlight {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .feature-highlight::after {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle at center, rgba(111, 66, 193, 0.1) 0%, transparent 65%);
+          opacity: 0;
+          z-index: 0;
+          animation: pulse-bg 4s ease-in-out infinite alternate;
+          pointer-events: none;
+        }
+        
+        @keyframes pulse-bg {
+          0% { opacity: 0; transform: scale(0.95); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      // Apply sequential animation delay to each card
+      document.querySelectorAll('.card').forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.15}s`;
+      });
+      
+      // Add subtle hover effect to buttons
+      document.querySelectorAll('button').forEach(button => {
+        button.addEventListener('mouseenter', () => {
+          button.querySelector('svg')?.classList.add('animated');
+        });
+        button.addEventListener('mouseleave', () => {
+          button.querySelector('svg')?.classList.remove('animated');
+        });
+      });
+    });
+  </script>
 </body>
 </html>
