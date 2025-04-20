@@ -283,7 +283,7 @@ const MicButtonManager = {
           }
 
           // Stop recording and process the audio
-          await window.stopRecording(); // Make sure we await this
+          await window.audioProcessingService.stopRecording(); // Make sure we await this
         } else {
           // Not recording, start a new recording
           console.log("TalkType: Starting new recording...");
@@ -373,7 +373,7 @@ const MicButtonManager = {
 
             // Now start the actual recording
             console.log("TalkType: Calling startRecording directly...");
-            await window.startRecording(inputElement, recordingIndicator);
+            await window.audioProcessingService.startRecording(inputElement, recordingIndicator);
 
             console.log("TalkType: Recording started successfully");
           } catch (error) {
