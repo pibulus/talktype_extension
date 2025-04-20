@@ -2,24 +2,32 @@
 
 // Import services from other scripts
 // Note: These scripts need to be included in the manifest.json before this script
+import notificationService from './notification-service.js';
+
+// Log successful import
+console.log('TalkType: NotificationService imported successfully');
 
 let audioService = null;
 let apiService = null;
-let notificationService = null; // Will be initialized from window.NotificationService
 let isRecording = false;
 let activeInput = null;
 
-// Fallback function for showStatusNotification if the notification service is not available
+/**
+ * Display a status notification
+ * @param {string} message - The message to display
+ * @param {string} type - Notification type ('info', 'error', 'success', 'warning', 'recording', 'processing')
+ * @returns {HTMLElement|null} - The notification element
+ */
 function showStatusNotification(message, type = 'info') {
-  if (notificationService) {
+  if (!message) return null;
+  
+  try {
     return notificationService.showStatusNotification(message, type);
-  } else {
-    console.log('TalkType: Notification fallback -', message, type);
-    // Simple alert fallback if notification service is not available
+  } catch (error) {
+    console.error(`TalkType: Notification error - ${error}`);
+    // Simple fallback for critical errors
     if (type === 'error') {
-      console.error('TalkType:', message);
-    } else {
-      console.log('TalkType:', message);
+      console.error(`TalkType ERROR: ${message}`);
     }
     return null;
   }
@@ -27,7 +35,7 @@ function showStatusNotification(message, type = 'info') {
 let apiKey = ''; // This should be set through extension options
 
 // Initialize immediately AND ensure it runs on all DOM changes
-console.log('TalkType content script loading...');
+console.log(`TalkType: Content script loading...`);
 // Force immediate initialization
 initializeExtension();
 
@@ -89,36 +97,30 @@ function initializeExtensionCore() {
     return;
   }
   
-  // Initialize notification service
-  if (typeof window.NotificationService === 'undefined') {
-    console.error('TalkType: NotificationService is not defined! Check that notification-service.js is loaded.');
-    // Just log this error, we'll use inline notifications as fallback
+  // Log notification service initialization
+  if (notificationService) {
+    console.log(`TalkType: NotificationService initialized and ready`);
   } else {
-    console.log('TalkType: Setting up NotificationService');
-    notificationService = window.NotificationService;
+    console.error(`TalkType: NotificationService initialization failed!`);
+    // We'll use the fallback showStatusNotification implementation
   }
   
   // Check that chrome API is available
   if (!chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
-    console.error('TalkType: chrome.runtime.sendMessage not available!');
-    if (notificationService) {
-      notificationService.showStatusNotification('TalkType initialization error: Chrome API unavailable', 'error');
-    } else {
-      // Fallback to our own implementation if service isn't available
-      showStatusNotification('TalkType initialization error: Chrome API unavailable', 'error');
-    }
+    console.error(`TalkType: chrome.runtime.sendMessage not available!`);
+    showStatusNotification('TalkType initialization error: Chrome API unavailable', 'error');
     return;
   }
   
   // Get API key directly from storage for more reliable access
   chrome.storage.sync.get(['apiKey'], function(result) {
     if (chrome.runtime.lastError) {
-      console.error('TalkType: Error accessing storage:', chrome.runtime.lastError);
+      console.error(`TalkType: Error accessing storage - ${chrome.runtime.lastError}`);
       showStatusNotification('Error accessing extension storage. Try reloading the page.', 'error');
       return;
     }
     
-    console.log('TalkType: Got API key from storage:', result.apiKey ? 'Valid key' : 'Empty key');
+    console.log(`TalkType: Got API key from storage - ${result.apiKey ? 'Valid key' : 'Empty key'}`);
     apiKey = result.apiKey || '';
     
     // Initialize services - even with empty API key to allow detection of inputs
@@ -775,29 +777,62 @@ function initializeInputDetection() {
   console.log('TalkType: Input detection completed');
 }
 
-// Create a stylish progress notification (uses notification-service.js)
+/**
+ * Create a progress notification with a progress bar
+ * @param {string} message - The message to display
+ * @returns {HTMLElement|null} - The notification element
+ */
 function createProgressNotification(message) {
-  return notificationService ? notificationService.createProgressNotification(message) : null;
+  if (!message) return null;
+  
+  try {
+    return notificationService.createProgressNotification(message);
+  } catch (error) {
+    console.error(`TalkType: Progress notification error - ${error}`);
+    return null;
+  }
 }
 
-// Function to update progress notification (uses notification-service.js)
+/**
+ * Update a progress notification with a new percentage
+ * @param {HTMLElement} notification - The notification element
+ * @param {number} percentage - Progress value (0-100)
+ */
 function updateProgressNotification(notification, percentage) {
-  if (notificationService) {
+  if (!notification) return;
+  
+  try {
     notificationService.updateProgressNotification(notification, percentage);
+  } catch (error) {
+    console.error(`TalkType: Progress update error - ${error}`);
   }
 }
 
-// Function for indeterminate progress animation (uses notification-service.js)
+/**
+ * Start indeterminate progress animation
+ * @param {HTMLElement} notification - The notification element
+ */
 function animateIndeterminateProgress(notification) {
-  if (notificationService) {
+  if (!notification) return;
+  
+  try {
     notificationService.animateIndeterminateProgress(notification);
+  } catch (error) {
+    console.error(`TalkType: Animation error - ${error}`);
   }
 }
 
-// Function to stop indeterminate animation (uses notification-service.js)
+/**
+ * Stop indeterminate progress animation
+ * @param {HTMLElement} notification - The notification element
+ */
 function stopIndeterminateProgress(notification) {
-  if (notificationService) {
+  if (!notification) return;
+  
+  try {
     notificationService.stopIndeterminateProgress(notification);
+  } catch (error) {
+    console.error(`TalkType: Animation stop error - ${error}`);
   }
 }
 

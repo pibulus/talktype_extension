@@ -25,7 +25,8 @@
       "matches": ["<all_urls>"],
       "js": ["permission-dialog.js", "audio-service.js", "api-service.js", "AudioVisualizer.js", "notification-service.js", "content.js"],
       "css": ["styles.css"],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "type": "module"
     }
   ],
   "background": {

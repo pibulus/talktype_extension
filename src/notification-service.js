@@ -1,6 +1,17 @@
 /**
  * Notification Service for TalkType Extension
- * Handles the display, update, and management of user notifications
+ * 
+ * A lightweight, standalone service that handles the creation, display,
+ * and management of user notifications in the TalkType extension.
+ * 
+ * This module provides two main types of notifications:
+ * 1. Status notifications - Simple messages with different visual states (success, error, etc.)
+ * 2. Progress notifications - Visual indicators for ongoing operations with percentage updates
+ * 
+ * All notifications use a consistent glass-morphism UI style and provide
+ * appropriate visual feedback based on their state.
+ * 
+ * @module notification-service
  */
 
 const notificationService = {
@@ -11,7 +22,7 @@ const notificationService = {
    * @returns {Element} The notification element
    */
   showStatusNotification(message, type = 'info') {
-    console.log('TalkType: Showing notification -', message, type);
+    console.log(`TalkType: Showing notification - ${message} (${type})`);
     
     // Don't show notifications if they were recently disabled
     if (window.audioToTextNotificationsDisabled) {
@@ -489,5 +500,5 @@ const notificationService = {
   }
 };
 
-// For use in other modules
+// Pure ES module export
 export default notificationService;
