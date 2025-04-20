@@ -71,22 +71,6 @@ window.addEventListener("load", () => {
   // Double check after a slight delay to catch any late-loading elements
   setTimeout(() => {
     console.log("TalkType: Final initialization check");
-    initializeInputDetection();
+    window.InputDetectionService.initializeInputDetection();
   }, 1000);
 });
-
-// Function to initialize input detection
-/**
- * Sets up a MutationObserver to detect and handle dynamically added input elements
- * @deprecated Use InputDetectionService.observeDynamicInputs() instead
- */
-function observeDynamicInputs() {
-  return window.InputDetectionService.observeDynamicInputs();
-}
-
-/**
- * Initialize input detection to find all text input elements on the page
- */
-function initializeInputDetection() {
-  return window.InputDetectionService.initializeInputDetection();
-}
