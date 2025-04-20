@@ -23,7 +23,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["permission-dialog.js", "audio-service.js", "api-service.js", "AudioVisualizer.js", "notification-service.js", "input-detection-service.js", "mic-button-manager.js", "audio-processing-service.js", "context-menu-service.js", "content.js"],
+      "js": ["permission-dialog.js", "audio-service.js", "api-service.js", "AudioVisualizer.js", "notification-service.js", "input-detection-service.js", "mic-button-manager.js", "audio-processing-service.js", "context-menu-service.js", "message-handler-service.js", "content.js"],
       "css": ["styles.css"],
       "run_at": "document_start",
       "type": "module"
@@ -65,6 +65,7 @@
         "mic-button-manager.js",
         "audio-processing-service.js",
         "context-menu-service.js",
+        "message-handler-service.js",
         "about.html",
         "LICENSE.md",
         "PRIVACY.md",
