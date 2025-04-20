@@ -5,8 +5,25 @@
 
 let audioService = null;
 let apiService = null;
+let notificationService = null; // Will be initialized from window.NotificationService
 let isRecording = false;
 let activeInput = null;
+
+// Fallback function for showStatusNotification if the notification service is not available
+function showStatusNotification(message, type = 'info') {
+  if (notificationService) {
+    return notificationService.showStatusNotification(message, type);
+  } else {
+    console.log('TalkType: Notification fallback -', message, type);
+    // Simple alert fallback if notification service is not available
+    if (type === 'error') {
+      console.error('TalkType:', message);
+    } else {
+      console.log('TalkType:', message);
+    }
+    return null;
+  }
+}
 let apiKey = ''; // This should be set through extension options
 
 // Initialize immediately AND ensure it runs on all DOM changes
@@ -43,7 +60,13 @@ function initializeExtensionCore() {
   if (typeof window.AudioRecordingService === 'undefined') {
     console.error('TalkType: AudioRecordingService is not defined! Check that audio-service.js is loaded.');
     console.log('TalkType: Available global objects:', Object.keys(window).filter(k => k.includes('Service')));
-    showStatusNotification('TalkType initialization error: Required scripts missing', 'error');
+    
+    // Try to use notification service or fallback to alert
+    if (window.NotificationService) {
+      window.NotificationService.showStatusNotification('TalkType initialization error: Required scripts missing', 'error');
+    } else {
+      alert('TalkType initialization error: Required scripts missing');
+    }
     
     // Inject script directly as a fallback
     injectServiceScripts();
@@ -53,17 +76,37 @@ function initializeExtensionCore() {
   if (typeof window.GeminiApiService === 'undefined') {
     console.error('TalkType: GeminiApiService is not defined! Check that api-service.js is loaded.');
     console.log('TalkType: Available global objects:', Object.keys(window).filter(k => k.includes('Service')));
-    showStatusNotification('TalkType initialization error: Required scripts missing', 'error');
+    
+    // Try to use notification service or fallback to alert
+    if (window.NotificationService) {
+      window.NotificationService.showStatusNotification('TalkType initialization error: Required scripts missing', 'error');
+    } else {
+      alert('TalkType initialization error: Required scripts missing');
+    }
     
     // Inject script directly as a fallback
     injectServiceScripts();
     return;
   }
   
+  // Initialize notification service
+  if (typeof window.NotificationService === 'undefined') {
+    console.error('TalkType: NotificationService is not defined! Check that notification-service.js is loaded.');
+    // Just log this error, we'll use inline notifications as fallback
+  } else {
+    console.log('TalkType: Setting up NotificationService');
+    notificationService = window.NotificationService;
+  }
+  
   // Check that chrome API is available
   if (!chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
     console.error('TalkType: chrome.runtime.sendMessage not available!');
-    showStatusNotification('TalkType initialization error: Chrome API unavailable', 'error');
+    if (notificationService) {
+      notificationService.showStatusNotification('TalkType initialization error: Chrome API unavailable', 'error');
+    } else {
+      // Fallback to our own implementation if service isn't available
+      showStatusNotification('TalkType initialization error: Chrome API unavailable', 'error');
+    }
     return;
   }
   
@@ -732,374 +775,32 @@ function initializeInputDetection() {
   console.log('TalkType: Input detection completed');
 }
 
-// Create a stylish progress notification
+// Create a stylish progress notification (uses notification-service.js)
 function createProgressNotification(message) {
-  // Remove any existing notifications first
-  document.querySelectorAll('.audio-to-text-notification, .audio-to-text-progress-notification').forEach(notification => {
-    if (document.body.contains(notification)) {
-      document.body.removeChild(notification);
-    }
-  });
-  
-  // Create progress notification styles if they don't exist
-  if (!document.getElementById('progress-notification-styles')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'progress-notification-styles';
-    styleEl.textContent = `
-      .audio-to-text-progress-notification {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 16px;
-        font-size: 14px;
-        font-weight: 500;
-        color: white;
-        background: linear-gradient(135deg, #6f42c1, #7a5dcb);
-        box-shadow: 0 5px 20px rgba(111, 66, 193, 0.3);
-        z-index: 999999;
-        display: flex;
-        flex-direction: column;
-        min-width: 240px;
-        max-width: 300px;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-      
-      .progress-bar-container {
-        margin-top: 10px;
-        width: 100%;
-        height: 6px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 6px;
-        overflow: hidden;
-      }
-      
-      .progress-bar {
-        height: 100%;
-        width: 0%;
-        background: linear-gradient(90deg, rgba(111, 66, 193, 0.7), rgba(247, 70, 180, 0.7));
-        background-size: 200% 100%;
-        border-radius: 6px;
-        transition: width 0.5s cubic-bezier(0.44, 0.89, 0.56, 0.94);
-        box-shadow: 0 0 10px rgba(111, 66, 193, 0.5);
-        position: relative;
-      }
-      
-      .progress-bar::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 50%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        animation: progress-shine 2s infinite;
-      }
-      
-      .progress-bar.complete {
-        animation: gradient-shift 1.5s ease forwards, glow 1.5s ease forwards;
-      }
-      
-      @keyframes progress-shine {
-        0% { left: -100%; }
-        100% { left: 200%; }
-      }
-      
-      @keyframes gradient-shift {
-        0% { background-position: 0% 50%; }
-        100% { background-position: 100% 50%; }
-      }
-      
-      @keyframes glow {
-        0% { box-shadow: 0 0 5px rgba(111, 66, 193, 0.3); }
-        50% { box-shadow: 0 0 15px rgba(111, 66, 193, 0.6), 0 0 20px rgba(247, 70, 180, 0.4); }
-        100% { box-shadow: 0 0 10px rgba(111, 66, 193, 0.5); }
-      }
-      
-      .progress-status {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-        margin-top: 6px;
-        font-size: 12px;
-        color: rgba(255, 255, 255, 0.8);
-      }
-      
-      .progress-message {
-        display: flex;
-        align-items: center;
-      }
-      
-      .progress-icon {
-        margin-right: 10px;
-        animation: pulse 1.5s infinite;
-      }
-      
-      @keyframes pulse {
-        0% { opacity: 0.6; }
-        50% { opacity: 1; }
-        100% { opacity: 0.6; }
-      }
-      
-      .progress-percentage {
-        font-weight: 600;
-      }
-      
-      .progress-complete {
-        background: linear-gradient(135deg, #52c41a, #85e255);
-      }
-      
-      .progress-complete .progress-bar {
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 1));
-      }
-    `;
-    document.head.appendChild(styleEl);
-  }
-  
-  // Create notification element
-  const notification = document.createElement('div');
-  notification.className = 'audio-to-text-progress-notification';
-  
-  // Create content
-  notification.innerHTML = `
-    <div class="progress-message">
-      <span class="progress-icon">🎙️</span>
-      <span>${message}</span>
-    </div>
-    <div class="progress-bar-container">
-      <div class="progress-bar"></div>
-    </div>
-    <div class="progress-status">
-      <span class="progress-status-text">Processing...</span>
-      <span class="progress-percentage">0%</span>
-    </div>
-  `;
-  
-  // Add to DOM
-  document.body.appendChild(notification);
-  
-  // Start initial animation
-  updateProgressNotification(notification, 0);
-  animateIndeterminateProgress(notification);
-  
-  return notification;
+  return notificationService ? notificationService.createProgressNotification(message) : null;
 }
 
-// Function to update progress notification
+// Function to update progress notification (uses notification-service.js)
 function updateProgressNotification(notification, percentage) {
-  if (!notification || !document.body.contains(notification)) return;
-  
-  // Get progress elements
-  const progressBar = notification.querySelector('.progress-bar');
-  const progressPercentage = notification.querySelector('.progress-percentage');
-  const progressStatus = notification.querySelector('.progress-status-text');
-  
-  // Ensure percentage is valid
-  const validPercentage = Math.max(0, Math.min(100, percentage));
-  
-  // Update progress bar width
-  if (progressBar) {
-    progressBar.style.width = `${validPercentage}%`;
-    
-    // Add the 'complete' class when progress reaches 100%
-    // This triggers the gradient-shift and glow animations
-    if (validPercentage >= 100) {
-      progressBar.classList.add('complete');
-    } else {
-      progressBar.classList.remove('complete');
-    }
-  }
-  
-  // Update percentage text
-  if (progressPercentage) {
-    progressPercentage.textContent = `${Math.round(validPercentage)}%`;
-  }
-  
-  // Update status text based on percentage - single word messages
-  if (progressStatus) {
-    if (validPercentage < 20) {
-      progressStatus.textContent = 'Processing';
-    } else if (validPercentage < 50) {
-      progressStatus.textContent = 'Converting';
-    } else if (validPercentage < 80) {
-      progressStatus.textContent = 'Analyzing';
-    } else if (validPercentage < 100) {
-      progressStatus.textContent = 'Finishing';
-    } else {
-      progressStatus.textContent = 'Done!';
-      notification.classList.add('progress-complete');
-      
-      // Change icon to checkmark
-      const progressIcon = notification.querySelector('.progress-icon');
-      if (progressIcon) {
-        progressIcon.textContent = '✓';
-      }
-    }
-  }
-  
-  // If we have an actual percentage, stop indeterminate animation
-  if (percentage > 0) {
-    stopIndeterminateProgress(notification);
+  if (notificationService) {
+    notificationService.updateProgressNotification(notification, percentage);
   }
 }
 
-// For initial indeterminate progress animation
+// Function for indeterminate progress animation (uses notification-service.js)
 function animateIndeterminateProgress(notification) {
-  if (!notification) return;
-  
-  notification._indeterminateInterval = setInterval(() => {
-    const progressBar = notification.querySelector('.progress-bar');
-    if (progressBar) {
-      const currentWidth = parseFloat(progressBar.style.width || '0');
-      
-      // Create a "bouncing" effect between 10% and 30%
-      if (currentWidth >= 30) {
-        progressBar.style.width = '10%';
-      } else {
-        progressBar.style.width = `${currentWidth + 1}%`;
-      }
-    }
-  }, 50);
-}
-
-// Stop indeterminate animation
-function stopIndeterminateProgress(notification) {
-  if (notification && notification._indeterminateInterval) {
-    clearInterval(notification._indeterminateInterval);
-    notification._indeterminateInterval = null;
+  if (notificationService) {
+    notificationService.animateIndeterminateProgress(notification);
   }
 }
 
-// Function to observe for dynamically added inputs
-function observeDynamicInputs() {
-  console.log('TalkType: Setting up MutationObserver...');
-  
-  // Create a focused scan function that only looks for actual text inputs
-  const scanAndAttachMic = (root) => {
-    // Limit console output to reduce spam
-    const startTime = performance.now();
-    
-    // Focus on standard inputs first - these are most reliable
-    const standardInputs = root.querySelectorAll('input[type="text"], input[type="search"], input:not([type]), textarea');
-    
-    // Process standard inputs first - these are the most reliable
-    standardInputs.forEach(input => {
-      if (!input.dataset.hasMicButton) {
-        addMicrophoneToInput(input);
-      }
-    });
-    
-    // Then handle specific known text editor types with careful selection
-    const knownEditors = root.querySelectorAll(`
-      /* Gmail compose area */
-      .Am.Al.editable, 
-      [g_editable="true"],
-      div[aria-label="Message Body"],
-      div[aria-label="Message Text"],
-      
-      /* Facebook comment box - real text areas only */
-      [contenteditable="true"][data-lexical-editor="true"],
-      [contenteditable="true"][spellcheck="true"][role="textbox"],
-      
-      /* Messaging platforms */
-      [contenteditable="true"][data-slate-editor="true"],
-      div[role="textbox"][contenteditable="true"],
-      div[role="textbox"][aria-label*="message"],
-      
-      /* Major known rich text editors */
-      .ql-editor[contenteditable="true"], 
-      .ProseMirror[contenteditable="true"], 
-      .public-DraftEditor-content
-    `);
-    
-    // Process specific known editors
-    knownEditors.forEach(editor => {
-      if (!editor.dataset.hasMicButton) {
-        addMicrophoneToInput(editor);
-      }
-    });
-    
-    // Finally, look for elements with specific attributes that strongly suggest they are text inputs
-    const clearTextInputs = root.querySelectorAll(`
-      /* Elements with explicit textbox role */
-      [role="textbox"]:not([aria-readonly="true"]):not([aria-disabled="true"]),
-      
-      /* Elements with clear text input attributes */
-      [contenteditable="true"][aria-label*="comment"],
-      [contenteditable="true"][aria-label*="message"],
-      [contenteditable="true"][aria-label*="write"],
-      [contenteditable="true"][aria-label*="text"],
-      
-      /* Elements with placeholder text for input */
-      [contenteditable="true"][placeholder],
-      [contenteditable="true"][data-placeholder]
-    `);
-    
-    // Process these as well
-    clearTextInputs.forEach(element => {
-      if (!element.dataset.hasMicButton && isValidTextInputElement(element)) {
-        addMicrophoneToInput(element);
-      }
-    });
-    
-    // Special case for Messenger and other chat inputs which often have special classes
-    const chatInputs = root.querySelectorAll(`
-      [aria-label*="Type a message"],
-      [aria-label*="Send a message"],
-      [placeholder*="message"],
-      [placeholder*="chat"],
-      [data-testid*="message-composer"]
-    `);
-    
-    chatInputs.forEach(input => {
-      if (!input.dataset.hasMicButton && isValidTextInputElement(input)) {
-        addMicrophoneToInput(input);
-      }
-    });
-    
-    // Only log if it took more than 50ms to avoid spam
-    const duration = performance.now() - startTime;
-    if (duration > 50) {
-      console.log(`TalkType: Scan completed in ${Math.round(duration)}ms`);
-    }
-  };
-  
-  // Track last scan time to throttle scans
-  let lastScanTime = 0;
-  const THROTTLE_INTERVAL = 1000; // Don't scan more than once per second
-  
-  // Create an observer that watches for DOM changes
-  const observer = new MutationObserver((mutations) => {
-    // Check if we should throttle the scan
-    const now = Date.now();
-    if (now - lastScanTime < THROTTLE_INTERVAL) {
-      return; // Skip this scan due to throttling
-    }
-    
-    let shouldScan = false;
-    
-    // Check if any mutations are relevant
-    for (let i = 0; i < mutations.length; i++) {
-      const mutation = mutations[i];
-      
-      // If nodes were added
-      if (mutation.addedNodes.length) {
-        // Check if the added nodes could contain text inputs
-        for (let j = 0; j < mutation.addedNodes.length; j++) {
-          const node = mutation.addedNodes[j];
-          
-          // Skip text nodes, comments, etc.
-          if (node.nodeType !== Node.ELEMENT_NODE) continue;
-          
-          // Check if the node is an input or contains inputs
-          if (node.nodeName === 'INPUT' || node.nodeName === 'TEXTAREA' ||
-              (node.hasAttribute && node.hasAttribute('contenteditable')) ||
-              node.querySelector && (
-                node.querySelector('input, textarea, [contenteditable="true"], [role="textbox"]')
-              )) {
-            shouldScan = true;
+// Function to stop indeterminate animation (uses notification-service.js)
+function stopIndeterminateProgress(notification) {
+  if (notificationService) {
+    notificationService.stopIndeterminateProgress(notification);
+  }
+}
+
             break;
           }
         }
@@ -2594,211 +2295,7 @@ async function processAudioData(audioBlob) {
 }
 
 // Function to show status notifications with enhanced visual appeal
-function showStatusNotification(message, type = 'info') {
-  console.log('TalkType: Showing notification -', message, type);
-  
-  // Don't show notifications if they were recently disabled
-  if (window.audioToTextNotificationsDisabled) {
-    return;
-  }
-  
-  // Remove ALL existing notifications to avoid duplicates
-  const existingNotifications = document.querySelectorAll(`.audio-to-text-notification`);
-  existingNotifications.forEach(notification => {
-    if (document.body.contains(notification)) {
-      document.body.removeChild(notification);
-    }
-  });
-  
-  // Create notification element with enhanced glass morphism style
-  const notification = document.createElement('div');
-  notification.className = `audio-to-text-notification audio-to-text-notification-${type}`;
-  notification.style.position = 'fixed';
-  notification.style.top = '20px';  // Changed from bottom to top
-  notification.style.right = '20px';
-  notification.style.padding = '16px 20px';
-  notification.style.borderRadius = '16px';
-  notification.style.boxShadow = '0 10px 40px rgba(31, 38, 135, 0.3)';
-  notification.style.zIndex = '99999'; // Very high z-index to ensure visibility
-  notification.style.fontSize = '16px';
-  notification.style.fontWeight = '600';
-  notification.style.maxWidth = '350px';
-  notification.style.opacity = '0';
-  notification.style.transform = 'translateY(-30px) scale(0.95)';
-  notification.style.transition = 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
-  notification.style.backdropFilter = 'blur(16px)';
-  notification.style.webkitBackdropFilter = 'blur(16px)';
-  notification.style.border = '2px solid rgba(255, 255, 255, 0.25)';
-  notification.style.pointerEvents = 'all';
-  
-  // Create notification styles with animations if they don't exist yet
-  if (!document.getElementById('talktype-notification-styles')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'talktype-notification-styles';
-    styleEl.textContent = `
-      @keyframes talktype-gentle-pulse {
-        0% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
-        50% { box-shadow: 0 12px 40px rgba(255, 255, 255, 0.5); border-color: rgba(255, 255, 255, 0.5); }
-        100% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
-      }
-      
-      @keyframes talktype-gradientBg {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-      }
-      
-      @keyframes talktype-float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-5px); }
-        100% { transform: translateY(0px); }
-      }
-      
-      @keyframes talktype-sparkle {
-        0%, 100% { opacity: 0; }
-        50% { opacity: 1; }
-      }
-      
-      .talktype-gradient-notification {
-        background: linear-gradient(90deg, #4568DC, #7474BF, #348AC7, #56CCF2);
-        background-size: 300% 100%;
-        animation: talktype-gradientBg 3s ease infinite;
-      }
-      
-      .talktype-recording-notification {
-        background: linear-gradient(135deg, rgba(111, 66, 193, 0.8), rgba(130, 160, 240, 0.75));
-        animation: talktype-gentle-pulse 2s infinite;
-      }
-      
-      .talktype-success-notification {
-        background: linear-gradient(135deg, rgba(76, 175, 80, 0.85), rgba(105, 220, 155, 0.8));
-      }
-      
-      .talktype-error-notification {
-        background: linear-gradient(135deg, rgba(244, 67, 54, 0.85), rgba(255, 87, 34, 0.8));
-      }
-      
-      .talktype-notification-icon {
-        display: inline-block;
-        margin-right: 10px;
-        vertical-align: middle;
-        animation: talktype-float 2s ease-in-out infinite;
-      }
-      
-      .talktype-sparkle {
-        position: absolute;
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background-color: white;
-        opacity: 0;
-      }
-    `;
-    document.head.appendChild(styleEl);
-  }
-  
-  // Create notification content with icon and message
-  let notificationIcon = '';
-  
-  // Set styles based on notification type with enhanced aesthetics
-  if (type === 'error') {
-    notification.classList.add('talktype-error-notification');
-    notificationIcon = '❌';
-  } else if (type === 'success') {
-    notification.classList.add('talktype-success-notification');
-    notificationIcon = '✓';
-  } else if (type === 'recording') {
-    notification.classList.add('talktype-recording-notification');
-    notificationIcon = '🎤';
-    
-    // Add sparkle effects for recording
-    for (let i = 0; i < 3; i++) {
-      const sparkle = document.createElement('span');
-      sparkle.className = 'talktype-sparkle';
-      sparkle.style.top = `${Math.random() * 100}%`;
-      sparkle.style.left = `${Math.random() * 100}%`;
-      sparkle.style.animation = `talktype-sparkle ${1 + Math.random()}s ease-in-out infinite ${Math.random()}s`;
-      notification.appendChild(sparkle);
-    }
-  } else if (type === 'processing') {
-    notification.classList.add('talktype-gradient-notification');
-    notificationIcon = '⚙️';
-  } else {
-    notification.style.background = 'linear-gradient(135deg, rgba(33, 150, 243, 0.85), rgba(3, 169, 244, 0.8))';
-    notificationIcon = 'ℹ️';
-  }
-  
-  // Create icon element
-  const iconElement = document.createElement('span');
-  iconElement.className = 'talktype-notification-icon';
-  iconElement.textContent = notificationIcon;
-  
-  // Create message text element
-  const messageElement = document.createElement('span');
-  messageElement.textContent = message;
-  messageElement.style.verticalAlign = 'middle';
-  
-  // Add icon and message to notification
-  notification.appendChild(iconElement);
-  notification.appendChild(messageElement);
-  
-  // Apply common styles
-  notification.style.color = 'white';
-  notification.style.display = 'flex';
-  notification.style.alignItems = 'center';
-  
-  // Add close button with improved styling
-  const closeButton = document.createElement('button');
-  closeButton.innerHTML = '&times;';
-  closeButton.style.background = 'transparent';
-  closeButton.style.border = 'none';
-  closeButton.style.color = 'white';
-  closeButton.style.marginLeft = '15px';
-  closeButton.style.cursor = 'pointer';
-  closeButton.style.fontSize = '22px';
-  closeButton.style.lineHeight = '18px';
-  closeButton.style.opacity = '0.8';
-  closeButton.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-  closeButton.style.padding = '0 5px';
-  closeButton.style.borderRadius = '50%';
-  
-  // Add hover effects to close button
-  closeButton.onmouseenter = () => {
-    closeButton.style.opacity = '1';
-    closeButton.style.transform = 'scale(1.1)';
-  };
-  
-  closeButton.onmouseleave = () => {
-    closeButton.style.opacity = '0.8';
-    closeButton.style.transform = 'scale(1)';
-  };
-  
-  closeButton.onclick = () => {
-    if (document.body.contains(notification)) {
-      notification.style.opacity = '0';
-      notification.style.transform = 'translateY(30px) scale(0.9)';
-      
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 500);
-    }
-  };
-  
-  notification.appendChild(closeButton);
-  
-  // Add to DOM
-  document.body.appendChild(notification);
-  
-  // Trigger enhanced entrance animation (adjusted for top position)
-  setTimeout(() => {
-    notification.style.opacity = '1';
-    notification.style.transform = 'translateY(0) scale(1)';
-  }, 10);
-  
-  // Auto-remove after timeout (except for recording notifications)
-  if (type !== 'recording') {
+// This function has been moved to notification-service.js and should be using the one at the top of this file
     setTimeout(() => {
       if (document.body.contains(notification)) {
         notification.style.opacity = '0';

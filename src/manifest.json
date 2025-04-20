@@ -23,7 +23,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["permission-dialog.js", "audio-service.js", "api-service.js", "AudioVisualizer.js", "content.js"],
+      "js": ["permission-dialog.js", "audio-service.js", "api-service.js", "AudioVisualizer.js", "notification-service.js", "content.js"],
       "css": ["styles.css"],
       "run_at": "document_start"
     }
@@ -59,12 +59,14 @@
         "audio-service.js",
         "api-service.js",
         "AudioVisualizer.js",
+        "notification-service.js",
         "about.html",
         "LICENSE.md",
         "PRIVACY.md",
         "robots.txt",
         "test-context-menu.html",
-        "test-context-menu.js"
+        "test-context-menu.js",
+        "test-notification.html"
       ],
       "matches": ["<all_urls>"]
     }
