@@ -324,6 +324,151 @@ class AudioProcessingService {
   }
 
   /**
+   * Process raw audio data with direct API handling
+   * @param {Blob} audioBlob - The audio blob to process
+   * @param {HTMLElement} targetInput - The input element to insert transcription into
+   * @returns {Promise<string>} - The transcription text
+   */
+  async processAudioData(audioBlob, targetInput) {
+    if (!targetInput) {
+      console.error("TalkType: No active input element provided");
+      window.NotificationService.showStatusNotification("Error: No active input element", "error");
+      return;
+    }
+
+    try {
+      // Show processing indicator
+      targetInput.classList.add("audio-to-text-processing");
+
+      // Create a processing notification with glass morphism
+      const processingNotification = window.NotificationService.showStatusNotification(
+        "Transcribing...",
+        "processing"
+      );
+
+      // Ensure we have a fresh API service with the latest key
+      console.log("TalkType: Getting fresh API key for transcription");
+
+      let apiKeyResponse;
+      try {
+        apiKeyResponse = await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage({ action: "getApiKey" }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(
+                new Error(
+                  `Failed to get API key: ${chrome.runtime.lastError.message}`
+                )
+              );
+              return;
+            }
+            resolve(response);
+          });
+        });
+      } catch (keyError) {
+        console.error("TalkType: Failed to get API key for transcription:", keyError);
+        throw new Error("Failed to get API key. Please refresh the page and try again.");
+      }
+
+      if (!apiKeyResponse || !apiKeyResponse.apiKey) {
+        console.error("TalkType: No API key found in background response");
+        throw new Error("API key not found. Please set your API key in extension options.");
+      }
+
+      // Create a fresh API service with the latest key
+      console.log("TalkType: Creating fresh API service for transcription");
+      const freshApiService = new window.GeminiApiService(apiKeyResponse.apiKey);
+
+      // Verify API key is valid
+      console.log("TalkType: Verifying API key for transcription");
+      const isValid = await freshApiService.verifyApiKey();
+      if (!isValid) {
+        console.error("TalkType: API key validation failed during transcription");
+        throw new Error("Invalid API key. Please check settings.");
+      }
+
+      // Send audio to API for transcription
+      console.log("TalkType: Starting transcription with verified API key");
+      const transcription = await freshApiService.transcribeAudio(audioBlob);
+
+      // Insert transcribed text based on element type
+      if (targetInput.isContentEditable) {
+        // For contentEditable elements
+        targetInput.textContent = transcription;
+
+        // Trigger input event for reactive frameworks
+        targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+      } else if (
+        targetInput.tagName === "INPUT" ||
+        targetInput.tagName === "TEXTAREA"
+      ) {
+        // For standard input/textarea elements
+        targetInput.value = transcription;
+
+        // Trigger input events to make sure any listeners are notified
+        // This ensures that frameworks like React, Angular, etc. detect the change
+        targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+        targetInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+        // If it's a textarea, resize appropriately
+        if (
+          targetInput.tagName.toLowerCase() === "textarea" &&
+          targetInput.scrollHeight > targetInput.clientHeight
+        ) {
+          const originalHeight = targetInput.style.height;
+          targetInput.style.height = "auto";
+          targetInput.style.height = targetInput.scrollHeight + "px";
+
+          // Reset after 1s to allow for any auto-resize scripts
+          setTimeout(() => {
+            if (originalHeight) {
+              targetInput.style.height = originalHeight;
+            }
+          }, 1000);
+        }
+
+        // Focus the input and place cursor at the end
+        targetInput.focus();
+
+        // Set selection range if supported by this element
+        if (typeof targetInput.setSelectionRange === "function") {
+          targetInput.setSelectionRange(
+            transcription.length,
+            transcription.length
+          );
+        }
+      } else {
+        // Fallback for other elements - try innerText
+        try {
+          targetInput.innerText = transcription;
+          targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+        } catch (e) {
+          console.error("TalkType: Unable to set text on element:", e);
+        }
+      }
+
+      // Show simple success notification
+      window.NotificationService.showStatusNotification("Transcription complete", "success");
+
+      console.log("TalkType: Transcription complete:", transcription);
+      return transcription;
+    } catch (error) {
+      console.error("TalkType: Transcription failed:", error);
+
+      // Show error notification
+      window.NotificationService.showStatusNotification(
+        `❌ Transcription failed: ${error.message}`,
+        "error"
+      );
+      throw error;
+    } finally {
+      // Remove processing indicator
+      if (targetInput) {
+        targetInput.classList.remove("audio-to-text-processing");
+      }
+    }
+  }
+
+  /**
    * Stop recording and process audio
    * @returns {Promise<void>}
    */
