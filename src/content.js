@@ -1,31 +1,59 @@
-// Main content script for the Audio to Text extension
+/**
+ * TalkType - Audio to Text Extension
+ * Main content script responsible for coordinating extension initialization
+ * across various page load states to ensure reliable operation.
+ */
 
-// Import services from other scripts
-// Note: These scripts need to be included in the manifest.json before this script
+//==============================================================================
+// GLOBAL STATE
+//==============================================================================
 
-// Define global variables that will be used across modules
+/**
+ * AudioRecordingService instance for handling microphone recording
+ * @type {Object|null}
+ */
 window.audioService = null;
-window.apiService = null;
-window.isRecording = false;
-// Active input is now managed by FocusTrackingService
-window.apiKey = ""; // This should be set through extension options
 
-// Initialize immediately AND ensure it runs on all DOM changes
+/**
+ * GeminiApiService instance for handling API communication
+ * @type {Object|null}
+ */
+window.apiService = null;
+
+/**
+ * Whether audio recording is currently in progress
+ * @type {boolean}
+ */
+window.isRecording = false;
+
+/**
+ * API key for Gemini API service - managed by FocusTrackingService
+ * @type {string}
+ */
+window.apiKey = "";
+
+//==============================================================================
+// INITIALIZATION TRIGGERS
+//==============================================================================
+
+// Primary initialization on script load
 console.log(`TalkType: Content script loading...`);
-// Force immediate initialization
 initializeExtension();
 
-// Set an immediate timeout to ensure it runs after DOM is loaded
+// Backup initialization to ensure DOM readiness
 setTimeout(() => {
-  console.log("TalkType running delayed initialization...");
+  console.log("TalkType: Running delayed initialization...");
   initializeExtension();
 }, 500);
 
-// Function to initialize the extension with robust error handling
+/**
+ * Main initialization function with DOM readiness checks and error handling
+ * Routes to appropriate initialization helper based on document state
+ */
 function initializeExtension() {
   console.log("TalkType: Extension initializing...");
 
-  // Ensure script execution environment is ready
+  // Handle initialization during document loading state
   if (document.readyState === "loading") {
     console.log("TalkType: Document still loading, deferring initialization");
     document.addEventListener("DOMContentLoaded", () => {
@@ -40,7 +68,7 @@ function initializeExtension() {
     return;
   }
 
-  // If document is already loaded, proceed with initialization
+  // Handle initialization when document is already loaded
   if (window.InitializationHelpers) {
     window.InitializationHelpers.initializeExtensionCore();
   } else {
@@ -48,7 +76,11 @@ function initializeExtension() {
   }
 }
 
-// Also initialize on DOM content loaded and load events to ensure it works in all scenarios
+//==============================================================================
+// LIFECYCLE EVENT HANDLERS
+//==============================================================================
+
+// DOMContentLoaded initialization backup
 document.addEventListener("DOMContentLoaded", () => {
   console.log("TalkType: DOMContentLoaded event fired");
   if (!window.audioService || !window.apiService) {
@@ -56,21 +88,23 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Also try on window load
+// Window.onload initialization backup and post-load operations
 window.addEventListener("load", () => {
   console.log("TalkType: Window load event fired");
+  
+  // Ensure core services are initialized
   if (!window.audioService || !window.apiService) {
     initializeExtension();
   }
 
-  // Refresh focus tracking if the service is available
+  // Initialize focus tracking after window load
   if (window.FocusTrackingService) {
     window.FocusTrackingService.initialize();
   }
 
-  // Double check after a slight delay to catch any late-loading elements
+  // Final input detection after a delay to catch dynamic elements
   setTimeout(() => {
-    console.log("TalkType: Final initialization check");
+    console.log("TalkType: Running final input detection sweep");
     window.InputDetectionService.initializeInputDetection();
   }, 1000);
 });
