@@ -500,5 +500,5 @@ const notificationService = {
   }
 };
 
-// Pure ES module export
-export default notificationService;
+// Expose the service as a global variable like other services
+window.NotificationService = notificationService;
