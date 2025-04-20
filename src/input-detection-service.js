@@ -21,7 +21,7 @@ const InputDetectionService = {
       `TalkType: Found ${standardInputs.length} standard input elements`
     );
 
-    // Finally, look for elements with specific attributes that strongly suggest they are text inputs
+    // Look for elements with specific attributes that strongly suggest they are text inputs
     // NOTE: We're no longer adding mic buttons to these but still tracking them for context menu support
     const clearTextInputs = document.querySelectorAll(`
       /* Elements with explicit textbox role */
@@ -59,6 +59,18 @@ const InputDetectionService = {
     console.log(
       `TalkType: Found ${clearTextInputs.length} additional text inputs with specific attributes (for tracking only)`
     );
+
+    // Add mic buttons to valid text inputs if MicButtonManager is available
+    if (window.MicButtonManager) {
+      clearTextInputs.forEach((element) => {
+        if (
+          !element.dataset.hasMicButton &&
+          this.isValidTextInputElement(element)
+        ) {
+          window.MicButtonManager.addMicrophoneToInput(element);
+        }
+      });
+    }
 
     // Special case for Messenger and other chat inputs which often have special classes
     const chatInputs = document.querySelectorAll(`

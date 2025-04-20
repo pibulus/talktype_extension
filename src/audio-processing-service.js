@@ -178,7 +178,12 @@ class AudioProcessingService {
 
       // Update state
       window.isRecording = true;
-      window.activeInput = targetInput;
+      // Set active input through the FocusTrackingService if available
+      if (window.FocusTrackingService) {
+        window.FocusTrackingService.setActiveInput(targetInput);
+      } else {
+        window.activeInput = targetInput; // Fallback for backward compatibility
+      }
       console.log("TalkType: Set isRecording=true, activeInput=", targetInput);
 
       // Show recording indicator with animations using classes
@@ -293,7 +298,12 @@ class AudioProcessingService {
 
       // Reset state
       window.isRecording = false;
-      window.activeInput = null;
+      // Clear active input through the FocusTrackingService if available
+      if (window.FocusTrackingService) {
+        window.FocusTrackingService.clearActiveInput();
+      } else {
+        window.activeInput = null; // Fallback for backward compatibility
+      }
       console.log("TalkType: Reset recording state after error");
 
       // Hide recording indicator and update button state
@@ -494,7 +504,12 @@ class AudioProcessingService {
       return;
     }
 
-    if (!window.activeInput) {
+    // Get active input from the FocusTrackingService if available
+    const activeInput = window.FocusTrackingService ? 
+                        window.FocusTrackingService.getActiveInput() : 
+                        window.activeInput;
+                        
+    if (!activeInput) {
       console.error("TalkType: Cannot stop recording - no active input");
       window.showStatusNotification("Error: No active input element", "error");
       return;
@@ -525,14 +540,16 @@ class AudioProcessingService {
       // Update recording state immediately
       window.isRecording = false;
 
-      // Get info about the current input element for debugging
-      console.log("TalkType: Current activeInput:", window.activeInput);
-      console.log("TalkType: activeInput type:", window.activeInput.tagName);
-      if (window.activeInput.id)
-        console.log("TalkType: activeInput id:", window.activeInput.id);
+      // Get the active input from FocusTrackingService if available
+      const currentInput = window.FocusTrackingService ? 
+                          window.FocusTrackingService.getActiveInput() : 
+                          window.activeInput;
 
-      // Store currentInput locally for processing
-      const currentInput = window.activeInput;
+      // Get info about the current input element for debugging
+      console.log("TalkType: Current activeInput:", currentInput);
+      console.log("TalkType: activeInput type:", currentInput.tagName);
+      if (currentInput.id)
+        console.log("TalkType: activeInput id:", currentInput.id);
 
       // Hide all recording indicators and update button styling
       document

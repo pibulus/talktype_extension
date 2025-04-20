@@ -150,8 +150,12 @@ const MessageHandlerService = {
    * @returns {boolean} - True to keep message port open
    */
   handleGetActiveInput(request, sendResponse) {
-    // Return info about the currently focused input element
-    const hasActiveInput = window.activeInput !== null;
+    // Use FocusTrackingService if available, otherwise use global activeInput
+    const activeInput = window.FocusTrackingService ? 
+                        window.FocusTrackingService.getActiveInput() : 
+                        window.activeInput;
+                        
+    const hasActiveInput = activeInput !== null;
     console.log(
       "TalkType: Popup requested active input status:",
       hasActiveInput
@@ -164,9 +168,9 @@ const MessageHandlerService = {
 
     if (hasActiveInput) {
       response.inputInfo = {
-        type: window.activeInput.tagName,
-        id: window.activeInput.id || "(no id)",
-        className: window.activeInput.className || "(no class)",
+        type: activeInput.tagName,
+        id: activeInput.id || "(no id)",
+        className: activeInput.className || "(no class)",
       };
     }
 
@@ -493,75 +497,13 @@ const MessageHandlerService = {
    * @returns {Element} - The deepest active element
    */
   getDeepActiveElement() {
-    let active = document.activeElement;
-
-    // Traverse shadow DOM trees to find the deepest active element
-    while (active && active.shadowRoot && active.shadowRoot.activeElement) {
-      active = active.shadowRoot.activeElement;
+    // Use FocusTrackingService if available
+    if (window.FocusTrackingService) {
+      return window.FocusTrackingService.getDeepActiveElement();
     }
-
-    // Handle the case where the active element is an iframe
-    if (active && active.tagName === "IFRAME") {
-      try {
-        // Try to access iframe document (may fail due to cross-origin restrictions)
-        const iframeDoc =
-          active.contentDocument || active.contentWindow?.document;
-        if (iframeDoc && iframeDoc.activeElement) {
-          // Only use the iframe's active element if it's not the body (meaning nothing is focused)
-          if (iframeDoc.activeElement !== iframeDoc.body) {
-            active = iframeDoc.activeElement;
-
-            // Also traverse shadow DOM inside the iframe if present
-            while (
-              active &&
-              active.shadowRoot &&
-              active.shadowRoot.activeElement
-            ) {
-              active = active.shadowRoot.activeElement;
-            }
-          }
-        }
-      } catch (error) {
-        // Silently fail for cross-origin iframes
-        console.log("TalkType: Cannot access iframe content (cross-origin)");
-      }
-    }
-
-    // Special case for Google Docs - if we're on a Google Docs page
-    if (window.location.hostname.includes("docs.google.com")) {
-      // If the activeElement is outside the editor but we're on Google Docs
-      // consider the editor as the target
-      const editor = document.querySelector(".kix-appview-editor");
-      if (editor) {
-        const isInsideEditor = active === editor || editor.contains(active);
-        if (!isInsideEditor) {
-          // If the active element is not inside the editor, default to the editor
-          console.log("TalkType: Google Docs detected - using editor as target");
-          active = editor;
-        }
-      }
-    }
-
-    // Special case for Gmail - if we're on a Gmail page
-    if (
-      window.location.hostname.includes("mail.google.com") ||
-      window.location.hostname.includes("gmail")
-    ) {
-      // Check if the active element is not a text input but we have a compose box
-      if (!window.InputDetectionService.isValidTextInputElement(active)) {
-        const gmailComposer = document.querySelector(
-          'div[role="textbox"][aria-label*="compose"], div[g_editable="true"], div.Am.Al.editable[role="textbox"]'
-        );
-        if (gmailComposer) {
-          console.log(
-            "TalkType: Gmail compose detected - using composer as target"
-          );
-          active = gmailComposer;
-        }
-      }
-    }
-
-    return active;
+    
+    // Fallback to simple document.activeElement if FocusTrackingService not available
+    return document.activeElement;
   },
 
   /**
