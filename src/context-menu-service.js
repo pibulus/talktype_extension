@@ -10,6 +10,27 @@ class ContextMenuService {
     
     // Set up message listener for context menu actions
     this.setupMessageListener();
+    
+    // Verify the context menu is working by checking if we receive the confirmation message
+    this.verifyContextMenuSetup();
+  }
+  
+  // Method to verify context menu is properly set up
+  verifyContextMenuSetup() {
+    // Send a message to the background script to check if context menu exists
+    setTimeout(() => {
+      try {
+        chrome.runtime.sendMessage({
+          action: "verifyContextMenuExists"
+        }).then(response => {
+          console.log("TalkType: Context menu verification response:", response);
+        }).catch(error => {
+          console.warn("TalkType: Context menu verification failed:", error);
+        });
+      } catch (e) {
+        console.warn("TalkType: Context menu verification error:", e);
+      }
+    }, 2000);
   }
 
   // Initialize and set up message listener
@@ -34,9 +55,42 @@ class ContextMenuService {
     // Show notification that we received the message
     window.NotificationService.showStatusNotification("Context menu action received!", "info");
     
-    // Get the active element (where the user right-clicked)
-    this.targetInputElement = document.activeElement;
-    console.log("TalkType: Active element is:", this.targetInputElement);
+    // Use multiple strategies to find the target element
+    let targetElement = null;
+    
+    // Strategy 1: Try to find the element using targetElementInfo from background.js
+    if (request.targetElementInfo) {
+      console.log("TalkType: Using targetElementInfo from background script");
+      
+      // If we have selection text, try to find the element with that selection
+      if (request.targetElementInfo.selectionText) {
+        // Look for elements containing this selection text
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          targetElement = range.startContainer.parentElement;
+          console.log("TalkType: Found element via selection:", targetElement);
+        }
+      }
+      
+      // If still not found and it was editable, try finding inputs with focus
+      if (!targetElement && request.targetElementInfo.editable) {
+        // First check document.activeElement as a likely candidate
+        if (window.InputDetectionService.isValidTextInputElement(document.activeElement)) {
+          targetElement = document.activeElement;
+          console.log("TalkType: Using activeElement as target:", targetElement);
+        }
+      }
+    }
+    
+    // Strategy 2: Fallback to document.activeElement if we couldn't find the element
+    if (!targetElement) {
+      targetElement = document.activeElement;
+      console.log("TalkType: Falling back to activeElement:", targetElement);
+    }
+    
+    // Store the target element
+    this.targetInputElement = targetElement;
     
     // Add debug information
     if (request.info && request.info.editable) {
