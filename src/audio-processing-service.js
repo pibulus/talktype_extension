@@ -8,6 +8,7 @@
 class AudioProcessingService {
   constructor() {
     this.isProcessing = false;
+    this.isRecording = false;
     this.activeInput = null;
     this.recordingIndicator = null;
     this.apiKey = "";
@@ -31,7 +32,7 @@ class AudioProcessingService {
       console.error("TalkType: Services not initialized!");
 
       // Show error notification
-      window.showStatusNotification(
+      window.NotificationService.showStatusNotification(
         "TalkType services not initialized. Reconnecting...",
         "error"
       );
@@ -58,7 +59,7 @@ class AudioProcessingService {
             window.apiService = new window.GeminiApiService(this.apiKey);
 
             console.log("TalkType: Services restored, retrying recording");
-            window.showStatusNotification(
+            window.NotificationService.showStatusNotification(
               "Services reconnected! Trying again...",
               "info"
             );
@@ -87,7 +88,7 @@ class AudioProcessingService {
       window.injectServiceScripts();
 
       // Show error message
-      window.showStatusNotification(
+      window.NotificationService.showStatusNotification(
         "Could not initialize TalkType. Please refresh the page or check your API key in options.",
         "error"
       );
@@ -105,10 +106,17 @@ class AudioProcessingService {
    * @returns {Promise<void>}
    */
   async startRecordingCore(targetInput, indicator) {
-    // Check if already recording
-    if (window.isRecording) {
+    // Check if already recording with validation of actual recorder state
+    if (this.isRecording && window.audioService && window.audioService.mediaRecorder) {
       console.log("TalkType: Already recording, ignoring start request");
       return;
+    }
+    
+    // Reset potentially incorrect recording state
+    if (window.isRecording && (!window.audioService || !window.audioService.mediaRecorder)) {
+      console.log("TalkType: Detected inconsistent recording state, resetting");
+      window.isRecording = false;
+      this.isRecording = false;
     }
 
     try {
@@ -117,7 +125,7 @@ class AudioProcessingService {
 
       if (!navigator.mediaDevices) {
         console.error("TalkType: navigator.mediaDevices not available!");
-        window.showStatusNotification(
+        window.NotificationService.showStatusNotification(
           "Your browser does not support media recording",
           "error"
         );
@@ -142,7 +150,7 @@ class AudioProcessingService {
         console.error(
           "TalkType: Recording not supported according to audioService"
         );
-        window.showStatusNotification(
+        window.NotificationService.showStatusNotification(
           "Your browser does not support audio recording",
           "error"
         );
@@ -162,7 +170,7 @@ class AudioProcessingService {
           );
 
           if (permissionStatus.state === "denied") {
-            window.showStatusNotification(
+            window.NotificationService.showStatusNotification(
               "Microphone permission denied. Please enable in your browser settings.",
               "error"
             );
@@ -176,7 +184,8 @@ class AudioProcessingService {
         }
       }
 
-      // Update state
+      // Update state - both instance and global
+      this.isRecording = true;
       window.isRecording = true;
       // Set active input through the FocusTrackingService if available
       if (window.FocusTrackingService) {
@@ -184,7 +193,7 @@ class AudioProcessingService {
       } else {
         window.activeInput = targetInput; // Fallback for backward compatibility
       }
-      console.log("TalkType: Set isRecording=true, activeInput=", targetInput);
+      console.log("TalkType: Set isRecording=true (instance and global), activeInput=", targetInput);
 
       // Show recording indicator with animations using classes
       if (indicator) {
@@ -223,7 +232,7 @@ class AudioProcessingService {
       }
 
       // Show enhanced listening notification - shorter text
-      window.showStatusNotification("Recording... Click to stop", "recording");
+      window.NotificationService.showStatusNotification("Recording... Click to stop", "recording");
 
       // Start recording with thorough error handling
       console.log("TalkType: Calling audioService.startRecording()...");
@@ -247,7 +256,7 @@ class AudioProcessingService {
         console.log("TalkType: Permission error detected:", error.name);
 
         // Create a detailed but friendly notification
-        window.showStatusNotification(
+        window.NotificationService.showStatusNotification(
           "Microphone permission needed. Click the lock icon in your address bar and allow microphone access.",
           "error"
         );
@@ -271,14 +280,14 @@ class AudioProcessingService {
         if (navigator.platform.toUpperCase().indexOf("MAC") >= 0) {
           console.log("TalkType: Mac detected, showing special message");
           setTimeout(() => {
-            window.showStatusNotification(
+            window.NotificationService.showStatusNotification(
               "Mac users: Also check System Preferences → Security & Privacy → Microphone",
               "info"
             );
           }, 3000);
         }
       } else if (error.name === "NotFoundError") {
-        window.showStatusNotification(
+        window.NotificationService.showStatusNotification(
           "No microphone found. Please connect a microphone and try again.",
           "error"
         );
@@ -286,17 +295,18 @@ class AudioProcessingService {
         error.name === "TypeError" &&
         error.message.includes("MediaRecorder")
       ) {
-        window.showStatusNotification(
+        window.NotificationService.showStatusNotification(
           "Your browser doesn't support audio recording. Try using Chrome or Edge.",
           "error"
         );
       } else {
         // Generic error with more details
         console.log("TalkType: General recording error:", error);
-        window.showStatusNotification(`Recording error: ${error.message}`, "error");
+        window.NotificationService.showStatusNotification(`Recording error: ${error.message}`, "error");
       }
 
-      // Reset state
+      // Reset state - both instance and global
+      this.isRecording = false;
       window.isRecording = false;
       // Clear active input through the FocusTrackingService if available
       if (window.FocusTrackingService) {
@@ -304,7 +314,7 @@ class AudioProcessingService {
       } else {
         window.activeInput = null; // Fallback for backward compatibility
       }
-      console.log("TalkType: Reset recording state after error");
+      console.log("TalkType: Reset recording state after error (instance and global)")
 
       // Hide recording indicator and update button state
       if (indicator) {
@@ -484,7 +494,9 @@ class AudioProcessingService {
    */
   async stopRecording() {
     console.log(
-      "TalkType: stopRecording called, isRecording:",
+      "TalkType: stopRecording called, isRecording (instance):",
+      this.isRecording,
+      "isRecording (global):",
       window.isRecording,
       "activeInput:",
       !!window.activeInput
@@ -494,13 +506,26 @@ class AudioProcessingService {
       console.error(
         "TalkType: Cannot stop recording - audioService is not initialized"
       );
-      window.showStatusNotification("Error: Audio service not initialized", "error");
+      window.NotificationService.showStatusNotification("Error: Audio service not initialized", "error");
+      // Reset recording state to recover from errors
+      this.isRecording = false;
+      window.isRecording = false;
       return;
     }
 
-    if (!window.isRecording) {
+    // Check for inconsistent state between recording flag and actual recorder
+    if (window.isRecording && (!window.audioService.mediaRecorder)) {
+      console.error("TalkType: Detected inconsistent recording state - flag is true but no active recorder");
+      window.NotificationService.showStatusNotification("Resetting recording state", "warning");
+      // Reset recording state
+      this.isRecording = false;
+      window.isRecording = false;
+      return;
+    }
+
+    if (!this.isRecording && !window.isRecording) {
       console.error("TalkType: Cannot stop recording - not currently recording");
-      window.showStatusNotification("Error: Not currently recording", "error");
+      window.NotificationService.showStatusNotification("Error: Not currently recording", "error");
       return;
     }
 
@@ -511,7 +536,7 @@ class AudioProcessingService {
                         
     if (!activeInput) {
       console.error("TalkType: Cannot stop recording - no active input");
-      window.showStatusNotification("Error: No active input element", "error");
+      window.NotificationService.showStatusNotification("Error: No active input element", "error");
       return;
     }
 
@@ -528,7 +553,7 @@ class AudioProcessingService {
         });
 
       // Now show a single processing notification
-      window.showStatusNotification("Processing audio...", "processing");
+      window.NotificationService.showStatusNotification("Processing audio...", "processing");
 
       // Stop recording and get audio blob
       const audioBlob = await window.audioService.stopRecording();
@@ -537,7 +562,8 @@ class AudioProcessingService {
         !!audioBlob
       );
 
-      // Update recording state immediately
+      // Update recording state immediately - both instance and global
+      this.isRecording = false;
       window.isRecording = false;
 
       // Get the active input from FocusTrackingService if available
@@ -601,7 +627,7 @@ class AudioProcessingService {
         }
 
         // Show transcribing notification with progress bar
-        const progressNotification = window.createProgressNotification(
+        const progressNotification = window.NotificationService.createProgressNotification(
           "Transcribing audio..."
         );
 
@@ -611,7 +637,7 @@ class AudioProcessingService {
           audioBlob,
           (status, percentage) => {
             if (progressNotification) {
-              window.updateProgressNotification(progressNotification, percentage);
+              window.NotificationService.updateProgressNotification(progressNotification, percentage);
             }
           }
         );
@@ -619,15 +645,15 @@ class AudioProcessingService {
 
         // Complete progress animation and show success notification
         if (progressNotification) {
-          window.updateProgressNotification(progressNotification, 100);
+          window.NotificationService.updateProgressNotification(progressNotification, 100);
           setTimeout(() => {
             if (document.body.contains(progressNotification)) {
               document.body.removeChild(progressNotification);
-              window.showStatusNotification("Transcription complete!", "success");
+              window.NotificationService.showStatusNotification("Transcription complete!", "success");
             }
           }, 500);
         } else {
-          window.showStatusNotification("Transcription complete!", "success");
+          window.NotificationService.showStatusNotification("Transcription complete!", "success");
         }
 
         // Insert the transcription directly into the input element
@@ -758,14 +784,14 @@ class AudioProcessingService {
         }
       } catch (processingError) {
         console.error("TalkType: Error during audio processing:", processingError);
-        window.showStatusNotification(
+        window.NotificationService.showStatusNotification(
           "Error processing audio: " + processingError.message,
           "error"
         );
       }
     } catch (error) {
       console.error("TalkType: Error stopping recording:", error);
-      window.showStatusNotification("Error stopping recording: " + error.message, "error");
+      window.NotificationService.showStatusNotification("Error stopping recording: " + error.message, "error");
     }
   }
 }

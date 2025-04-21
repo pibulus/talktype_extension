@@ -24,7 +24,7 @@ window.apiService = null;
  * Whether audio recording is currently in progress
  * @type {boolean}
  */
-window.isRecording = false;
+window.isRecording = false; // Global recording state flag - managed by AudioProcessingService instance
 
 /**
  * API key for Gemini API service - managed by FocusTrackingService

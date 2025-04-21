@@ -32,7 +32,21 @@ const MessageHandlerService = {
       console.log("TalkType: Received message:", request);
       
       try {
-        // Handle different message types
+        // EXCLUSIVE HANDLING: Context menu messages handled only by ContextMenuService
+        if (request.action === "startTranscriptionFromContextMenu") {
+          console.log("TalkType: Bypassing context menu message - ContextMenuService will handle it");
+          
+          // Just log receipt but DO NOT process further
+          return false; // Exit immediately, allowing ContextMenuService to handle it exclusively
+        }
+        
+        // EXCLUSIVE HANDLING: Context menu verification handled only by background script
+        if (request.action === "verifyContextMenuExists") {
+          console.log("TalkType: Bypassing context menu verification - background.js will handle it");
+          return false; // Exit immediately, letting background.js handle it exclusively
+        }
+        
+        // Handle other message types (non-context-menu related)
         switch(request.action) {
           case "insertTranscription":
             return this.handleInsertTranscription(request, sendResponse);

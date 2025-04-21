@@ -3,6 +3,15 @@
 
 class ContextMenuService {
   constructor() {
+    // Singleton Protection Pattern - prevent multiple instantiation
+    if (window._contextMenuServiceInstance) {
+      console.log("TalkType: ⚠️ Avoiding duplicate ContextMenuService initialization");
+      return window._contextMenuServiceInstance;
+    }
+    
+    // Register this instance as the singleton
+    window._contextMenuServiceInstance = this;
+    
     // Variables to track context menu recording state
     this.contextMenuRecording = false;
     this.contextMenuRecordingIndicator = null;
@@ -13,6 +22,8 @@ class ContextMenuService {
     
     // Verify the context menu is working by checking if we receive the confirmation message
     this.verifyContextMenuSetup();
+    
+    console.log("TalkType: ✅ ContextMenuService initialized as singleton");
   }
   
   // Method to verify context menu is properly set up
@@ -289,9 +300,9 @@ class ContextMenuService {
         }
       }
       
-      // Set recording flag
+      // Set recording flag - use contextMenuRecording for local state
+      // AudioProcessingService will manage window.isRecording
       this.contextMenuRecording = true;
-      window.isRecording = true;
       
       // Notify background script about recording state
       chrome.runtime.sendMessage({
@@ -346,9 +357,8 @@ class ContextMenuService {
       // Use audioProcessingService to stop recording - it will handle transcription and insertion
       await window.audioProcessingService.stopRecording();
       
-      // Reset recording flags
+      // Reset local recording flag only - AudioProcessingService manages window.isRecording
       this.contextMenuRecording = false;
-      window.isRecording = false;
       
       // Notify background script
       chrome.runtime.sendMessage({
@@ -375,5 +385,5 @@ class ContextMenuService {
   }
 }
 
-// Make service available globally
-window.ContextMenuService = new ContextMenuService();
+// Make service available globally - using a factory pattern to ensure singleton
+window.ContextMenuService = window._contextMenuServiceInstance || new ContextMenuService();
