@@ -1,4 +1,5 @@
 // Popup script
+// Notifications have been refactored to use the NotificationService
 
 // Global variables
 let audioService = null;
@@ -102,12 +103,12 @@ async function toggleAutoRecord() {
     }
     
     // Show feedback
-    showStatusNotification(`Auto-record ${autoRecordEnabled ? 'enabled' : 'disabled'}`, 'info');
+    window.NotificationService.showPopupNotification(`Auto-record ${autoRecordEnabled ? 'enabled' : 'disabled'}`, 'info');
     
     return autoRecordEnabled;
   } catch (error) {
     console.error('Error toggling auto-record:', error);
-    showStatusNotification('Failed to update setting', 'error');
+    window.NotificationService.showPopupNotification('Failed to update setting', 'error');
     return false;
   }
 }
@@ -148,12 +149,12 @@ async function toggleContextMenu() {
     await checkContextMenu();
     
     // Show feedback
-    showStatusNotification(`Context menu ${contextMenuEnabled ? 'enabled' : 'disabled'}`, 'info');
+    window.NotificationService.showPopupNotification(`Context menu ${contextMenuEnabled ? 'enabled' : 'disabled'}`, 'info');
     
     return contextMenuEnabled;
   } catch (error) {
     console.error('Error toggling context menu:', error);
-    showStatusNotification('Failed to update setting', 'error');
+    window.NotificationService.showPopupNotification('Failed to update setting', 'error');
     return false;
   }
 }
@@ -346,188 +347,7 @@ async function startRecording() {
   }
 }
 
-// Function to show status notification
-function showStatusNotification(message, type = 'info') {
-  // Remove any existing notification
-  const existingNotification = document.querySelector('.status-notification');
-  if (existingNotification) {
-    document.body.removeChild(existingNotification);
-  }
-  
-  // Create notification element
-  const notification = document.createElement('div');
-  notification.className = 'status-notification';
-  
-  // Determine icon based on type
-  let icon = '';
-  let bgColor = '';
-  
-  switch(type) {
-    case 'error':
-      icon = '<path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>';
-      bgColor = 'rgba(255, 82, 82, 0.95)';
-      break;
-    case 'warning':
-      icon = '<path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>';
-      bgColor = 'rgba(255, 152, 0, 0.95)';
-      break;
-    case 'success':
-      icon = '<path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>';
-      bgColor = 'rgba(75, 203, 156, 0.95)';
-      break;
-    default: // info
-      icon = '<path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>';
-      bgColor = 'rgba(70, 174, 247, 0.95)';
-  }
-  
-  notification.innerHTML = `
-    <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      ${icon}
-    </svg>
-    <span>${message}</span>
-  `;
-  
-  // Add styles if not already added
-  if (!document.getElementById('status-notification-style')) {
-    const style = document.createElement('style');
-    style.id = 'status-notification-style';
-    style.textContent = `
-      .status-notification {
-        position: fixed;
-        bottom: 10px !important;
-        top: auto !important;
-        left: 50%;
-        transform: translateX(-50%) translateY(40px);
-        background: ${bgColor};
-        color: white;
-        padding: 10px 18px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        opacity: 0;
-        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        z-index: 1000;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        width: 90%;
-      }
-      .status-notification.show {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
-      .status-notification .icon {
-        width: 18px;
-        height: 18px;
-        margin-right: 8px;
-      }
-    `;
-    document.head.appendChild(style);
-  } else {
-    // Update background color for the current notification
-    document.getElementById('status-notification-style').textContent = 
-      document.getElementById('status-notification-style').textContent.replace(
-        /background:[^;]+;/, 
-        `background: ${bgColor};`
-      );
-  }
-  
-  document.body.appendChild(notification);
-  
-  // Animate in
-  setTimeout(() => {
-    notification.classList.add('show');
-  }, 10);
-  
-  // Animate out and remove
-  setTimeout(() => {
-    notification.classList.remove('show');
-    setTimeout(() => {
-      if (document.body.contains(notification)) {
-        document.body.removeChild(notification);
-      }
-    }, 300);
-  }, 3000);
-}
-
-// Function to show clipboard notification
-function showClipboardNotification(message = 'Copied to clipboard') {
-  // Remove any existing notification first
-  const existingNotification = document.querySelector('.clipboard-notification');
-  if (existingNotification) {
-    document.body.removeChild(existingNotification);
-  }
-  
-  // Create notification element
-  const notification = document.createElement('div');
-  notification.className = 'clipboard-notification';
-  notification.innerHTML = `
-    <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
-    </svg>
-    <span>Copied to clipboard</span>
-  `;
-  document.body.appendChild(notification);
-  
-  // Add styles if not already added
-  if (!document.getElementById('clipboard-notification-style')) {
-    const style = document.createElement('style');
-    style.id = 'clipboard-notification-style';
-    style.textContent = `
-      .clipboard-notification {
-        position: fixed;
-        bottom: 10px !important;
-        top: auto !important;
-        left: 50%;
-        transform: translateX(-50%) translateY(40px);
-        background: rgba(75, 203, 156, 0.95);
-        color: white;
-        padding: 10px 18px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        opacity: 0;
-        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        z-index: 1000;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        width: 90%;
-      }
-      .clipboard-notification.show {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
-      .clipboard-notification .icon {
-        width: 18px;
-        height: 18px;
-        margin-right: 8px;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-  
-  // Animate in
-  setTimeout(() => {
-    notification.classList.add('show');
-  }, 10);
-  
-  // Animate out and remove
-  setTimeout(() => {
-    notification.classList.remove('show');
-    setTimeout(() => {
-      if (document.body.contains(notification)) {
-        document.body.removeChild(notification);
-      }
-    }, 300);
-  }, 2000);
-}
+// Notification functions have been refactored to use NotificationService
 
 // Stop recording and transcribe
 async function stopRecording(showConfirmation = true) {
@@ -638,7 +458,7 @@ async function stopRecording(showConfirmation = true) {
           try {
             await navigator.clipboard.writeText(transcription);
             // Show a "Text inserted" notification
-            showClipboardNotification('Text inserted in input field');
+            window.NotificationService.showClipboardNotification('Text inserted in input field');
           } catch (err) {
             console.error('Failed to copy text: ', err);
           }
@@ -660,7 +480,7 @@ async function stopRecording(showConfirmation = true) {
         console.error('Error inserting transcription into input:', error);
         
         // Show error notification
-        showStatusNotification('Failed to insert text. Displaying in popup instead.', 'error');
+        window.NotificationService.showPopupNotification('Failed to insert text. Displaying in popup instead.', 'error');
         
         // Fall back to standard mode if insertion fails
         contextualMode = false;
@@ -687,7 +507,7 @@ async function stopRecording(showConfirmation = true) {
         if (transcription && transcription.trim()) {
           try {
             await navigator.clipboard.writeText(transcription);
-            showClipboardNotification('Copied to clipboard instead');
+            window.NotificationService.showClipboardNotification('Copied to clipboard instead');
           } catch (err) {
             console.error('Failed to copy text: ', err);
           }
@@ -699,7 +519,7 @@ async function stopRecording(showConfirmation = true) {
         try {
           await navigator.clipboard.writeText(transcription);
           // Clipboard notification will be shown by completeProgressAnimation
-          // No need to call showClipboardNotification() here to avoid duplicate notifications
+          // No need to call window.NotificationService.showClipboardNotification() here to avoid duplicate notifications
         } catch (err) {
           console.error('Failed to copy text: ', err);
         }
@@ -1007,7 +827,7 @@ function completeProgressAnimation() {
     
     // Show the copy notification
     setTimeout(() => {
-      showCopyNotification();
+      window.NotificationService.showCopyNotification();
       
       // Restore button after a short delay
       setTimeout(() => {
@@ -1043,69 +863,6 @@ function completeProgressAnimation() {
   }
 }
 
-// Show copy notification
-function showCopyNotification() {
-  // Create notification if it doesn't exist
-  if (!document.getElementById('copy-notification')) {
-    const notification = document.createElement('div');
-    notification.id = 'copy-notification';
-    notification.className = 'copy-notification';
-    notification.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="currentColor"/>
-      </svg>
-      <span>Copied to clipboard</span>
-    `;
-    document.body.appendChild(notification);
-    
-    // Add custom styles for top notification
-    const notifStyle = document.createElement('style');
-    notifStyle.id = 'top-notification-style';
-    notifStyle.textContent = `
-      .copy-notification {
-        position: fixed;
-        bottom: 10px !important;
-        top: auto !important;
-        left: 50%;
-        transform: translateX(-50%) translateY(40px);
-        background: rgba(75, 203, 156, 0.95);
-        color: white;
-        padding: 10px 18px;
-        border-radius: 14px;
-        font-size: 14px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        opacity: 0;
-        transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-        z-index: 2000;
-        display: flex;
-        align-items: center;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        width: 90%;
-        justify-content: center;
-      }
-      
-      .copy-notification.show {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-      }
-    `;
-    document.head.appendChild(notifStyle);
-  }
-  
-  const notification = document.getElementById('copy-notification');
-  
-  // Show the notification
-  setTimeout(() => {
-    notification.classList.add('show');
-  }, 100);
-  
-  // Hide after 2.5 seconds
-  setTimeout(() => {
-    notification.classList.remove('show');
-  }, 2500);
-}
 
 // Handle recording errors
 function handleRecordingError(error) {
@@ -1439,12 +1196,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           const hasActiveInput = await checkForActiveInputInTab();
           if (!hasActiveInput) {
             // If no active input is found, show a notification
-            showStatusNotification('No text input selected. Focus a text field on the page first.');
+            window.NotificationService.showPopupNotification('No text input selected. Focus a text field on the page first.', 'info');
             contextualMode = false;
           }
         } catch (error) {
           console.error('Error checking for active input:', error);
-          showStatusNotification('Unable to detect text inputs. Please reload the page.');
+          window.NotificationService.showPopupNotification('Unable to detect text inputs. Please reload the page.', 'info');
           contextualMode = false;
         }
       }
@@ -1522,7 +1279,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           // Get edited text content from the contenteditable element
           await navigator.clipboard.writeText(transcriptionText.textContent);
-          showClipboardNotification();
+          window.NotificationService.showClipboardNotification();
         } catch (err) {
           console.error('Failed to copy: ', err);
         }
