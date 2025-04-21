@@ -30,11 +30,11 @@ const PROCESSING_MESSAGES = [
 
 // Check if API key is set
 async function checkApiKey() {
-  const result = await chrome.storage.sync.get(['apiKey']);
+  const apiKey = await window.SettingsService.getApiKey();
   const apiKeyError = document.getElementById('apiKeyError');
   const recordButton = document.getElementById('startRecording');
   
-  if (!result.apiKey) {
+  if (!apiKey) {
     apiKeyError.style.display = 'block';
     recordButton.classList.add('disabled');
     recordButton.disabled = true;
@@ -50,13 +50,13 @@ async function checkApiKey() {
 // Check if auto-record is enabled
 async function checkAutoRecord() {
   try {
-    const result = await chrome.storage.sync.get(['autoRecord']);
-    autoRecordEnabled = result.autoRecord === true;
+    autoRecordEnabled = await window.SettingsService.isAutoRecordEnabled();
     console.log('Auto-record enabled:', autoRecordEnabled);
     
     // Update UI to reflect current setting
     const autoRecordBadge = document.getElementById('auto-record-badge');
     if (autoRecordBadge) {
+      autoRecordBadge.style.display = 'flex';
       if (autoRecordEnabled) {
         autoRecordBadge.classList.add('active');
         autoRecordBadge.querySelector('.auto-record-tooltip span').textContent = 'Auto-record enabled';
@@ -86,8 +86,8 @@ async function checkAutoRecord() {
 // Toggle auto-record setting
 async function toggleAutoRecord() {
   try {
-    autoRecordEnabled = !autoRecordEnabled;
-    await chrome.storage.sync.set({ autoRecord: autoRecordEnabled });
+    await window.SettingsService.toggleAutoRecord();
+    autoRecordEnabled = await window.SettingsService.isAutoRecordEnabled();
     
     // Update UI
     await checkAutoRecord();
@@ -107,6 +107,52 @@ async function toggleAutoRecord() {
     return autoRecordEnabled;
   } catch (error) {
     console.error('Error toggling auto-record:', error);
+    showStatusNotification('Failed to update setting', 'error');
+    return false;
+  }
+}
+
+// Check if context menu is enabled
+async function checkContextMenu() {
+  try {
+    const contextMenuEnabled = await window.SettingsService.isContextMenuEnabled();
+    console.log('Context menu enabled:', contextMenuEnabled);
+    
+    // Update UI to reflect current setting
+    const contextMenuBadge = document.getElementById('context-menu-badge');
+    if (contextMenuBadge) {
+      contextMenuBadge.style.display = 'flex';
+      if (contextMenuEnabled) {
+        contextMenuBadge.classList.add('active');
+        contextMenuBadge.querySelector('.context-menu-tooltip span').textContent = 'Right-click menu enabled';
+      } else {
+        contextMenuBadge.classList.remove('active');
+        contextMenuBadge.querySelector('.context-menu-tooltip span').textContent = 'Right-click menu disabled';
+      }
+    }
+    
+    return contextMenuEnabled;
+  } catch (error) {
+    console.error('Error checking context menu setting:', error);
+    return true; // Default to enabled
+  }
+}
+
+// Toggle context menu setting
+async function toggleContextMenu() {
+  try {
+    await window.SettingsService.toggleContextMenu();
+    const contextMenuEnabled = await window.SettingsService.isContextMenuEnabled();
+    
+    // Update UI
+    await checkContextMenu();
+    
+    // Show feedback
+    showStatusNotification(`Context menu ${contextMenuEnabled ? 'enabled' : 'disabled'}`, 'info');
+    
+    return contextMenuEnabled;
+  } catch (error) {
+    console.error('Error toggling context menu:', error);
     showStatusNotification('Failed to update setting', 'error');
     return false;
   }
@@ -1328,6 +1374,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.style.display = 'block';
   document.body.style.opacity = '1';
   
+  // Initialize settings service first
+  await window.SettingsService.initialize();
+  
   // Check API key in parallel with rendering
   const hasApiKey = await checkApiKey();
   
@@ -1363,6 +1412,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         startRecording();
       }, 300);
     }
+  }
+  
+  // Check for context menu setting
+  const contextMenuBadge = document.getElementById('context-menu-badge');
+  if (contextMenuBadge) {
+    contextMenuBadge.style.display = 'flex';
+    
+    // Check context menu setting
+    await checkContextMenu();
+    
+    // Setup click handler for context menu badge
+    contextMenuBadge.addEventListener('click', toggleContextMenu);
   }
   
   // Setup context badge click handler

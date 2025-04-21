@@ -1,29 +1,50 @@
 // Options page script
 
 // Save options to Chrome storage
-function saveOptions() {
+async function saveOptions() {
   const apiKey = document.getElementById('apiKey').value;
   const autoRecord = document.getElementById('autoRecord').checked;
   const contextMenu = document.getElementById('contextMenu').checked;
   
-  chrome.storage.sync.set(
-    { 
+  try {
+    // Initialize settings service if needed
+    await window.SettingsService.initialize();
+    
+    // Save all settings at once
+    await window.SettingsService.setMultiple({
       apiKey,
       autoRecord,
       contextMenu
-    },
-    () => {
-      // Update status to let user know options were saved
-      const status = document.getElementById('status');
+    });
+    
+    // Update status to let user know options were saved
+    const status = document.getElementById('status');
+    
+    // Show appropriate message based on context menu toggle
+    if (contextMenu !== undefined) {
+      const contextMenuStatus = contextMenu ? 'enabled' : 'disabled';
+      status.textContent = `Settings saved successfully! Context menu ${contextMenuStatus}.`;
+    } else {
       status.textContent = 'Settings saved successfully!';
-      status.className = 'status success';
-      status.style.display = 'block';
-      
-      setTimeout(() => {
-        status.style.display = 'none';
-      }, 3000);
     }
-  );
+    
+    status.className = 'status success';
+    status.style.display = 'block';
+    
+    setTimeout(() => {
+      status.style.display = 'none';
+    }, 3000);
+  } catch (error) {
+    console.error('Error saving options:', error);
+    const status = document.getElementById('status');
+    status.textContent = 'Error saving settings. Please try again.';
+    status.className = 'status error';
+    status.style.display = 'block';
+    
+    setTimeout(() => {
+      status.style.display = 'none';
+    }, 3000);
+  }
 }
 
 // Check microphone permission status
@@ -198,22 +219,41 @@ function requestMicrophonePermission() {
 }
 
 // Restore options from Chrome storage
-function restoreOptions() {
-  chrome.storage.sync.get(
-    { 
-      apiKey: '',
-      autoRecord: false,
-      contextMenu: true 
-    },
-    (items) => {
-      document.getElementById('apiKey').value = items.apiKey;
-      document.getElementById('autoRecord').checked = items.autoRecord;
-      document.getElementById('contextMenu').checked = items.contextMenu;
-    }
-  );
-  
-  // Check microphone permission
-  checkMicrophonePermission();
+async function restoreOptions() {
+  try {
+    // Initialize settings service
+    await window.SettingsService.initialize();
+    
+    // Get all settings
+    const settings = await window.SettingsService.getAll();
+    
+    // Apply settings to form
+    document.getElementById('apiKey').value = settings.apiKey || '';
+    document.getElementById('autoRecord').checked = !!settings.autoRecord;
+    document.getElementById('contextMenu').checked = settings.contextMenu !== false; // Default to true
+    
+    // Check microphone permission
+    checkMicrophonePermission();
+  } catch (error) {
+    console.error('Error restoring options:', error);
+    
+    // Fallback to direct storage access if settings service fails
+    chrome.storage.sync.get(
+      { 
+        apiKey: '',
+        autoRecord: false,
+        contextMenu: true 
+      },
+      (items) => {
+        document.getElementById('apiKey').value = items.apiKey;
+        document.getElementById('autoRecord').checked = items.autoRecord;
+        document.getElementById('contextMenu').checked = items.contextMenu;
+      }
+    );
+    
+    // Check microphone permission
+    checkMicrophonePermission();
+  }
 }
 
 // Open Chrome's microphone settings

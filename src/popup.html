@@ -903,6 +903,20 @@
     </div>
   </div>
   
+  <!-- Context Menu Badge -->
+  <div id="context-menu-badge" class="context-badge" style="display: none; margin-top: 5px;">
+    <span class="context-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+        <path fill="currentColor" d="M12 7c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0-14a2 2 0 1 0 0 4 2 2 0 1 0 0-4z"/>
+        <path fill="currentColor" d="M4 7c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0-14a2 2 0 1 0 0 4 2 2 0 1 0 0-4zm16 0a2 2 0 1 0 0 4 2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4zm0 8c-1.1 0-2 .9-2 2s.9 2 2 2a2 2 0 1 0 0-4z"/>
+      </svg>
+    </span>
+    <div class="context-menu-tooltip context-tooltip">
+      <strong>Context menu</strong>
+      <span>Right-click menu enabled</span>
+    </div>
+  </div>
+  
   <div class="header-divider"></div>
   
   <div id="apiKeyError" class="error" style="display: none;">
@@ -1052,6 +1066,7 @@
   <script src="api-service.js"></script>
   <script src="audio-service.js"></script>
   <script src="AudioVisualizer.js"></script>
+  <script src="settings-service.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

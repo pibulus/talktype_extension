@@ -22,8 +22,28 @@ function createContextMenu() {
   });
 }
 
-// Create the menu when the script loads
-createContextMenu();
+// Check context menu preference at startup
+chrome.storage.sync.get({ contextMenu: true }, (result) => {
+  if (result.contextMenu) {
+    createContextMenu();
+  } else {
+    chrome.contextMenus.removeAll();
+    console.log('TalkType: Context menu disabled by user preference');
+  }
+});
+
+// Listen for changes to the contextMenu setting
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'sync' && changes.contextMenu) {
+    if (changes.contextMenu.newValue) {
+      createContextMenu();
+      console.log('TalkType: Context menu enabled by user preference');
+    } else {
+      chrome.contextMenus.removeAll();
+      console.log('TalkType: Context menu disabled by user preference');
+    }
+  }
+});
 
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener((info, tab) => {
