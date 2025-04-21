@@ -52,15 +52,26 @@ class ContextMenuService {
 
   // Handle incoming context menu action message
   handleContextMenuAction(request) {
+    console.log("TalkType: 🔄 COMMUNICATION TEST - Context menu action received in content script", request);
+    
     // Show notification that we received the message
     window.NotificationService.showStatusNotification("Context menu action received!", "info");
+    
+    // Log all available information from the request for diagnostic purposes
+    console.log("TalkType: 🔄 Request details:", {
+      action: request.action,
+      hasInfo: !!request.info,
+      hasTargetInfo: !!request.targetElementInfo,
+      editable: request.info?.editable,
+      selectionText: request.targetElementInfo?.selectionText?.substring(0, 20) // Truncate long text
+    });
     
     // Use multiple strategies to find the target element
     let targetElement = null;
     
     // Strategy 1: Try to find the element using targetElementInfo from background.js
     if (request.targetElementInfo) {
-      console.log("TalkType: Using targetElementInfo from background script");
+      console.log("TalkType: 🎯 Using targetElementInfo from background script");
       
       // If we have selection text, try to find the element with that selection
       if (request.targetElementInfo.selectionText) {
@@ -69,7 +80,7 @@ class ContextMenuService {
         if (selection && selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
           targetElement = range.startContainer.parentElement;
-          console.log("TalkType: Found element via selection:", targetElement);
+          console.log("TalkType: 🎯 Found element via selection:", targetElement);
         }
       }
       
@@ -78,7 +89,7 @@ class ContextMenuService {
         // First check document.activeElement as a likely candidate
         if (window.InputDetectionService.isValidTextInputElement(document.activeElement)) {
           targetElement = document.activeElement;
-          console.log("TalkType: Using activeElement as target:", targetElement);
+          console.log("TalkType: 🎯 Using activeElement as target:", targetElement);
         }
       }
     }
@@ -86,11 +97,22 @@ class ContextMenuService {
     // Strategy 2: Fallback to document.activeElement if we couldn't find the element
     if (!targetElement) {
       targetElement = document.activeElement;
-      console.log("TalkType: Falling back to activeElement:", targetElement);
+      console.log("TalkType: 🎯 Falling back to activeElement:", targetElement);
     }
     
     // Store the target element
     this.targetInputElement = targetElement;
+    
+    // Log detailed information about the target element for diagnostic purposes
+    console.log("TalkType: 🎯 Target element details:", {
+      tagName: this.targetInputElement?.tagName,
+      id: this.targetInputElement?.id,
+      className: this.targetInputElement?.className,
+      isContentEditable: this.targetInputElement?.isContentEditable,
+      isInput: this.targetInputElement?.tagName === 'INPUT',
+      isTextarea: this.targetInputElement?.tagName === 'TEXTAREA',
+      value: this.targetInputElement?.value?.substring(0, 20) // Truncate long values
+    });
     
     // Add debug information
     if (request.info && request.info.editable) {
@@ -101,7 +123,7 @@ class ContextMenuService {
     
     // Validate if it's a proper input element
     if (!window.InputDetectionService.isValidTextInputElement(this.targetInputElement)) {
-      console.error("TalkType: Context menu target is not a valid text input element");
+      console.error("TalkType: ❌ Context menu target is not a valid text input element");
       window.NotificationService.showStatusNotification(
         "Cannot transcribe: Invalid input element",
         "error"
@@ -110,8 +132,14 @@ class ContextMenuService {
     }
     
     console.log(
-      "TalkType: Starting context menu transcription for:",
+      "TalkType: ✅ Starting context menu transcription for:",
       this.targetInputElement
+    );
+    
+    // Test notification for verification
+    window.NotificationService.showStatusNotification(
+      "Communication verified! Starting transcription...",
+      "success"
     );
     
     // Start the recording process
