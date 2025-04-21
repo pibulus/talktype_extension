@@ -15,34 +15,55 @@ const MAX_RECORDING_TIME = 30000; // 30 seconds
 
 // Extension icon states
 const ICON_STATE = {
-  IDLE: 'idle',        // Default state
-  RECORDING: 'recording', // When actively recording
-  AUTO_RECORD: 'auto_record' // When auto-record is enabled
+  IDLE: "idle", // Default state
+  RECORDING: "recording", // When actively recording
+  AUTO_RECORD: "auto_record", // When auto-record is enabled
 };
 
 // Fun processing messages - used in multiple places
 const PROCESSING_MESSAGES = [
-  "Processing", "Magic", "Converting", "Thinking", "Translating", 
-  "Analyzing", "Decoding", "Working", "Transcribing", "Interpreting", 
-  "Transforming", "Computing", "Listening", "Deciphering", "Understanding", 
-  "Pondering", "Absorbing", "Wizardry", "Enchanting", "Conjuring", 
-  "Brewing", "Spellcasting", "Unraveling", "Digesting", "Transmuting", "Calculating"
+  "Processing",
+  "Magic",
+  "Converting",
+  "Thinking",
+  "Translating",
+  "Analyzing",
+  "Decoding",
+  "Working",
+  "Transcribing",
+  "Interpreting",
+  "Transforming",
+  "Computing",
+  "Listening",
+  "Deciphering",
+  "Understanding",
+  "Pondering",
+  "Absorbing",
+  "Wizardry",
+  "Enchanting",
+  "Conjuring",
+  "Brewing",
+  "Spellcasting",
+  "Unraveling",
+  "Digesting",
+  "Transmuting",
+  "Calculating",
 ];
 
 // Check if API key is set
 async function checkApiKey() {
   const apiKey = await window.SettingsService.getApiKey();
-  const apiKeyError = document.getElementById('apiKeyError');
-  const recordButton = document.getElementById('startRecording');
-  
+  const apiKeyError = document.getElementById("apiKeyError");
+  const recordButton = document.getElementById("startRecording");
+
   if (!apiKey) {
-    apiKeyError.style.display = 'block';
-    recordButton.classList.add('disabled');
+    apiKeyError.style.display = "block";
+    recordButton.classList.add("disabled");
     recordButton.disabled = true;
     return false;
   } else {
-    apiKeyError.style.display = 'none';
-    recordButton.classList.remove('disabled');
+    apiKeyError.style.display = "none";
+    recordButton.classList.remove("disabled");
     recordButton.disabled = false;
     return true;
   }
@@ -52,34 +73,36 @@ async function checkApiKey() {
 async function checkAutoRecord() {
   try {
     autoRecordEnabled = await window.SettingsService.isAutoRecordEnabled();
-    console.log('Auto-record enabled:', autoRecordEnabled);
-    
+    console.log("Auto-record enabled:", autoRecordEnabled);
+
     // Update UI to reflect current setting
-    const autoRecordBadge = document.getElementById('auto-record-badge');
+    const autoRecordBadge = document.getElementById("auto-record-badge");
     if (autoRecordBadge) {
-      autoRecordBadge.style.display = 'flex';
+      autoRecordBadge.style.display = "flex";
       if (autoRecordEnabled) {
-        autoRecordBadge.classList.add('active');
-        autoRecordBadge.querySelector('.auto-record-tooltip span').textContent = 'Auto-record enabled';
-        
+        autoRecordBadge.classList.add("active");
+        autoRecordBadge.querySelector(".auto-record-tooltip span").textContent =
+          "Auto-record enabled";
+
         // Update icon if not recording
         if (!isRecording) {
           updateExtensionIcon(ICON_STATE.AUTO_RECORD);
         }
       } else {
-        autoRecordBadge.classList.remove('active');
-        autoRecordBadge.querySelector('.auto-record-tooltip span').textContent = 'Auto-record disabled';
-        
+        autoRecordBadge.classList.remove("active");
+        autoRecordBadge.querySelector(".auto-record-tooltip span").textContent =
+          "Auto-record disabled";
+
         // Update icon if not recording
         if (!isRecording) {
           updateExtensionIcon(ICON_STATE.IDLE);
         }
       }
     }
-    
+
     return autoRecordEnabled;
   } catch (error) {
-    console.error('Error checking auto-record setting:', error);
+    console.error("Error checking auto-record setting:", error);
     return false;
   }
 }
@@ -89,26 +112,34 @@ async function toggleAutoRecord() {
   try {
     await window.SettingsService.toggleAutoRecord();
     autoRecordEnabled = await window.SettingsService.isAutoRecordEnabled();
-    
+
     // Update UI
     await checkAutoRecord();
-    
+
     // Update extension icon based on current state
     if (isRecording) {
       // If we're recording, keep showing recording icon
       updateExtensionIcon(ICON_STATE.RECORDING);
     } else {
       // Otherwise show auto-record or idle icon
-      updateExtensionIcon(autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE);
+      updateExtensionIcon(
+        autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE
+      );
     }
-    
+
     // Show feedback
-    window.NotificationService.showPopupNotification(`Auto-record ${autoRecordEnabled ? 'enabled' : 'disabled'}`, 'info');
-    
+    window.NotificationService.showPopupNotification(
+      `Auto-record ${autoRecordEnabled ? "enabled" : "disabled"}`,
+      "info"
+    );
+
     return autoRecordEnabled;
   } catch (error) {
-    console.error('Error toggling auto-record:', error);
-    window.NotificationService.showPopupNotification('Failed to update setting', 'error');
+    console.error("Error toggling auto-record:", error);
+    window.NotificationService.showPopupNotification(
+      "Failed to update setting",
+      "error"
+    );
     return false;
   }
 }
@@ -116,25 +147,30 @@ async function toggleAutoRecord() {
 // Check if context menu is enabled
 async function checkContextMenu() {
   try {
-    const contextMenuEnabled = await window.SettingsService.isContextMenuEnabled();
-    console.log('Context menu enabled:', contextMenuEnabled);
-    
+    const contextMenuEnabled =
+      await window.SettingsService.isContextMenuEnabled();
+    console.log("Context menu enabled:", contextMenuEnabled);
+
     // Update UI to reflect current setting
-    const contextMenuBadge = document.getElementById('context-menu-badge');
+    const contextMenuBadge = document.getElementById("context-menu-badge");
     if (contextMenuBadge) {
-      contextMenuBadge.style.display = 'flex';
+      contextMenuBadge.style.display = "flex";
       if (contextMenuEnabled) {
-        contextMenuBadge.classList.add('active');
-        contextMenuBadge.querySelector('.context-menu-tooltip span').textContent = 'Right-click menu enabled';
+        contextMenuBadge.classList.add("active");
+        contextMenuBadge.querySelector(
+          ".context-menu-tooltip span"
+        ).textContent = "Right-click menu enabled";
       } else {
-        contextMenuBadge.classList.remove('active');
-        contextMenuBadge.querySelector('.context-menu-tooltip span').textContent = 'Right-click menu disabled';
+        contextMenuBadge.classList.remove("active");
+        contextMenuBadge.querySelector(
+          ".context-menu-tooltip span"
+        ).textContent = "Right-click menu disabled";
       }
     }
-    
+
     return contextMenuEnabled;
   } catch (error) {
-    console.error('Error checking context menu setting:', error);
+    console.error("Error checking context menu setting:", error);
     return true; // Default to enabled
   }
 }
@@ -143,18 +179,25 @@ async function checkContextMenu() {
 async function toggleContextMenu() {
   try {
     await window.SettingsService.toggleContextMenu();
-    const contextMenuEnabled = await window.SettingsService.isContextMenuEnabled();
-    
+    const contextMenuEnabled =
+      await window.SettingsService.isContextMenuEnabled();
+
     // Update UI
     await checkContextMenu();
-    
+
     // Show feedback
-    window.NotificationService.showPopupNotification(`Context menu ${contextMenuEnabled ? 'enabled' : 'disabled'}`, 'info');
-    
+    window.NotificationService.showPopupNotification(
+      `Context menu ${contextMenuEnabled ? "enabled" : "disabled"}`,
+      "info"
+    );
+
     return contextMenuEnabled;
   } catch (error) {
-    console.error('Error toggling context menu:', error);
-    window.NotificationService.showPopupNotification('Failed to update setting', 'error');
+    console.error("Error toggling context menu:", error);
+    window.NotificationService.showPopupNotification(
+      "Failed to update setting",
+      "error"
+    );
     return false;
   }
 }
@@ -166,101 +209,102 @@ function openOptions() {
 
 // Open about page
 function openAbout() {
-  chrome.tabs.create({url: chrome.runtime.getURL('about.html')});
+  chrome.tabs.create({ url: chrome.runtime.getURL("about.html") });
 }
 
 // Update extension icon to reflect the current state
 function updateExtensionIcon(state = ICON_STATE.IDLE) {
   try {
     let iconPath = {};
-    let badgeText = '';
-    let badgeColor = '#FFFFFF';
-    
-    switch(state) {
+    let badgeText = "";
+    let badgeColor = "#FFFFFF";
+
+    switch (state) {
       case ICON_STATE.RECORDING:
         // Red icon for recording state
         iconPath = {
-          "16": "icons/icon_recording/favicon-16x16.png",
-          "32": "icons/icon_recording/favicon-32x32.png",
-          "48": "icons/icon_recording/android-icon-48x48.png",
-          "128": "icons/icon_recording/android-icon-144x144.png"
+          16: "icons/icon_recording/favicon-16x16.png",
+          32: "icons/icon_recording/favicon-32x32.png",
+          48: "icons/icon_recording/android-icon-48x48.png",
+          128: "icons/icon_recording/android-icon-144x144.png",
         };
-        badgeText = '●';
-        badgeColor = '#d32f2f'; // Red badge
+        badgeText = "●";
+        badgeColor = "#d32f2f"; // Red badge
         break;
-        
+
       case ICON_STATE.AUTO_RECORD:
         // Blue icon for auto-record mode
         // Using standard icons with a blue badge for now
         iconPath = {
-          "16": "icons/icon_white/favicon-16x16.png",
-          "32": "icons/icon_white/favicon-32x32.png",
-          "48": "icons/icon_white/android-icon-48x48.png",
-          "128": "icons/icon_white/android-icon-144x144.png"
+          16: "icons/icon_white/favicon-16x16.png",
+          32: "icons/icon_white/favicon-32x32.png",
+          48: "icons/icon_white/android-icon-48x48.png",
+          128: "icons/icon_white/android-icon-144x144.png",
         };
-        badgeText = 'A';
-        badgeColor = '#2196F3'; // Blue badge
+        badgeText = "A";
+        badgeColor = "#2196F3"; // Blue badge
         break;
-        
+
       default: // ICON_STATE.IDLE
         // Default icon (white/black based on theme)
         iconPath = {
-          "16": "icons/icon_white/favicon-16x16.png",
-          "32": "icons/icon_white/favicon-32x32.png",
-          "48": "icons/icon_white/android-icon-48x48.png",
-          "128": "icons/icon_white/android-icon-144x144.png"
+          16: "icons/icon_white/favicon-16x16.png",
+          32: "icons/icon_white/favicon-32x32.png",
+          48: "icons/icon_white/android-icon-48x48.png",
+          128: "icons/icon_white/android-icon-144x144.png",
         };
-        badgeText = '';
+        badgeText = "";
         break;
     }
-    
+
     // Update the extension icon
     chrome.action.setIcon({ path: iconPath });
-    
+
     // Update badge
     chrome.action.setBadgeText({ text: badgeText });
     chrome.action.setBadgeBackgroundColor({ color: badgeColor });
-    
+
     console.log(`Extension icon updated to ${state} state`);
   } catch (error) {
-    console.error('Error updating extension icon:', error);
+    console.error("Error updating extension icon:", error);
   }
 }
-
 
 // Start recording immediately
 async function startRecording() {
   if (isRecording) return;
-  
+
   // Show transcription area
-  const transcriptionContainer = document.getElementById('transcription-container');
-  transcriptionContainer.style.display = 'block';
-  const transcriptionText = document.getElementById('transcription-text');
-  transcriptionText.textContent = '';
-  transcriptionText.style.display = 'none'; // Hide text container while visualizer is active
-  
+  const transcriptionContainer = document.getElementById(
+    "transcription-container"
+  );
+  transcriptionContainer.style.display = "block";
+  const transcriptionText = document.getElementById("transcription-text");
+  transcriptionText.textContent = "";
+  transcriptionText.style.display = "none"; // Hide text container while visualizer is active
+
   // Reset any previous editable state
-  transcriptionText.style.pointerEvents = 'none';
-  transcriptionText.setAttribute('contenteditable', 'false');
-  
+  transcriptionText.style.pointerEvents = "none";
+  transcriptionText.setAttribute("contenteditable", "false");
+
   // We no longer need special animation on recording start
   // The original animation looks good as is
-  
+
   // Start audio visualizer
   if (audioVisualizer) {
     audioVisualizer.start();
   }
-  
+
   // Hide copy button when starting a new recording
-  const copyButtonWrapper = document.getElementById('copy-button-wrapper');
+  const copyButtonWrapper = document.getElementById("copy-button-wrapper");
   if (copyButtonWrapper) {
-    copyButtonWrapper.style.display = 'none';
+    copyButtonWrapper.style.display = "none";
   }
-  
+
   // Update status
-  const statusElement = document.getElementById('status');
-  const recordButton = document.getElementById('startRecording');
-  
+  const statusElement = document.getElementById("status");
+  const recordButton = document.getElementById("startRecording");
+
   try {
     // Check if API key is set
     const hasApiKey = await checkApiKey();
@@ -275,12 +319,12 @@ async function startRecording() {
       `;
       return;
     }
-    
+
     // Initialize service if not already done
     if (!audioService) {
       audioService = new AudioRecordingService();
     }
-    
+
     // Check recording support
     if (!audioService.isRecordingSupported()) {
       statusElement.innerHTML = `
@@ -293,11 +337,11 @@ async function startRecording() {
       `;
       return;
     }
-    
+
     // Show animation
-    const recordingAnimation = document.getElementById('recording-animation');
-    recordingAnimation.classList.add('active');
-    
+    const recordingAnimation = document.getElementById("recording-animation");
+    recordingAnimation.classList.add("active");
+
     // Update button
     recordButton.innerHTML = `
       <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -305,7 +349,7 @@ async function startRecording() {
       </svg>
       Stop Recording
     `;
-    
+
     // Update status
     statusElement.innerHTML = `
       <div class="status-indicator status-recording">
@@ -313,36 +357,35 @@ async function startRecording() {
         <span class="status-text">Recording...</span>
       </div>
     `;
-    
+
     // Hide settings button while recording
-    const settingsButton = document.getElementById('options');
+    const settingsButton = document.getElementById("options");
     if (settingsButton) {
-      settingsButton.style.display = 'none';
+      settingsButton.style.display = "none";
     }
-    
+
     // Start recording
     await audioService.startRecording();
     isRecording = true;
     stopRecordingConfirmationNeeded = true; // Enable confirmation dialog for stopping recording
-    
+
     // Update extension icon to recording state
     updateExtensionIcon(ICON_STATE.RECORDING);
-    
+
     // Notify background script about recording state
-    chrome.runtime.sendMessage({ 
-      action: 'updateRecordingState', 
-      isRecording: true 
+    chrome.runtime.sendMessage({
+      action: "updateRecordingState",
+      isRecording: true,
     });
-    
+
     // Auto-stop after MAX_RECORDING_TIME
     recordingTimeout = setTimeout(() => {
       if (isRecording) {
         stopRecording(false); // Don't need confirmation for auto-stop
       }
     }, MAX_RECORDING_TIME);
-    
   } catch (error) {
-    console.error('Error starting recording:', error);
+    console.error("Error starting recording:", error);
     handleRecordingError(error);
   }
 }
@@ -354,162 +397,186 @@ async function stopRecording(showConfirmation = true) {
   // Check if we need to show confirmation
   if (showConfirmation && stopRecordingConfirmationNeeded) {
     // Display confirmation dialog
-    if (!confirm('Are you sure you want to stop recording?')) {
+    if (!confirm("Are you sure you want to stop recording?")) {
       // User clicked cancel, don't stop recording
-      console.log('Recording stop cancelled by user');
+      console.log("Recording stop cancelled by user");
       return;
     }
   }
-  
+
   // Reset confirmation flag
   stopRecordingConfirmationNeeded = false;
-  
+
   if (!isRecording || !audioService) return;
-  
+
   // Clear timeout
   if (recordingTimeout) {
     clearTimeout(recordingTimeout);
     recordingTimeout = null;
   }
-  
-  const statusElement = document.getElementById('status');
-  const recordButton = document.getElementById('startRecording');
-  const recordingAnimation = document.getElementById('recording-animation');
-  const transcriptionText = document.getElementById('transcription-text');
-  
+
+  const statusElement = document.getElementById("status");
+  const recordButton = document.getElementById("startRecording");
+  const recordingAnimation = document.getElementById("recording-animation");
+  const transcriptionText = document.getElementById("transcription-text");
+
   // Stop audio visualizer
   if (audioVisualizer) {
     audioVisualizer.stop();
   }
-  
+
   try {
     // Hide recording animation
-    recordingAnimation.classList.remove('active');
-    
+    recordingAnimation.classList.remove("active");
+
     // Update status indicator with a random fun message
-    const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
+    const randomMessage =
+      PROCESSING_MESSAGES[
+        Math.floor(Math.random() * PROCESSING_MESSAGES.length)
+      ];
     statusElement.innerHTML = `<div class="status-indicator status-processing"><span class="pulse-dot"></span><span class="status-text">${randomMessage}...</span></div>`;
-    
+
     // Stop recording and get audio data
     const audioBlob = await audioService.stopRecording();
     isRecording = false;
-    
+
     // Set icon back to normal or auto-record state
-    updateExtensionIcon(autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE);
-    
+    updateExtensionIcon(
+      autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE
+    );
+
     // Notify background script about recording state
-    chrome.runtime.sendMessage({ 
-      action: 'updateRecordingState', 
-      isRecording: false 
+    chrome.runtime.sendMessage({
+      action: "updateRecordingState",
+      isRecording: false,
     });
-    
+
     // Transform recording button into progress bar
     transformButtonToProgressBar(recordButton);
-    
+
     // Get API key and create fresh service instance to avoid 404 errors
-    const { apiKey } = await chrome.storage.sync.get(['apiKey']);
-    
+    const { apiKey } = await chrome.storage.sync.get(["apiKey"]);
+
     // Create a new API service instance to prevent stale state
     apiService = null;
     apiService = new GeminiApiService(apiKey);
-    
+
     // Verify API key with our enhanced validation
     const keyValidation = await apiService.verifyApiKey();
     if (!keyValidation.valid) {
-      throw new Error(keyValidation.displayMessage || 'Invalid API key. Please check your key in Options.');
+      throw new Error(
+        keyValidation.displayMessage ||
+          "Invalid API key. Please check your key in Options."
+      );
     }
-    
+
     // Update status indicator with random fun messages
     showTranscribingStatus(statusElement, true);
-    
+
     // Actually transcribe the audio using retry mechanism
-    const transcription = await apiService.transcribeAudioWithRetry(audioBlob, updateProgressCallback);
-    
+    const transcription = await apiService.transcribeAudioWithRetry(
+      audioBlob,
+      updateProgressCallback
+    );
+
     // Complete the progress animation
     completeProgressAnimation();
-    
+
     // Handle transcription based on mode
     if (contextualMode && activeTabInput) {
       // In contextual mode, send transcription to the active input in the tab
       try {
         // Get the current active tab
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tabs || tabs.length === 0) throw new Error('No active tab found');
-        
+        const tabs = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+        if (!tabs || tabs.length === 0) throw new Error("No active tab found");
+
         const currentTab = tabs[0];
-        
+
         // Only send the message once - this is the first point where we might get duplicate insertion
-        console.log('Sending single insertion request to tab');
-        
+        console.log("Sending single insertion request to tab");
+
         // Send message to content script to insert transcription - with timeout to ensure response
         const insertResult = await Promise.race([
           chrome.tabs.sendMessage(currentTab.id, {
-            action: 'insertTranscription',
+            action: "insertTranscription",
             text: transcription,
-            requestId: Date.now() // Add unique request ID to prevent duplicate processing
+            requestId: Date.now(), // Add unique request ID to prevent duplicate processing
           }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Tab message timeout')), 5000))
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Tab message timeout")), 5000)
+          ),
         ]);
-        
-        console.log('Insertion result:', insertResult);
-        
+
+        console.log("Insertion result:", insertResult);
+
         // Still copy to clipboard for convenience
         if (transcription && transcription.trim()) {
           try {
             await navigator.clipboard.writeText(transcription);
             // Show a "Text inserted" notification
-            window.NotificationService.showClipboardNotification('Text inserted in input field');
+            window.NotificationService.showClipboardNotification(
+              "Text inserted in input field"
+            );
           } catch (err) {
-            console.error('Failed to copy text: ', err);
+            console.error("Failed to copy text: ", err);
           }
         }
-        
+
         // Update status to show contextual insertion was successful
-        statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Inserted in field</span></div>';
-        
+        statusElement.innerHTML =
+          '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Inserted in field</span></div>';
+
         // Also show in popup what was transcribed
-        transcriptionText.style.opacity = '0';
-        transcriptionText.style.transition = 'opacity 0.3s ease';
-        transcriptionText.textContent = transcription || 'No speech detected.';
-        transcriptionText.style.display = 'block'; // Show text container
-        transcriptionText.style.pointerEvents = 'auto';
-        transcriptionText.style.position = 'relative';
-        transcriptionText.style.zIndex = '10';
-        
+        transcriptionText.style.opacity = "0";
+        transcriptionText.style.transition = "opacity 0.3s ease";
+        transcriptionText.textContent = transcription || "No speech detected.";
+        transcriptionText.style.display = "block"; // Show text container
+        transcriptionText.style.pointerEvents = "auto";
+        transcriptionText.style.position = "relative";
+        transcriptionText.style.zIndex = "10";
       } catch (error) {
-        console.error('Error inserting transcription into input:', error);
-        
+        console.error("Error inserting transcription into input:", error);
+
         // Show error notification
-        window.NotificationService.showPopupNotification('Failed to insert text. Displaying in popup instead.', 'error');
-        
+        window.NotificationService.showPopupNotification(
+          "Failed to insert text. Displaying in popup instead.",
+          "error"
+        );
+
         // Fall back to standard mode if insertion fails
         contextualMode = false;
         updateContextualModeUI(false);
-        
+
         // Show in popup
-        transcriptionText.style.opacity = '0';
-        transcriptionText.style.transition = 'opacity 0.3s ease';
-        transcriptionText.textContent = transcription || 'No speech detected.';
-        transcriptionText.style.display = 'block';
-        transcriptionText.style.pointerEvents = 'auto';
-        transcriptionText.style.position = 'relative';
-        transcriptionText.style.zIndex = '10';
-        
+        transcriptionText.style.opacity = "0";
+        transcriptionText.style.transition = "opacity 0.3s ease";
+        transcriptionText.textContent = transcription || "No speech detected.";
+        transcriptionText.style.display = "block";
+        transcriptionText.style.pointerEvents = "auto";
+        transcriptionText.style.position = "relative";
+        transcriptionText.style.zIndex = "10";
+
         // Force redisplay with animation
         setTimeout(() => {
-          transcriptionText.style.opacity = '1';
+          transcriptionText.style.opacity = "1";
         }, 10);
-        
+
         // Update status to show standard mode fallback
-        statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Complete</span></div>';
-        
+        statusElement.innerHTML =
+          '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Complete</span></div>';
+
         // Copy to clipboard as fallback
         if (transcription && transcription.trim()) {
           try {
             await navigator.clipboard.writeText(transcription);
-            window.NotificationService.showClipboardNotification('Copied to clipboard instead');
+            window.NotificationService.showClipboardNotification(
+              "Copied to clipboard instead"
+            );
           } catch (err) {
-            console.error('Failed to copy text: ', err);
+            console.error("Failed to copy text: ", err);
           }
         }
       }
@@ -521,52 +588,53 @@ async function stopRecording(showConfirmation = true) {
           // Clipboard notification will be shown by completeProgressAnimation
           // No need to call window.NotificationService.showClipboardNotification() here to avoid duplicate notifications
         } catch (err) {
-          console.error('Failed to copy text: ', err);
+          console.error("Failed to copy text: ", err);
         }
       }
-      
+
       // Show the transcription with "Complete" status
-      statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Complete</span></div>';
-      
+      statusElement.innerHTML =
+        '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Complete</span></div>';
+
       // Animate the transcription text
-      transcriptionText.style.opacity = '0';
-      transcriptionText.style.transition = 'opacity 0.3s ease';
-      transcriptionText.textContent = transcription || 'No speech detected.';
-      transcriptionText.style.display = 'block'; // Show text container
-      transcriptionText.style.pointerEvents = 'auto'; // Ensure it's interactive
-      transcriptionText.style.position = 'relative'; // Ensure proper stacking
-      transcriptionText.style.zIndex = '10'; // Higher than visualizer
+      transcriptionText.style.opacity = "0";
+      transcriptionText.style.transition = "opacity 0.3s ease";
+      transcriptionText.textContent = transcription || "No speech detected.";
+      transcriptionText.style.display = "block"; // Show text container
+      transcriptionText.style.pointerEvents = "auto"; // Ensure it's interactive
+      transcriptionText.style.position = "relative"; // Ensure proper stacking
+      transcriptionText.style.zIndex = "10"; // Higher than visualizer
     }
-    
+
     // Reset status to "Ready" after 3 seconds
     setTimeout(() => {
       if (!isRecording) {
-        statusElement.innerHTML = '<div class="status-indicator status-ready"><span class="pulse-dot"></span><span class="status-text">Ready</span></div>';
+        statusElement.innerHTML =
+          '<div class="status-indicator status-ready"><span class="pulse-dot"></span><span class="status-text">Ready</span></div>';
       }
     }, 3000);
-    
+
     // Make the text selectable and editable with no outline
-    transcriptionText.setAttribute('contenteditable', 'true');
-    transcriptionText.style.userSelect = 'text';
-    transcriptionText.style.cursor = 'text';
-    transcriptionText.style.outline = 'none';
-    transcriptionText.style.border = 'none';
-    transcriptionText.style.boxShadow = 'none';
-    
+    transcriptionText.setAttribute("contenteditable", "true");
+    transcriptionText.style.userSelect = "text";
+    transcriptionText.style.cursor = "text";
+    transcriptionText.style.outline = "none";
+    transcriptionText.style.border = "none";
+    transcriptionText.style.boxShadow = "none";
+
     // Force reflow to ensure animation works
     transcriptionText.offsetHeight;
-    
+
     // Show with animation
-    transcriptionText.style.opacity = '1';
-    
+    transcriptionText.style.opacity = "1";
+
     // Show copy button when transcription is available
-    const copyButtonWrapper = document.getElementById('copy-button-wrapper');
+    const copyButtonWrapper = document.getElementById("copy-button-wrapper");
     if (copyButtonWrapper) {
-      copyButtonWrapper.style.display = 'block';
+      copyButtonWrapper.style.display = "block";
     }
-    
   } catch (error) {
-    console.error('Error in recording/transcription:', error);
+    console.error("Error in recording/transcription:", error);
     statusElement.innerHTML = `
       <div class="error-message">
         <svg class="icon" style="color: #ff5252" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -575,8 +643,8 @@ async function stopRecording(showConfirmation = true) {
         <span>Error: ${error.message}</span>
       </div>
     `;
-    transcriptionText.textContent = 'Transcription failed. Please try again.';
-    
+    transcriptionText.textContent = "Transcription failed. Please try again.";
+
     // Restore button in case of error
     recordButton.innerHTML = `
       <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -586,8 +654,8 @@ async function stopRecording(showConfirmation = true) {
       Record & Transcribe
     `;
     recordButton.disabled = false;
-    recordButton.classList.remove('button-progress-container');
-    
+    recordButton.classList.remove("button-progress-container");
+
     // Keep settings button hidden to maintain layout consistency
     // Once recording has been attempted, we don't show settings button again
   }
@@ -596,9 +664,9 @@ async function stopRecording(showConfirmation = true) {
 // Transform button into progress bar
 function transformButtonToProgressBar(button) {
   // Add the progress bar styles if not already added
-  if (!document.getElementById('progress-bar-styles')) {
-    const progressStyles = document.createElement('style');
-    progressStyles.id = 'progress-bar-styles';
+  if (!document.getElementById("progress-bar-styles")) {
+    const progressStyles = document.createElement("style");
+    progressStyles.id = "progress-bar-styles";
     progressStyles.textContent = `
       /* Gradient Progress Bar */
       .button-progress-container {
@@ -698,16 +766,17 @@ function transformButtonToProgressBar(button) {
     `;
     document.head.appendChild(progressStyles);
   }
-  
+
   // Preserve button content
   const buttonContent = button.innerHTML;
-  
+
   // Transform button to progress bar
-  button.classList.add('button-progress-container');
+  button.classList.add("button-progress-container");
   button.disabled = true;
-  
+
   // Create progress structure with a random fun message
-  const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
+  const randomMessage =
+    PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
   button.innerHTML = `
     <div id="progress-bar" class="button-progress-bar"></div>
     <div class="button-progress-content">
@@ -717,16 +786,16 @@ function transformButtonToProgressBar(button) {
       <span>${randomMessage}...</span>
     </div>
   `;
-  
+
   // Hide settings button while showing progress
-  const settingsButton = document.getElementById('options');
+  const settingsButton = document.getElementById("options");
   if (settingsButton) {
-    settingsButton.style.display = 'none';
+    settingsButton.style.display = "none";
   }
-  
+
   // Store original content for later restoration
   button.dataset.originalContent = buttonContent;
-  
+
   // Start progress animation
   startFakeProgressAnimation();
 }
@@ -735,7 +804,7 @@ function transformButtonToProgressBar(button) {
 function startFakeProgressAnimation() {
   let fakeProgress = 0;
   let lastMessageUpdateTime = Date.now();
-  
+
   window.progressInterval = setInterval(() => {
     if (fakeProgress < 30) {
       fakeProgress += 3; // Fast initial progress
@@ -746,24 +815,29 @@ function startFakeProgressAnimation() {
     } else if (fakeProgress < 95) {
       fakeProgress += 0.3; // Slow down
     }
-    
+
     // Cap at 95%
     if (fakeProgress > 95) {
       fakeProgress = 95;
       clearInterval(window.progressInterval);
     }
-    
+
     // Update progress bar
-    const progressBar = document.getElementById('progress-bar');
+    const progressBar = document.getElementById("progress-bar");
     if (progressBar) {
-      progressBar.style.width = fakeProgress + '%';
-      
+      progressBar.style.width = fakeProgress + "%";
+
       // Occasionally update the message (every ~2.5 seconds)
       const now = Date.now();
       if (now - lastMessageUpdateTime > 2500) {
-        const messageElement = document.querySelector('.button-progress-content span');
+        const messageElement = document.querySelector(
+          ".button-progress-content span"
+        );
         if (messageElement) {
-          const randomMessage = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
+          const randomMessage =
+            PROCESSING_MESSAGES[
+              Math.floor(Math.random() * PROCESSING_MESSAGES.length)
+            ];
           messageElement.textContent = `${randomMessage}...`;
         }
         lastMessageUpdateTime = now;
@@ -775,11 +849,14 @@ function startFakeProgressAnimation() {
 // Show transcribing status with animation and random fun messages
 function showTranscribingStatus(container, randomMessage = false) {
   // Update the status to indicate processing is happening
-  const statusElement = document.getElementById('status');
+  const statusElement = document.getElementById("status");
   if (statusElement) {
     // Always choose a random fun message
-    const message = PROCESSING_MESSAGES[Math.floor(Math.random() * PROCESSING_MESSAGES.length)];
-    
+    const message =
+      PROCESSING_MESSAGES[
+        Math.floor(Math.random() * PROCESSING_MESSAGES.length)
+      ];
+
     statusElement.innerHTML = `
       <div class="status-indicator status-processing">
         <span class="pulse-dot"></span>
@@ -787,7 +864,7 @@ function showTranscribingStatus(container, randomMessage = false) {
       </div>
     `;
   }
-  
+
   // Progress bar animation is handled by startFakeProgressAnimation()
 }
 
@@ -804,35 +881,43 @@ function completeProgressAnimation() {
   if (window.progressInterval) {
     clearInterval(window.progressInterval);
   }
-  
+
   // Get the progress bar
-  const progressBar = document.getElementById('progress-bar');
+  const progressBar = document.getElementById("progress-bar");
   if (progressBar) {
     // Set to 100% with satisfying finish
-    progressBar.style.width = '100%';
-    progressBar.style.transition = 'width 0.5s cubic-bezier(0.1, 0.9, 0.2, 1.2)';
-    progressBar.classList.add('complete');
-    
+    progressBar.style.width = "100%";
+    progressBar.style.transition =
+      "width 0.5s cubic-bezier(0.1, 0.9, 0.2, 1.2)";
+    progressBar.classList.add("complete");
+
     // Update the progress content text to show "Complete"
-    const progressContent = document.querySelector('.button-progress-content span');
+    const progressContent = document.querySelector(
+      ".button-progress-content span"
+    );
     if (progressContent) {
-      progressContent.textContent = 'Complete';
+      progressContent.textContent = "Complete";
     }
-    
+
     // Update icon to checkmark
-    const progressIcon = document.querySelector('.button-progress-content svg path');
+    const progressIcon = document.querySelector(
+      ".button-progress-content svg path"
+    );
     if (progressIcon) {
-      progressIcon.setAttribute('d', 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z');
+      progressIcon.setAttribute(
+        "d",
+        "M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"
+      );
     }
-    
+
     // Show the copy notification
     setTimeout(() => {
       window.NotificationService.showCopyNotification();
-      
+
       // Restore button after a short delay
       setTimeout(() => {
-        const recordButton = document.getElementById('startRecording');
-        
+        const recordButton = document.getElementById("startRecording");
+
         if (recordButton) {
           // Always use the original mic icon and "Record & Transcribe" text
           recordButton.innerHTML = `
@@ -842,19 +927,19 @@ function completeProgressAnimation() {
             </svg>
             Record & Transcribe
           `;
-          recordButton.classList.remove('button-progress-container');
+          recordButton.classList.remove("button-progress-container");
           recordButton.disabled = false;
           delete recordButton.dataset.originalContent;
-          
+
           // Re-attach the event listener for the record button
-          recordButton.addEventListener('click', async () => {
+          recordButton.addEventListener("click", async () => {
             if (isRecording) {
               await stopRecording();
             } else {
               await startRecording();
             }
           });
-          
+
           // Keep settings button permanently hidden after first recording
           // This maintains layout stability and prevents UI shifts
         }
@@ -863,25 +948,26 @@ function completeProgressAnimation() {
   }
 }
 
-
 // Handle recording errors
 function handleRecordingError(error) {
-  const statusElement = document.getElementById('status');
-  const recordButton = document.getElementById('startRecording');
-  
+  const statusElement = document.getElementById("status");
+  const recordButton = document.getElementById("startRecording");
+
   // Reset recording state
   isRecording = false;
   stopRecordingConfirmationNeeded = false;
-  
+
   // Reset extension icon
-  updateExtensionIcon(autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE);
-  
+  updateExtensionIcon(
+    autoRecordEnabled ? ICON_STATE.AUTO_RECORD : ICON_STATE.IDLE
+  );
+
   // Notify background script about recording state
-  chrome.runtime.sendMessage({ 
-    action: 'updateRecordingState', 
-    isRecording: false 
+  chrome.runtime.sendMessage({
+    action: "updateRecordingState",
+    isRecording: false,
   });
-  
+
   // Reset button state
   recordButton.innerHTML = `
     <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -890,14 +976,17 @@ function handleRecordingError(error) {
     </svg>
     Record & Transcribe
   `;
-  
+
   // Hide animation
-  document.getElementById('recording-animation').classList.remove('active');
-  
+  document.getElementById("recording-animation").classList.remove("active");
+
   // Handle permission errors specially
-  if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    
+  if (
+    error.name === "NotAllowedError" ||
+    error.name === "PermissionDeniedError"
+  ) {
+    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+
     if (isMac) {
       statusElement.innerHTML = `
         <div class="error-message">
@@ -917,11 +1006,11 @@ function handleRecordingError(error) {
         </div>
       `;
     }
-    
+
     // Make sure permission button is visible
-    const permButton = document.getElementById('fixPermissions');
+    const permButton = document.getElementById("fixPermissions");
     if (permButton) {
-      permButton.style.display = 'block';
+      permButton.style.display = "block";
     }
   } else {
     // Show other errors
@@ -934,11 +1023,11 @@ function handleRecordingError(error) {
       </div>
     `;
   }
-  
+
   // Add error message styling
-  if (!document.getElementById('error-message-style')) {
-    const style = document.createElement('style');
-    style.id = 'error-message-style';
+  if (!document.getElementById("error-message-style")) {
+    const style = document.createElement("style");
+    style.id = "error-message-style";
     style.textContent = `
       .error-message {
         display: flex;
@@ -959,48 +1048,48 @@ function handleRecordingError(error) {
 // Handle microphone permission directly in the popup
 function openPermissionFix() {
   // Show the permission dialog with smooth animation
-  const permissionDialog = document.getElementById('permissionDialog');
-  permissionDialog.style.display = 'flex';
-  
+  const permissionDialog = document.getElementById("permissionDialog");
+  permissionDialog.style.display = "flex";
+
   // Force reflow before adding show class to ensure animation works
   permissionDialog.offsetHeight;
-  permissionDialog.classList.add('show');
-  
+  permissionDialog.classList.add("show");
+
   // Setup permission button
-  const permissionBtn = document.getElementById('permissionBtn');
-  const permissionStatus = document.getElementById('permission-status');
-  
+  const permissionBtn = document.getElementById("permissionBtn");
+  const permissionStatus = document.getElementById("permission-status");
+
   // Add click handler for permission button
   permissionBtn.onclick = async () => {
     try {
       // Request microphone access directly
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
+
       // Stop the stream right away, we just needed permission
-      stream.getTracks().forEach(track => track.stop());
-      
+      stream.getTracks().forEach((track) => track.stop());
+
       // Store permission status
-      chrome.storage.sync.set({ microphonePermission: 'granted' });
-      
+      chrome.storage.sync.set({ microphonePermission: "granted" });
+
       // Show success message
-      permissionStatus.textContent = 'Microphone access granted!';
-      permissionStatus.style.color = '#a0ff9d';
-      
-      permissionBtn.textContent = 'Access Granted';
+      permissionStatus.textContent = "Microphone access granted!";
+      permissionStatus.style.color = "#a0ff9d";
+
+      permissionBtn.textContent = "Access Granted";
       permissionBtn.disabled = true;
-      permissionBtn.style.backgroundColor = 'rgba(76, 175, 80, 0.7)';
-      
+      permissionBtn.style.backgroundColor = "rgba(76, 175, 80, 0.7)";
+
       // Close the dialog after a short delay
       setTimeout(() => {
-        permissionDialog.style.display = 'none';
-        permissionDialog.classList.remove('show');
+        permissionDialog.style.display = "none";
+        permissionDialog.classList.remove("show");
         // Refresh the status message
-        document.getElementById('status').textContent = 'Ready to transcribe! Microphone access granted.';
+        document.getElementById("status").textContent =
+          "Ready to transcribe! Microphone access granted.";
       }, 1500);
-      
     } catch (error) {
-      console.error('Error requesting microphone permission:', error);
-      
+      console.error("Error requesting microphone permission:", error);
+
       // Show detailed error message
       permissionStatus.innerHTML = `
         <span style="color: #ff88a9;">Microphone access denied.</span><br>
@@ -1013,12 +1102,12 @@ function openPermissionFix() {
       `;
     }
   };
-  
+
   // Setup close button with smooth animation
-  document.getElementById('closeDialog').onclick = () => {
-    permissionDialog.classList.remove('show');
+  document.getElementById("closeDialog").onclick = () => {
+    permissionDialog.classList.remove("show");
     setTimeout(() => {
-      permissionDialog.style.display = 'none';
+      permissionDialog.style.display = "none";
     }, 200); // Matches transition time
   };
 }
@@ -1029,34 +1118,36 @@ async function checkForActiveInputInTab() {
     // Get the current active tab
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tabs || tabs.length === 0) return false;
-    
+
     const currentTab = tabs[0];
-    
+
     // Send a message to the content script to check for active inputs
-    const response = await chrome.tabs.sendMessage(currentTab.id, { action: 'getActiveInput' });
-    
+    const response = await chrome.tabs.sendMessage(currentTab.id, {
+      action: "getActiveInput",
+    });
+
     if (response && response.hasActiveInput) {
       activeTabInput = response.inputInfo;
       contextualMode = true;
-      
+
       // Update UI to show contextual mode is active
       updateContextualModeUI(true);
-      
-      console.log('Active input found in tab:', activeTabInput);
+
+      console.log("Active input found in tab:", activeTabInput);
       return true;
     } else {
       activeTabInput = null;
       contextualMode = false;
-      
+
       // Update UI to show standard mode
       updateContextualModeUI(false);
-      
-      console.log('No active input found in tab');
+
+      console.log("No active input found in tab");
       return false;
     }
   } catch (error) {
-    console.error('Error checking for active input:', error);
-    
+    console.error("Error checking for active input:", error);
+
     // If error occurs (like content script not loaded), fall back to standard mode
     activeTabInput = null;
     contextualMode = false;
@@ -1067,18 +1158,18 @@ async function checkForActiveInputInTab() {
 
 // Update UI to reflect contextual mode status
 function updateContextualModeUI(isContextual) {
-  const contextBadge = document.getElementById('contextual-mode-badge');
+  const contextBadge = document.getElementById("contextual-mode-badge");
   if (!contextBadge) return;
-  
+
   // Always make sure badge is visible
-  contextBadge.style.display = 'flex'; 
-  
+  contextBadge.style.display = "flex";
+
   if (isContextual) {
-    contextBadge.classList.add('active');
-    
+    contextBadge.classList.add("active");
+
     // Show tooltip with input info if available
     if (activeTabInput) {
-      const tooltip = document.getElementById('contextual-tooltip');
+      const tooltip = document.getElementById("contextual-tooltip");
       if (tooltip) {
         tooltip.innerHTML = `
           <strong>Smart mode active</strong>
@@ -1087,10 +1178,10 @@ function updateContextualModeUI(isContextual) {
       }
     }
   } else {
-    contextBadge.classList.remove('active');
-    
+    contextBadge.classList.remove("active");
+
     // Update tooltip for standard mode
-    const tooltip = document.getElementById('contextual-tooltip');
+    const tooltip = document.getElementById("contextual-tooltip");
     if (tooltip) {
       tooltip.innerHTML = `
         <strong>Standard mode</strong>
@@ -1106,7 +1197,7 @@ const startInit = () => {
   try {
     audioService = new AudioRecordingService();
   } catch (error) {
-    console.error('Error in pre-initialization:', error);
+    console.error("Error in pre-initialization:", error);
     // We'll handle this later in the DOMContentLoaded event
   }
 };
@@ -1117,117 +1208,128 @@ startInit();
 // Initialize the popup
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((message) => {
-  console.log('Received message in popup:', message);
-  
-  if (message.action === 'forceStopRecording' && isRecording) {
-    console.log('Received force stop recording command');
+  console.log("Received message in popup:", message);
+
+  if (message.action === "forceStopRecording" && isRecording) {
+    console.log("Received force stop recording command");
     // Stop recording without confirmation (passing false to skip confirmation)
     stopRecording(false);
   }
 });
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener("DOMContentLoaded", async () => {
   // Force immediate rendering
-  document.body.style.display = 'block';
-  document.body.style.opacity = '1';
-  
+  document.body.style.display = "block";
+  document.body.style.opacity = "1";
+
   // Initialize settings service first
   await window.SettingsService.initialize();
-  
+
   // Check API key in parallel with rendering
   const hasApiKey = await checkApiKey();
-  
+
   // Apply theme based on user preference or system preference
-  initializeTheme();
-  
+  window.ThemeManager.initialize();
+
   // Check for active input field in the current tab
   try {
     await checkForActiveInputInTab();
   } catch (error) {
-    console.error('Error checking for active input during initialization:', error);
+    console.error(
+      "Error checking for active input during initialization:",
+      error
+    );
     activeTabInput = null;
     contextualMode = false;
     // No need to show notification on initial load
   }
-  
+
   // Check for auto-record setting
-  const autoRecordBadge = document.getElementById('auto-record-badge');
+  const autoRecordBadge = document.getElementById("auto-record-badge");
   if (autoRecordBadge) {
-    autoRecordBadge.style.display = 'flex';
-    
+    autoRecordBadge.style.display = "flex";
+
     // Check auto-record setting
     const isAutoRecordEnabled = await checkAutoRecord();
-    
+
     // Setup click handler for auto-record badge
-    autoRecordBadge.addEventListener('click', toggleAutoRecord);
-    
+    autoRecordBadge.addEventListener("click", toggleAutoRecord);
+
     // Start recording automatically if enabled and API key is set
     if (isAutoRecordEnabled && hasApiKey && !isRecording) {
-      console.log('Auto-recording enabled, starting recording...');
+      console.log("Auto-recording enabled, starting recording...");
       // Use a small delay to allow UI to initialize first
       setTimeout(() => {
         startRecording();
       }, 300);
     }
   }
-  
+
   // Check for context menu setting
-  const contextMenuBadge = document.getElementById('context-menu-badge');
+  const contextMenuBadge = document.getElementById("context-menu-badge");
   if (contextMenuBadge) {
-    contextMenuBadge.style.display = 'flex';
-    
+    contextMenuBadge.style.display = "flex";
+
     // Check context menu setting
     await checkContextMenu();
-    
+
     // Setup click handler for context menu badge
-    contextMenuBadge.addEventListener('click', toggleContextMenu);
+    contextMenuBadge.addEventListener("click", toggleContextMenu);
   }
-  
+
   // Setup context badge click handler
-  const contextBadge = document.getElementById('contextual-mode-badge');
+  const contextBadge = document.getElementById("contextual-mode-badge");
   if (contextBadge) {
-    contextBadge.addEventListener('click', async () => {
+    contextBadge.addEventListener("click", async () => {
       // Toggle contextual mode
       contextualMode = !contextualMode;
-      
+
       // If turning on contextual mode, check if there's an active input
       if (contextualMode) {
         try {
           const hasActiveInput = await checkForActiveInputInTab();
           if (!hasActiveInput) {
             // If no active input is found, show a notification
-            window.NotificationService.showPopupNotification('No text input selected. Focus a text field on the page first.', 'info');
+            window.NotificationService.showPopupNotification(
+              "No text input selected. Focus a text field on the page first.",
+              "info"
+            );
             contextualMode = false;
           }
         } catch (error) {
-          console.error('Error checking for active input:', error);
-          window.NotificationService.showPopupNotification('Unable to detect text inputs. Please reload the page.', 'info');
+          console.error("Error checking for active input:", error);
+          window.NotificationService.showPopupNotification(
+            "Unable to detect text inputs. Please reload the page.",
+            "info"
+          );
           contextualMode = false;
         }
       }
-      
+
       // Update UI
       updateContextualModeUI(contextualMode);
     });
   }
-  
+
   // Initialize audio visualizer
-  audioVisualizer = new AudioVisualizer(document.getElementById('transcription-container'));
-  
+  audioVisualizer = new AudioVisualizer(
+    document.getElementById("transcription-container")
+  );
+
   // Add random blinking to ghost in idle state
-  const ghostEyes = document.querySelector('.ghost-eyes');
+  const ghostEyes = document.querySelector(".ghost-eyes");
   if (ghostEyes) {
     // Function to trigger a random blink
     const triggerRandomBlink = () => {
       // Only blink if not recording
       if (!isRecording) {
-        ghostEyes.classList.add('idle-blink');
-        
+        ghostEyes.classList.add("idle-blink");
+
         // Remove class after animation completes
         setTimeout(() => {
-          ghostEyes.classList.remove('idle-blink');
+          ghostEyes.classList.remove("idle-blink");
         }, 200); // Animation duration
-        
+
         // Schedule next blink with random delay (between 4-15 seconds)
         const nextBlinkDelay = 4000 + Math.random() * 11000;
         setTimeout(triggerRandomBlink, nextBlinkDelay);
@@ -1236,32 +1338,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(triggerRandomBlink, 5000);
       }
     };
-    
+
     // Start the random blinking with initial delay
     setTimeout(triggerRandomBlink, 2000 + Math.random() * 3000);
   }
-  
+
   // Set click-to-stop callback
   audioVisualizer.setStopRecordingCallback(() => {
     if (isRecording) {
       stopRecording(false); // No confirmation needed when clicking on visualizer
     }
   });
-  
+
   // Set up RECORD BUTTON
-  const recordButton = document.getElementById('startRecording');
-  recordButton.addEventListener('click', async () => {
+  const recordButton = document.getElementById("startRecording");
+  recordButton.addEventListener("click", async () => {
     if (isRecording) {
       await stopRecording(false); // No confirmation needed when clicking stop button directly
     } else {
       await startRecording();
     }
   });
-  
+
   // Make the ghost microphone clickable for recording too
-  const ghostMic = document.getElementById('recording-animation');
+  const ghostMic = document.getElementById("recording-animation");
   if (ghostMic) {
-    ghostMic.addEventListener('click', async () => {
+    ghostMic.addEventListener("click", async () => {
       if (isRecording) {
         await stopRecording(false); // No confirmation needed when clicking directly on ghost mic
       } else {
@@ -1269,53 +1371,53 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
-  
+
   // Set up COPY BUTTON
-  const copyButton = document.getElementById('copy-button');
+  const copyButton = document.getElementById("copy-button");
   if (copyButton) {
-    copyButton.addEventListener('click', async () => {
-      const transcriptionText = document.getElementById('transcription-text');
+    copyButton.addEventListener("click", async () => {
+      const transcriptionText = document.getElementById("transcription-text");
       if (transcriptionText && transcriptionText.textContent) {
         try {
           // Get edited text content from the contenteditable element
           await navigator.clipboard.writeText(transcriptionText.textContent);
           window.NotificationService.showClipboardNotification();
         } catch (err) {
-          console.error('Failed to copy: ', err);
+          console.error("Failed to copy: ", err);
         }
       }
     });
-    
+
     // Add hover effect (more subtle without shadow)
-    copyButton.addEventListener('mouseenter', () => {
-      copyButton.style.transform = 'scale(1.15)';
-      copyButton.style.opacity = '1';
+    copyButton.addEventListener("mouseenter", () => {
+      copyButton.style.transform = "scale(1.15)";
+      copyButton.style.opacity = "1";
     });
-    
-    copyButton.addEventListener('mouseleave', () => {
-      copyButton.style.transform = 'scale(1)';
-      copyButton.style.opacity = '0.8';
+
+    copyButton.addEventListener("mouseleave", () => {
+      copyButton.style.transform = "scale(1)";
+      copyButton.style.opacity = "0.8";
     });
-    
-    copyButton.addEventListener('mousedown', () => {
-      copyButton.style.transform = 'scale(0.95)';
+
+    copyButton.addEventListener("mousedown", () => {
+      copyButton.style.transform = "scale(0.95)";
     });
-    
-    copyButton.addEventListener('mouseup', () => {
-      copyButton.style.transform = 'scale(1.15)';
+
+    copyButton.addEventListener("mouseup", () => {
+      copyButton.style.transform = "scale(1.15)";
     });
   }
-  
+
   // Set up SETTINGS BUTTON
-  const settingsButton = document.getElementById('options');
-  settingsButton.addEventListener('click', (e) => {
+  const settingsButton = document.getElementById("options");
+  settingsButton.addEventListener("click", (e) => {
     e.preventDefault();
     console.log("Settings button clicked");
-    
+
     // Add popup styles if not already added
-    if (!document.getElementById('settings-popup-styles')) {
-      const popupStyles = document.createElement('style');
-      popupStyles.id = 'settings-popup-styles';
+    if (!document.getElementById("settings-popup-styles")) {
+      const popupStyles = document.createElement("style");
+      popupStyles.id = "settings-popup-styles";
       popupStyles.textContent = `
         .settings-popup {
           position: fixed;
@@ -1673,14 +1775,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       document.head.appendChild(popupStyles);
     }
-    
+
     // Create and show settings popup
-    const settingsPopup = document.createElement('div');
-    settingsPopup.className = 'settings-popup';
-    
+    const settingsPopup = document.createElement("div");
+    settingsPopup.className = "settings-popup";
+
     // Determine current theme for accurate button labels
-    const isDarkTheme = document.body.classList.contains('dark-theme');
-    
+    const isDarkTheme = window.ThemeManager.isDarkMode();
+
     // Use same popup HTML as the original handler
     settingsPopup.innerHTML = `
       <div class="settings-content">
@@ -1693,13 +1795,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         </button>
         <button id="toggleTheme" class="settings-button">
           <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; margin-right: 10px;">
-            ${isDarkTheme ? 
-              `<path fill="currentColor" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5s5-2.24 5-5s-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0c-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0c-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0c.39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>` 
-              : 
-              `<path fill="currentColor" d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9s9-4.03 9-9c0-.46-.04-.92-.1-1.36c-.98 1.37-2.58 2.26-4.4 2.26c-2.98 0-5.4-2.42-5.4-5.4c0-1.81.89-3.42 2.26-4.4c-.44-.06-.9-.1-1.36-.1z"/>`
+            ${
+              isDarkTheme
+                ? `<path fill="currentColor" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5s5-2.24 5-5s-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0c-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0c-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0c.39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>`
+                : `<path fill="currentColor" d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9s9-4.03 9-9c0-.46-.04-.92-.1-1.36c-.98 1.37-2.58 2.26-4.4 2.26c-2.98 0-5.4-2.42-5.4-5.4c0-1.81.89-3.42 2.26-4.4c-.44-.06-.9-.1-1.36-.1z"/>`
             }
           </svg>
-          Switch to ${isDarkTheme ? 'Light' : 'Dark'} Mode
+          Switch to ${isDarkTheme ? "Light" : "Dark"} Mode
         </button>
         <div class="theme-indicator" style="
           display: flex;
@@ -1711,25 +1813,27 @@ document.addEventListener('DOMContentLoaded', async () => {
           opacity: 0.8;
         ">
           <span style="position: relative; z-index: 2;">
-            Current theme: <strong>${isDarkTheme ? 'Dark Mode' : 'Light Mode'}</strong>
+            Current theme: <strong>${
+              isDarkTheme ? "Dark Mode" : "Light Mode"
+            }</strong>
           </span>
         </div>
         <button id="closeSettings" class="settings-close">&times;</button>
       </div>
     `;
     document.body.appendChild(settingsPopup);
-    
+
     // Add event handlers for the popup buttons
-    document.getElementById('closeSettings').addEventListener('click', () => {
+    document.getElementById("closeSettings").addEventListener("click", () => {
       document.body.removeChild(settingsPopup);
     });
-    
-    document.getElementById('configureApiKey').addEventListener('click', () => {
+
+    document.getElementById("configureApiKey").addEventListener("click", () => {
       document.body.removeChild(settingsPopup);
-      
+
       // Create and show the API key configuration popup
-      const apiKeyPopup = document.createElement('div');
-      apiKeyPopup.className = 'settings-popup';
+      const apiKeyPopup = document.createElement("div");
+      apiKeyPopup.className = "settings-popup";
       apiKeyPopup.innerHTML = `
         <div class="settings-content">
           <h3 style="justify-content: center;">Configure API Key</h3>
@@ -1752,35 +1856,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       `;
       document.body.appendChild(apiKeyPopup);
-      
+
       // Fetch and populate current API key
-      chrome.storage.sync.get(['apiKey'], (result) => {
+      chrome.storage.sync.get(["apiKey"], (result) => {
         if (result.apiKey) {
-          document.getElementById('api-key-field').value = result.apiKey;
+          document.getElementById("api-key-field").value = result.apiKey;
         }
       });
-      
+
       // Add event listener for save button
-      document.getElementById('save-api-key').addEventListener('click', () => {
-        const apiKey = document.getElementById('api-key-field').value.trim();
+      document.getElementById("save-api-key").addEventListener("click", () => {
+        const apiKey = document.getElementById("api-key-field").value.trim();
         if (apiKey) {
           chrome.storage.sync.set({ apiKey }, () => {
             // Show success message with animation
-            const successMsg = document.querySelector('.api-key-success');
-            successMsg.classList.add('show');
-            
+            const successMsg = document.querySelector(".api-key-success");
+            successMsg.classList.add("show");
+
             // Apply success styling to the button
-            const saveButton = document.getElementById('save-api-key');
+            const saveButton = document.getElementById("save-api-key");
             saveButton.innerHTML = `
               <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 6px;">
                 <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
               </svg>
               Saved!
             `;
-            
+
             // Update the API key check
             checkApiKey();
-            
+
             // Close the popup after a delay
             setTimeout(() => {
               document.body.removeChild(apiKeyPopup);
@@ -1788,17 +1892,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           });
         } else {
           // Show error state for empty input
-          const apiKeyField = document.getElementById('api-key-field');
-          apiKeyField.style.borderColor = 'rgba(255, 0, 0, 0.5)';
-          apiKeyField.style.boxShadow = 'inset 0 1px 3px rgba(255, 0, 0, 0.2)';
-          
+          const apiKeyField = document.getElementById("api-key-field");
+          apiKeyField.style.borderColor = "rgba(255, 0, 0, 0.5)";
+          apiKeyField.style.boxShadow = "inset 0 1px 3px rgba(255, 0, 0, 0.2)";
+
           // Shake animation for empty field
-          apiKeyField.style.animation = 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both';
-          
+          apiKeyField.style.animation =
+            "shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both";
+
           // Add shake animation if not already added
-          if (!document.getElementById('shake-animation')) {
-            const shakeStyle = document.createElement('style');
-            shakeStyle.id = 'shake-animation';
+          if (!document.getElementById("shake-animation")) {
+            const shakeStyle = document.createElement("style");
+            shakeStyle.id = "shake-animation";
             shakeStyle.textContent = `
               @keyframes shake {
                 10%, 90% { transform: translateX(-1px); }
@@ -1809,107 +1914,108 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
             document.head.appendChild(shakeStyle);
           }
-          
+
           // Reset the error state after animation
           setTimeout(() => {
-            apiKeyField.style.borderColor = '';
-            apiKeyField.style.boxShadow = '';
-            apiKeyField.style.animation = '';
+            apiKeyField.style.borderColor = "";
+            apiKeyField.style.boxShadow = "";
+            apiKeyField.style.animation = "";
           }, 500);
         }
       });
-      
+
       // Add event listener for Enter key in input field
-      document.getElementById('api-key-field').addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') {
-          document.getElementById('save-api-key').click();
-        }
-      });
-      
+      document
+        .getElementById("api-key-field")
+        .addEventListener("keyup", (e) => {
+          if (e.key === "Enter") {
+            document.getElementById("save-api-key").click();
+          }
+        });
+
       // Add event listener for close button
-      document.getElementById('closeApiKey').addEventListener('click', () => {
+      document.getElementById("closeApiKey").addEventListener("click", () => {
         document.body.removeChild(apiKeyPopup);
       });
     });
-    
-    document.getElementById('toggleTheme').addEventListener('click', () => {
-      // Toggle theme
-      const currentIsDark = document.body.classList.contains('dark-theme');
-      const newIsDark = !currentIsDark;
-      
-      // Save preference
-      localStorage.setItem('userToggled', 'true');
-      localStorage.setItem('prefersDarkMode', newIsDark);
-      
-      // Apply theme
-      applyTheme(newIsDark);
-      
+
+    document.getElementById("toggleTheme").addEventListener("click", () => {
+      // Toggle theme using ThemeManager
+      const newIsDark = window.ThemeManager.toggleTheme();
+
       // Update theme indicator
-      const themeIndicator = document.querySelector('.theme-indicator span strong');
+      const themeIndicator = document.querySelector(
+        ".theme-indicator span strong"
+      );
       if (themeIndicator) {
-        themeIndicator.textContent = newIsDark ? 'Dark Mode' : 'Light Mode';
+        themeIndicator.textContent = newIsDark ? "Dark Mode" : "Light Mode";
       }
-      
+
       // Apply success styling to button
-      const toggleButton = document.getElementById('toggleTheme');
+      const toggleButton = document.getElementById("toggleTheme");
       toggleButton.innerHTML = `
         <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; margin-right: 10px;">
           <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
         </svg>
-        ${newIsDark ? 'Dark' : 'Light'} Mode Applied
+        ${newIsDark ? "Dark" : "Light"} Mode Applied
       `;
-      toggleButton.style.background = 'linear-gradient(135deg, rgba(75, 203, 156, 0.85), rgba(70, 174, 247, 0.75))';
+      toggleButton.style.background =
+        "linear-gradient(135deg, rgba(75, 203, 156, 0.85), rgba(70, 174, 247, 0.75))";
     });
   });
-  
+
   // Add About header click listener
-  const aboutHeader = document.getElementById('about-header');
+  const aboutHeader = document.getElementById("about-header");
   if (aboutHeader) {
-    aboutHeader.addEventListener('click', openAbout);
+    aboutHeader.addEventListener("click", openAbout);
   }
 
   // Create permission fix button
-  const permButton = document.createElement('button');
-  permButton.id = 'fixPermissions';
+  const permButton = document.createElement("button");
+  permButton.id = "fixPermissions";
   permButton.innerHTML = `
     <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
     </svg>
     Fix Microphone Access
   `;
-  permButton.style.marginTop = '12px';
-  permButton.style.backgroundColor = 'rgba(255, 122, 69, 0.85)';
-  permButton.style.display = 'none'; // Hidden by default
-  
+  permButton.style.marginTop = "12px";
+  permButton.style.backgroundColor = "rgba(255, 122, 69, 0.85)";
+  permButton.style.display = "none"; // Hidden by default
+
   // Add click event
-  permButton.addEventListener('click', openPermissionFix);
-  
+  permButton.addEventListener("click", openPermissionFix);
+
   // Add button to buttons div
-  document.querySelector('.buttons').appendChild(permButton);
-  
+  document.querySelector(".buttons").appendChild(permButton);
+
   // Check microphone permission
   checkMicPermissionAndUpdateButton();
 
   // Check for Chrome storage permission
-  const { microphonePermission } = await chrome.storage.sync.get(['microphonePermission']);
-  if (microphonePermission === 'granted') {
-    permButton.style.display = 'none';
+  const { microphonePermission } = await chrome.storage.sync.get([
+    "microphonePermission",
+  ]);
+  if (microphonePermission === "granted") {
+    permButton.style.display = "none";
   } else {
     // If permission not stored, check if we can detect it
     try {
       if (navigator.permissions && navigator.permissions.query) {
-        const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-        
-        if (permissionStatus.state === 'granted') {
-          permButton.style.display = 'none';
+        const permissionStatus = await navigator.permissions.query({
+          name: "microphone",
+        });
+
+        if (permissionStatus.state === "granted") {
+          permButton.style.display = "none";
           // Save status to storage
-          chrome.storage.sync.set({ microphonePermission: 'granted' });
+          chrome.storage.sync.set({ microphonePermission: "granted" });
         } else {
-          permButton.style.display = 'block';
+          permButton.style.display = "block";
         }
       }
     } catch (error) {
-      console.error('Error checking mic permission:', error);
+      console.error("Error checking mic permission:", error);
     }
   }
 });
@@ -1918,205 +2024,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function checkMicPermissionAndUpdateButton() {
   try {
     // Try to get mic permission status from storage
-    const { microphonePermission } = await chrome.storage.sync.get(['microphonePermission']);
-    
-    if (microphonePermission === 'granted') {
-      const permButton = document.getElementById('fixPermissions');
+    const { microphonePermission } = await chrome.storage.sync.get([
+      "microphonePermission",
+    ]);
+
+    if (microphonePermission === "granted") {
+      const permButton = document.getElementById("fixPermissions");
       if (permButton) {
-        permButton.style.display = 'none';
+        permButton.style.display = "none";
       }
       return;
     }
-    
+
     // If not found in storage, try to check permission state directly
     if (navigator.permissions && navigator.permissions.query) {
-      const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-      const permButton = document.getElementById('fixPermissions');
-      
-      if (permissionStatus.state === 'granted') {
+      const permissionStatus = await navigator.permissions.query({
+        name: "microphone",
+      });
+      const permButton = document.getElementById("fixPermissions");
+
+      if (permissionStatus.state === "granted") {
         if (permButton) {
-          permButton.style.display = 'none';
+          permButton.style.display = "none";
         }
         // Save status to storage
-        chrome.storage.sync.set({ microphonePermission: 'granted' });
+        chrome.storage.sync.set({ microphonePermission: "granted" });
       } else {
         if (permButton) {
-          permButton.style.display = 'block';
+          permButton.style.display = "block";
         }
       }
-      
+
       // Listen for permission changes
       permissionStatus.onchange = () => {
-        const permBtn = document.getElementById('fixPermissions');
+        const permBtn = document.getElementById("fixPermissions");
         if (permBtn) {
-          permBtn.style.display = 
-            permissionStatus.state === 'granted' ? 'none' : 'block';
+          permBtn.style.display =
+            permissionStatus.state === "granted" ? "none" : "block";
         }
-        
-        if (permissionStatus.state === 'granted') {
-          chrome.storage.sync.set({ microphonePermission: 'granted' });
+
+        if (permissionStatus.state === "granted") {
+          chrome.storage.sync.set({ microphonePermission: "granted" });
         }
       };
     }
   } catch (error) {
-    console.error('Error checking mic permission:', error);
+    console.error("Error checking mic permission:", error);
   }
-}
-
-/**
- * Initialize theme based on user preference or system preference
- */
-function initializeTheme() {
-  console.log('Initializing theme...');
-  
-  // Check if user has manually set a preference before
-  const userToggled = localStorage.getItem('userToggled');
-  
-  // Also check for theme preference in chrome.storage for persistence across devices
-  chrome.storage.sync.get(['themePreference', 'userToggled'], (result) => {
-    // If we have a stored preference in Chrome storage, use that first
-    if (result.userToggled === 'true' && result.themePreference !== undefined) {
-      console.log('Using Chrome storage theme preference:', result.themePreference);
-      const isDarkMode = result.themePreference === 'dark';
-      
-      // Apply theme
-      applyTheme(isDarkMode);
-      
-      // Also update localStorage to match
-      localStorage.setItem('userToggled', 'true');
-      localStorage.setItem('prefersDarkMode', isDarkMode);
-      
-      return;
-    }
-    
-    // If Chrome storage doesn't have a preference, check localStorage
-    if (userToggled === 'true') {
-      // If user has toggled, use their preference from localStorage
-      const prefersDarkMode = localStorage.getItem('prefersDarkMode') === 'true';
-      console.log('Using localStorage theme preference:', prefersDarkMode ? 'dark' : 'light');
-      
-      // Apply theme
-      applyTheme(prefersDarkMode);
-      
-      // Save to Chrome storage for persistence across devices
-      chrome.storage.sync.set({
-        themePreference: prefersDarkMode ? 'dark' : 'light',
-        userToggled: 'true'
-      });
-    } else {
-      // Otherwise, check system preference
-      const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      console.log('Using system theme preference:', prefersDarkMode ? 'dark' : 'light');
-      
-      // Apply theme
-      applyTheme(prefersDarkMode);
-      
-      // Set initial values to localStorage
-      localStorage.setItem('userToggled', 'false');
-      localStorage.setItem('prefersDarkMode', prefersDarkMode);
-      
-      // Also set in Chrome storage but mark as not user toggled
-      chrome.storage.sync.set({
-        themePreference: prefersDarkMode ? 'dark' : 'light',
-        userToggled: 'false'
-      });
-      
-      // Add listener for system theme changes if not user toggled
-      try {
-        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        
-        // Use the proper event listener based on browser support
-        if (darkModeMediaQuery.addEventListener) {
-          darkModeMediaQuery.addEventListener('change', handleSystemThemeChange);
-        } else if (darkModeMediaQuery.addListener) {
-          // For older browsers
-          darkModeMediaQuery.addListener(handleSystemThemeChange);
-        }
-      } catch (e) {
-        console.error('Error setting up theme listener:', e);
-      }
-    }
-  });
-}
-
-/**
- * Handle system theme change events
- * @param {MediaQueryListEvent} e - The media query change event
- */
-function handleSystemThemeChange(e) {
-  // Only apply if user hasn't manually set preference
-  chrome.storage.sync.get(['userToggled'], (result) => {
-    if (result.userToggled !== 'true' && localStorage.getItem('userToggled') !== 'true') {
-      console.log('System theme changed to:', e.matches ? 'dark' : 'light');
-      
-      // Apply new theme
-      applyTheme(e.matches);
-      
-      // Update stored values
-      localStorage.setItem('prefersDarkMode', e.matches);
-      chrome.storage.sync.set({
-        themePreference: e.matches ? 'dark' : 'light'
-      });
-    }
-  });
-}
-
-/**
- * Apply theme to the extension
- * @param {boolean} isDark - Whether to apply dark theme
- */
-function applyTheme(isDark) {
-  if (isDark) {
-    document.body.classList.add('dark-theme');
-    
-    // Update CSS variables for dark theme
-    document.documentElement.style.setProperty('--glass-bg', 'rgba(30, 30, 40, 0.8)');
-    document.documentElement.style.setProperty('--glass-border', 'rgba(70, 70, 90, 0.3)');
-    document.documentElement.style.setProperty('--text-primary', 'rgba(255, 255, 255, 0.9)');
-    document.documentElement.style.setProperty('--text-secondary', 'rgba(255, 255, 255, 0.7)');
-    document.documentElement.style.setProperty('--light-accent', 'rgba(111, 66, 193, 0.2)');
-    
-    // Update background gradient for dark theme
-    document.body.style.background = 'linear-gradient(225deg, rgba(20, 20, 30, 0.95), rgba(30, 30, 40, 0.9))';
-    
-    // Use white icon for dark theme
-    try {
-      const logoImg = document.querySelector('h1 img');
-      if (logoImg) {
-        // Ensure we're using the white icon for dark theme
-        if (!logoImg.src.includes('icon_white')) {
-          logoImg.src = logoImg.src.replace('icon_black', 'icon_white');
-        }
-      }
-    } catch (e) {
-      console.error('Error updating logo for dark theme:', e);
-    }
-  } else {
-    document.body.classList.remove('dark-theme');
-    
-    // Restore default CSS variables for light theme
-    document.documentElement.style.setProperty('--glass-bg', 'rgba(255, 255, 255, 0.65)');
-    document.documentElement.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.7)');
-    document.documentElement.style.setProperty('--text-primary', 'rgba(60, 64, 67, 0.95)');
-    document.documentElement.style.setProperty('--text-secondary', 'rgba(60, 64, 67, 0.85)');
-    document.documentElement.style.setProperty('--light-accent', 'rgba(111, 66, 193, 0.1)');
-    
-    // Restore background gradient for light theme
-    document.body.style.background = 'linear-gradient(225deg, rgba(255, 255, 255, 0.9), rgba(240, 245, 255, 0.95))';
-    
-    // Use black icon for light theme
-    try {
-      const logoImg = document.querySelector('h1 img');
-      if (logoImg) {
-        // Ensure we're using the black icon for light theme
-        if (!logoImg.src.includes('icon_black')) {
-          logoImg.src = logoImg.src.replace('icon_white', 'icon_black');
-        }
-      }
-    } catch (e) {
-      console.error('Error updating logo for light theme:', e);
-    }
-  }
-  
-  console.log(`Theme applied: ${isDark ? 'Dark' : 'Light'} mode`);
 }
