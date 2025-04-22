@@ -1,8 +1,17 @@
 // Background script for TalkType extension
 console.log("TalkType: Background script loaded");
 
+// Flag to track context menu creation status
+let contextMenuCreated = false;
+
 // Create context menu
 function createContextMenu() {
+  // Skip if already created to prevent duplicate creation attempts
+  if (contextMenuCreated) {
+    console.log('TalkType: Context menu already exists, skipping creation');
+    return;
+  }
+  
   console.log('TalkType: Creating context menu');
   
   // Remove any existing items to prevent duplicates
@@ -15,8 +24,13 @@ function createContextMenu() {
       // Check for creation errors
       if (chrome.runtime.lastError) {
         console.error('TalkType: Error creating context menu:', chrome.runtime.lastError);
+        // If creation failed due to a duplicate, still mark as created
+        if (chrome.runtime.lastError.message.includes("duplicate id")) {
+          contextMenuCreated = true;
+        }
       } else {
         console.log('TalkType: Context menu created successfully');
+        contextMenuCreated = true;
       }
     });
   });
@@ -138,10 +152,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "verifyContextMenuExists") {
     console.log('TalkType: Verifying context menu exists');
     
-    // Recreate the menu to ensure it exists
-    createContextMenu();
+    // Check if context menu already exists before trying to recreate
+    if (!contextMenuCreated) {
+      console.log('TalkType: Context menu not yet created, creating now');
+      createContextMenu();
+    } else {
+      console.log('TalkType: Context menu already exists, no recreation needed');
+    }
     
-    sendResponse({ status: "verified", timestamp: Date.now() });
+    sendResponse({ 
+      status: "verified", 
+      contextMenuExists: contextMenuCreated,
+      timestamp: Date.now() 
+    });
     return true; // Keep channel open for async response
   }
   

@@ -9,6 +9,12 @@
 //==============================================================================
 
 /**
+ * Flag to track initialization status and prevent duplicates
+ * @type {boolean}
+ */
+window.talkTypeInitialized = false;
+
+/**
  * AudioRecordingService instance for handling microphone recording
  * @type {Object|null}
  */
@@ -51,16 +57,29 @@ setTimeout(() => {
  * Routes to appropriate initialization helper based on document state
  */
 function initializeExtension() {
+  // Skip if already initialized to prevent duplicated initialization
+  if (window.talkTypeInitialized) {
+    console.log("TalkType: Skipping initialization - already initialized");
+    return;
+  }
+  
   console.log("TalkType: Extension initializing...");
 
   // Handle initialization during document loading state
   if (document.readyState === "loading") {
     console.log("TalkType: Document still loading, deferring initialization");
     document.addEventListener("DOMContentLoaded", () => {
+      // Skip if already initialized by another trigger
+      if (window.talkTypeInitialized) {
+        console.log("TalkType: Skipping DOMContentLoaded initialization - already initialized");
+        return;
+      }
+      
       setTimeout(() => {
-        if (window.InitializationHelpers) {
+        if (window.InitializationHelpers && !window.talkTypeInitialized) {
+          window.talkTypeInitialized = true;
           window.InitializationHelpers.initializeExtensionCore();
-        } else {
+        } else if (!window.InitializationHelpers) {
           console.error("TalkType: InitializationHelpers not available!");
         }
       }, 100);
@@ -70,6 +89,7 @@ function initializeExtension() {
 
   // Handle initialization when document is already loaded
   if (window.InitializationHelpers) {
+    window.talkTypeInitialized = true;
     window.InitializationHelpers.initializeExtensionCore();
   } else {
     console.error("TalkType: InitializationHelpers not available!");
@@ -83,7 +103,8 @@ function initializeExtension() {
 // DOMContentLoaded initialization backup
 document.addEventListener("DOMContentLoaded", () => {
   console.log("TalkType: DOMContentLoaded event fired");
-  if (!window.audioService || !window.apiService) {
+  // Only initialize if not already initialized and services are missing
+  if (!window.talkTypeInitialized && (!window.audioService || !window.apiService)) {
     initializeExtension();
   }
 });
@@ -93,18 +114,24 @@ window.addEventListener("load", () => {
   console.log("TalkType: Window load event fired");
   
   // Ensure core services are initialized
-  if (!window.audioService || !window.apiService) {
+  if (!window.talkTypeInitialized && (!window.audioService || !window.apiService)) {
     initializeExtension();
   }
 
-  // Initialize focus tracking after window load
-  if (window.FocusTrackingService) {
+  // Even if initialized, we still want to run these post-load operations once
+  // These operations won't re-initialize the core services, just enhance functionality
+  
+  // Initialize focus tracking after window load (if not already done)
+  if (window.FocusTrackingService && !window.focusTrackingInitialized) {
+    window.focusTrackingInitialized = true;
     window.FocusTrackingService.initialize();
   }
 
   // Final input detection after a delay to catch dynamic elements
   setTimeout(() => {
-    console.log("TalkType: Running final input detection sweep");
-    window.InputDetectionService.initializeInputDetection();
+    if (window.InputDetectionService) {
+      console.log("TalkType: Running final input detection sweep");
+      window.InputDetectionService.initializeInputDetection();
+    }
   }, 1000);
 });

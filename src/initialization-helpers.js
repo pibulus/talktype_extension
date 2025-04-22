@@ -4,6 +4,11 @@
  * Core initialization logic, extracted for better modularity
  */
 function initializeExtensionCore() {
+  // Prevent duplicate initialization
+  if (servicesInitialized) {
+    console.log("TalkType: Services already initialized, skipping");
+    return;
+  }
   // Verify that required objects are available in the page context
   if (typeof window.AudioRecordingService === "undefined") {
     console.error(
@@ -148,6 +153,9 @@ function initializeExtensionCore() {
       }
 
       console.log("TalkType: Extension initialized successfully");
+      
+      // Mark initialization as complete
+      servicesInitialized = true;
 
       // Check for browser mic support as an early diagnostic
       if (window.audioService.isRecordingSupported()) {
@@ -227,8 +235,20 @@ function injectServiceScripts() {
   document.head.appendChild(audioScript);
 }
 
+// Track service initialization state
+let servicesInitialized = false;
+
+/**
+ * Reset initialization flag - useful for testing or recovery
+ */
+function resetInitialization() {
+  servicesInitialized = false;
+  window.talkTypeInitialized = false;
+}
+
 // Export the functions for use in content.js
 window.InitializationHelpers = {
   initializeExtensionCore,
-  injectServiceScripts
+  injectServiceScripts,
+  resetInitialization
 };
