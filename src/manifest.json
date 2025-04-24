@@ -5,7 +5,7 @@
   "description": "Premium voice-to-text for any website. Speak naturally and see your words appear instantly with our beautiful interface.",
   "author": "Pablo Alvarado and Dennis",
   "short_name": "TalkType",
-  "permissions": ["activeTab", "scripting", "storage", "tabCapture", "contextMenus", "notifications"],
+  "permissions": ["activeTab", "scripting", "storage", "tabCapture", "contextMenus", "notifications", "clipboard-write", "clipboard-read"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_icon": {
@@ -23,10 +23,9 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["permission-dialog.js", "audio-service.js", "api-service.js", "AudioVisualizer.js", "notification-service.js", "input-detection-service.js", "mic-button-manager.js", "audio-processing-service.js", "context-menu-service.js", "message-handler-service.js", "focus-tracking-service.js", "initialization-helpers.js", "content.js"],
+      "js": ["service-registry.js", "permission-dialog.js", "audio-service.js", "api-service.js", "AudioVisualizer.js", "notification-service.js", "input-detection-service.js", "audio-processing-service.js", "context-menu-service.js", "message-handler-service.js", "focus-tracking-service.js", "initialization-helpers.js", "content.js"],
       "css": ["styles.css"],
-      "run_at": "document_start",
-      "type": "module"
+      "run_at": "document_start"
     }
   ],
   "background": {
@@ -57,12 +56,12 @@
         "icons/icon_black/*",
         "icons/icon_white/*",
         "styles.css",
+        "service-registry.js",
         "audio-service.js",
         "api-service.js",
         "AudioVisualizer.js",
         "notification-service.js",
         "input-detection-service.js",
-        "mic-button-manager.js",
         "audio-processing-service.js",
         "context-menu-service.js",
         "message-handler-service.js",

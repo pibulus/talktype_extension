@@ -10,17 +10,42 @@ class AudioProcessingService {
     this.isProcessing = false;
     this.isRecording = false;
     this.activeInput = null;
-    this.recordingIndicator = null;
     this.apiKey = "";
+    
+    // Register with ServiceRegistry if available
+    this.registerWithServiceRegistry();
+  }
+  
+  // Separate method for registration to ensure it runs both in constructor and on script load
+  registerWithServiceRegistry() {
+    if (window.ServiceRegistry) {
+      console.log("TalkType: AudioProcessingService registering with ServiceRegistry");
+      window.ServiceRegistry.register('AudioProcessingService', {
+        factory: () => this,
+        dependencies: ['AudioRecordingService', 'GeminiApiService', 'NotificationService'],
+        lazy: false
+      });
+    } else {
+      // Try again after a short delay if ServiceRegistry isn't available yet
+      setTimeout(() => {
+        if (window.ServiceRegistry) {
+          console.log("TalkType: AudioProcessingService registering with ServiceRegistry (delayed)");
+          window.ServiceRegistry.register('AudioProcessingService', {
+            factory: () => this,
+            dependencies: ['AudioRecordingService', 'GeminiApiService', 'NotificationService'],
+            lazy: false
+          });
+        }
+      }, 100);
+    }
   }
 
   /**
    * Start recording with a target input
    * @param {HTMLElement} targetInput - The input element to record for
-   * @param {HTMLElement} indicator - Optional recording indicator element
    * @returns {Promise<void>}
    */
-  async startRecording(targetInput, indicator) {
+  async startRecording(targetInput) {
     console.log(
       "TalkType: Starting recording with services:",
       !!window.audioService,
@@ -66,11 +91,11 @@ class AudioProcessingService {
 
             // Now try recording again after a short delay
             setTimeout(() => {
-              if (window.audioService && window.apiService && targetInput && indicator) {
+              if (window.audioService && window.apiService && targetInput) {
                 console.log(
                   "TalkType: Retrying recording with reconnected services"
                 );
-                this.startRecordingCore(targetInput, indicator);
+                this.startRecordingCore(targetInput);
               }
             }, 500);
           });
@@ -96,16 +121,15 @@ class AudioProcessingService {
     }
 
     // Continue with the core recording logic
-    await this.startRecordingCore(targetInput, indicator);
+    await this.startRecordingCore(targetInput);
   }
 
   /**
    * Core recording logic separated for reuse
    * @param {HTMLElement} targetInput - The input element to record for
-   * @param {HTMLElement} indicator - Optional recording indicator element
    * @returns {Promise<void>}
    */
-  async startRecordingCore(targetInput, indicator) {
+  async startRecordingCore(targetInput) {
     // Check if already recording with validation of actual recorder state
     if (this.isRecording && window.audioService && window.audioService.mediaRecorder) {
       console.log("TalkType: Already recording, ignoring start request");
@@ -195,41 +219,7 @@ class AudioProcessingService {
       }
       console.log("TalkType: Set isRecording=true (instance and global), activeInput=", targetInput);
 
-      // Show recording indicator with animations using classes
-      if (indicator) {
-        console.log("TalkType: Showing recording indicator");
-        indicator.style.display = "block";
-
-        // Add pulse animation class
-        indicator.classList.add("pulse-animation");
-
-        // Find the mic button (parent of the indicator)
-        const micButton = indicator.parentElement;
-        if (micButton) {
-          // Add wiggle animation to the mic icon using class
-          const micIcon = micButton.querySelector("img");
-          if (micIcon) {
-            // Remove old classes first
-            micIcon.classList.remove(
-              "wiggle-animation",
-              "wiggle-reverse-animation"
-            );
-            // Add animation class
-            micIcon.classList.add("wiggle-animation");
-            // Remove class after animation completes
-            setTimeout(() => {
-              micIcon.classList.remove("wiggle-animation");
-            }, 500);
-          }
-
-          // Add more prominent TalkType branded recording state
-          micButton.style.opacity = "1";
-          micButton.style.background = "rgba(255, 64, 129, 0.2)";
-          micButton.style.border = "1px solid rgba(255, 64, 129, 0.4)";
-          micButton.style.boxShadow = "0 2px 8px rgba(255, 64, 129, 0.35)";
-          micButton.style.filter = "drop-shadow(0 0 4px rgba(255, 64, 129, 0.4))";
-        }
-      }
+      // No longer showing recording indicator with mic buttons
 
       // Show enhanced listening notification - shorter text
       window.NotificationService.showStatusNotification("Recording... Click to stop", "recording");
@@ -316,21 +306,7 @@ class AudioProcessingService {
       }
       console.log("TalkType: Reset recording state after error (instance and global)")
 
-      // Hide recording indicator and update button state
-      if (indicator) {
-        indicator.style.display = "none";
-
-        // Reset button appearance
-        const micButton = indicator.parentElement;
-        if (micButton) {
-          micButton.style.animation = "";
-          micButton.style.opacity = "1";
-          micButton.style.background = "rgba(111, 66, 193, 0.15)";
-          micButton.style.border = "1px solid rgba(111, 66, 193, 0.3)";
-          micButton.style.boxShadow = "0 2px 6px rgba(111, 66, 193, 0.4)";
-          micButton.style.filter = "none";
-        }
-      }
+      // No longer using recording indicators or mic buttons
 
       // Remove any recording notifications
       document
@@ -340,6 +316,81 @@ class AudioProcessingService {
             document.body.removeChild(notification);
           }
         });
+    }
+  }
+
+  /**
+   * Insert text via clipboard - works with complex editors like Messenger's Lexical
+   * @param {HTMLElement} element - The element to insert text into
+   * @param {string} text - The text to insert
+   * @returns {Promise<boolean>} - Whether insertion was successful
+   */
+  async insertTextViaClipboard(element, text) {
+    if (!element || !text) return false;
+    
+    try {
+      // Store the original clipboard content
+      const originalClipboard = await navigator.clipboard.readText().catch(() => "");
+      
+      // Write the transcription to clipboard
+      await navigator.clipboard.writeText(text);
+      
+      // Focus the element before pasting
+      element.focus();
+      
+      // Try to select all content if it's an input or textarea
+      if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
+        element.select();
+      }
+      
+      // Execute paste command - this triggers the editor's native paste handler
+      const pasteSuccess = document.execCommand('paste');
+      
+      // If execCommand paste failed, try triggering paste event with keyboard shortcut
+      if (!pasteSuccess) {
+        // Determine if Mac or Windows/Linux for the correct modifier key
+        const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+        const ctrlKey = isMac ? false : true;
+        const metaKey = isMac ? true : false;
+        
+        // Create and dispatch keydown events for Ctrl/Cmd+V
+        element.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'v',
+          code: 'KeyV',
+          ctrlKey: ctrlKey,
+          metaKey: metaKey,
+          bubbles: true
+        }));
+        
+        // A slight delay before keyup
+        await new Promise(resolve => setTimeout(resolve, 10));
+        
+        // Create and dispatch keyup events
+        element.dispatchEvent(new KeyboardEvent('keyup', {
+          key: 'v',
+          code: 'KeyV',
+          ctrlKey: ctrlKey,
+          metaKey: metaKey,
+          bubbles: true
+        }));
+      }
+      
+      // Dispatch input event to ensure React and other frameworks update
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      
+      // Restore original clipboard after a short delay
+      setTimeout(async () => {
+        try {
+          await navigator.clipboard.writeText(originalClipboard);
+        } catch (e) {
+          console.log("TalkType: Could not restore clipboard:", e);
+        }
+      }, 100);
+      
+      return true;
+    } catch (e) {
+      console.error("TalkType: Clipboard insertion failed:", e);
+      return false;
     }
   }
 
@@ -577,29 +628,7 @@ class AudioProcessingService {
       if (currentInput.id)
         console.log("TalkType: activeInput id:", currentInput.id);
 
-      // Hide all recording indicators and update button styling
-      document
-        .querySelectorAll(".audio-to-text-recording-indicator")
-        .forEach((indicator) => {
-          indicator.style.display = "none";
-
-          // Update the parent button styling to show processing state
-          const micButton = indicator.parentElement;
-          if (micButton) {
-            if (micButton.dataset.darkMode === "true") {
-              micButton.style.background = "rgba(52, 168, 83, 0.25)"; // Green processing color for dark mode
-              micButton.style.border = "1px solid rgba(52, 168, 83, 0.4)";
-            } else {
-              micButton.style.background = "rgba(52, 168, 83, 0.2)"; // Green processing color for light mode
-              micButton.style.border = "1px solid rgba(52, 168, 83, 0.35)";
-            }
-
-            micButton.style.boxShadow = "0 1px 4px rgba(52, 168, 83, 0.3)";
-
-            // Add a subtle pulse animation during processing
-            micButton.style.animation = "subtle-glow 1.5s infinite";
-          }
-        });
+      // No longer using mic buttons or recording indicators
 
       // Process the audio data directly instead of creating another function
       console.log("TalkType: Processing audio data directly...");
@@ -616,14 +645,33 @@ class AudioProcessingService {
           );
         }
 
-        // Create a fresh API service
-        const transcriptionService = new window.GeminiApiService(
-          apiKeyResult.apiKey
-        );
-
+        // Get or create a transcription service using ServiceRegistry when available
+        let transcriptionService;
+        
+        if (window.ServiceRegistry) {
+          console.log("TalkType: Getting GeminiApiService from ServiceRegistry");
+          transcriptionService = await Promise.resolve(window.ServiceRegistry.get('GeminiApiService'));
+          
+          // Update the API key with the fresh one
+          if (transcriptionService) {
+            transcriptionService.apiKey = apiKeyResult.apiKey;
+          }
+        } else if (window.apiService) {
+          // Fallback to existing global instance
+          console.log("TalkType: Using existing global apiService");
+          transcriptionService = window.apiService;
+          transcriptionService.apiKey = apiKeyResult.apiKey;
+        } else if (typeof window.GeminiApiService === 'function') {
+          // Last resort: direct instantiation if constructor is available
+          console.log("TalkType: Creating GeminiApiService directly");
+          transcriptionService = new window.GeminiApiService(apiKeyResult.apiKey);
+        } else {
+          throw new Error("GeminiApiService not available - cannot transcribe audio");
+        }
+        
         // Make sure the service is valid
         if (!transcriptionService) {
-          throw new Error("Could not create transcription service");
+          throw new Error("Could not obtain transcription service");
         }
 
         // Show transcribing notification with progress bar
@@ -717,11 +765,20 @@ class AudioProcessingService {
                 }
               }
 
-              // Special handling for Facebook and Gmail editors
+              // Special handling for Messenger's Lexical editor
               if (currentInput.getAttribute("data-lexical-editor") === "true") {
-                // Facebook lexical editor - trigger input and focus
-                currentInput.focus();
-                currentInput.click();
+                console.log("TalkType: Detected Facebook Lexical editor, using clipboard insertion");
+                const clipboardSuccess = await this.insertTextViaClipboard(currentInput, transcription);
+                
+                if (clipboardSuccess) {
+                  console.log("TalkType: Clipboard insertion successful for Lexical editor");
+                  // Skip the standard events since clipboard method already fires them
+                  return;
+                } else {
+                  console.log("TalkType: Clipboard insertion failed, falling back to standard method");
+                  currentInput.focus();
+                  currentInput.click();
+                }
               }
 
               // Dispatch events to notify frameworks of content changes
@@ -731,9 +788,17 @@ class AudioProcessingService {
               console.log("TalkType: Inserted text into contenteditable element");
             } catch (e) {
               console.error("TalkType: Error inserting into contenteditable:", e);
-              // Fallback to simple approach
-              currentInput.textContent = transcription;
-              currentInput.dispatchEvent(new Event("input", { bubbles: true }));
+              
+              // Try clipboard insertion as a fallback
+              console.log("TalkType: Trying clipboard insertion as fallback for contenteditable");
+              const clipboardSuccess = await this.insertTextViaClipboard(currentInput, transcription);
+              
+              if (!clipboardSuccess) {
+                // Last resort fallback to simple approach
+                console.log("TalkType: Clipboard fallback also failed, using textContent");
+                currentInput.textContent = transcription;
+                currentInput.dispatchEvent(new Event("input", { bubbles: true }));
+              }
             }
           } else if (
             currentInput.tagName === "INPUT" ||
@@ -798,3 +863,22 @@ class AudioProcessingService {
 
 // Expose the service as a global variable
 window.AudioProcessingService = AudioProcessingService;
+
+// Create an instance and register it to ensure it's available
+window.audioProcessingService = new AudioProcessingService();
+
+// Ensure registration happens after the script is fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.audioProcessingService && typeof window.audioProcessingService.registerWithServiceRegistry === 'function') {
+    console.log("TalkType: Ensuring AudioProcessingService is registered on DOMContentLoaded");
+    window.audioProcessingService.registerWithServiceRegistry();
+  }
+});
+
+// Also register on window load as a fallback
+window.addEventListener('load', () => {
+  if (window.audioProcessingService && typeof window.audioProcessingService.registerWithServiceRegistry === 'function') {
+    console.log("TalkType: Ensuring AudioProcessingService is registered on window load");
+    window.audioProcessingService.registerWithServiceRegistry();
+  }
+});

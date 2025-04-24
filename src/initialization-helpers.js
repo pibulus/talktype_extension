@@ -1,14 +1,24 @@
 // Initialization helper functions for the Audio to Text extension
 
 /**
- * Core initialization logic, extracted for better modularity
+ * Initialize only core services when needed, not eager loading
+ * @param {boolean} isMessenger - Whether we're running on Messenger
  */
-function initializeExtensionCore() {
+function initializeCoreServices(isMessenger) {
   // Prevent duplicate initialization
   if (servicesInitialized) {
-    console.log("TalkType: Services already initialized, skipping");
+    console.log("TalkType: Core services already initialized, skipping");
     return;
   }
+  
+  // Store messenger detection
+  if (isMessenger && window.TalkTypeServices) {
+    console.log("TalkType: Messenger detected - using minimal initialization");
+    window.TalkTypeServices.isMessenger = true;
+  }
+  
+  console.log("TalkType: Initializing core services on demand");
+  
   // Verify that required objects are available in the page context
   if (typeof window.AudioRecordingService === "undefined") {
     console.error(
@@ -38,6 +48,10 @@ function initializeExtensionCore() {
   if (window.MessageHandlerService) {
     console.log("TalkType: Initializing MessageHandlerService");
     window.MessageHandlerService.initialize();
+    if (window.TalkTypeServices) {
+      window.TalkTypeServices.initStatus.messaging = true;
+      window.TalkTypeServices.initStatus.messageHandler = true;
+    }
   } else {
     console.warn(
       "TalkType: MessageHandlerService not available, using legacy message handling"
@@ -89,8 +103,21 @@ function initializeExtensionCore() {
     }
     return;
   }
+  
+  // Mark core initialization as started
+  servicesInitialized = true;
+  
+  // Get API key asynchronously
+  getApiKey(function(apiKey) {
+    initializeAudioAndApiServices(apiKey);
+  });
+}
 
-  // Get API key directly from storage for more reliable access
+/**
+ * Get API key asynchronously to avoid blocking operation
+ * @param {Function} callback - Function to call with API key
+ */
+function getApiKey(callback) {
   chrome.storage.sync.get(["apiKey"], function (result) {
     if (chrome.runtime.lastError) {
       console.error(
@@ -104,6 +131,7 @@ function initializeExtensionCore() {
       } else {
         console.error("TalkType ERROR: Error accessing extension storage");
       }
+      callback(""); // Continue with empty key
       return;
     }
 
@@ -112,95 +140,147 @@ function initializeExtensionCore() {
         result.apiKey ? "Valid key" : "Empty key"
       }`
     );
-    window.apiKey = result.apiKey || "";
+    callback(result.apiKey || "");
+  });
+}
 
-    // Initialize services - even with empty API key to allow detection of inputs
-    try {
-      console.log("TalkType: Creating AudioRecordingService instance");
-      window.audioService = new window.AudioRecordingService();
-
-      console.log("TalkType: Creating GeminiApiService instance with API key");
-      window.apiService = new window.GeminiApiService(window.apiKey);
-
-      console.log("TalkType: Creating AudioProcessingService instance");
-      window.audioProcessingService = new window.AudioProcessingService();
-
-      // Check if services initialized correctly
-      if (!window.audioService || !window.apiService) {
-        console.error("TalkType: Service initialization failed!");
-        if (window.NotificationService) {
-          window.NotificationService.showStatusNotification("Error initializing TalkType services", "error");
-        } else {
-          console.error("TalkType ERROR: Error initializing TalkType services");
-        }
-        return;
-      }
-
-      // Initialize input detection - do this regardless of API key status
-      console.log("TalkType: Initializing input detection");
-      window.InputDetectionService.initializeInputDetection();
-
-      // Add observer to detect dynamically added inputs
-      console.log("TalkType: Setting up DOM mutation observer");
-      window.InputDetectionService.observeDynamicInputs();
-
-      // Initialize focus tracking service for contextual transcription
-      console.log("TalkType: Initializing focus tracking service");
-      if (window.FocusTrackingService) {
-        window.FocusTrackingService.initialize();
-      } else {
-        console.error("TalkType: FocusTrackingService not available!");
-      }
-
-      console.log("TalkType: Extension initialized successfully");
+/**
+ * Initialize audio and API services with API key
+ * @param {string} apiKey - The API key to use
+ */
+function initializeAudioAndApiServices(apiKey) {
+  window.apiKey = apiKey;
+  
+  if (window.TalkTypeServices.initStatus.audio && window.TalkTypeServices.initStatus.api) {
+    console.log("TalkType: Audio and API services already initialized");
+    return;
+  }
+  
+  // Initialize services - even with empty API key to allow detection of inputs
+  try {
+    // Check if we should use ServiceRegistry
+    if (window.ServiceRegistry) {
+      console.log("TalkType: Using ServiceRegistry for service initialization");
       
-      // Mark initialization as complete
-      servicesInitialized = true;
-
-      // Check for browser mic support as an early diagnostic
-      if (window.audioService.isRecordingSupported()) {
-        console.log("TalkType: Browser supports recording");
-      } else {
-        console.warn("TalkType: Browser may not support recording!");
-        if (window.NotificationService) {
-          window.NotificationService.showStatusNotification(
-            "Your browser may not support recording. Chrome is recommended.",
-            "info"
-          );
-        } else {
-          console.warn("TalkType: Your browser may not support recording. Chrome is recommended.");
-        }
+      // Register AudioRecordingService if not registered
+      if (!window.ServiceRegistry.hasService('AudioRecordingService')) {
+        window.ServiceRegistry.register('AudioRecordingService', {
+          factory: () => new window.AudioRecordingService(),
+          dependencies: [],
+          lazy: false
+        });
+      }
+      
+      // Register GeminiApiService if not registered
+      if (!window.ServiceRegistry.hasService('GeminiApiService')) {
+        window.ServiceRegistry.register('GeminiApiService', {
+          factory: () => {
+            if (typeof window.GeminiApiService !== 'function') {
+              console.error("TalkType: GeminiApiService constructor not available");
+              return null;
+            }
+            const service = new window.GeminiApiService(window.apiKey);
+            console.log("TalkType: GeminiApiService created through factory");
+            return service;
+          },
+          dependencies: [],
+          lazy: false
+        });
+      }
+      
+      // Get services from registry
+      window.audioService = window.ServiceRegistry.get('AudioRecordingService');
+      window.apiService = window.ServiceRegistry.get('GeminiApiService');
+      window.audioProcessingService = window.ServiceRegistry.get('AudioProcessingService');
+      
+      // Update initialization status
+      window.TalkTypeServices.initStatus.audio = true;
+      window.TalkTypeServices.initStatus.api = true;
+    } else {
+      // Fallback to traditional initialization
+      // Only initialize audio service if not already done
+      if (!window.TalkTypeServices.initStatus.audio) {
+        console.log("TalkType: Creating AudioRecordingService instance directly");
+        window.audioService = new window.AudioRecordingService();
+        window.TalkTypeServices.initStatus.audio = true;
       }
 
-      // If no API key, show prompt but still allow initialization
-      if (!window.apiKey) {
-        console.warn("TalkType: No API key found in storage.");
-        if (window.NotificationService) {
-          window.NotificationService.showStatusNotification(
-            "Please set your API key in the extension options.",
-            "warning"
-          );
-        } else {
-          console.warn("TalkType: Please set your API key in the extension options.");
-        }
+      // Only initialize API service if not already done
+      if (!window.TalkTypeServices.initStatus.api) {
+        console.log("TalkType: Creating GeminiApiService instance directly with API key");
+        window.apiService = new window.GeminiApiService(window.apiKey);
+        window.TalkTypeServices.initStatus.api = true;
       }
 
-      // Already initialized FocusTrackingService above
-    } catch (initError) {
-      console.error(
-        "TalkType: Error during service initialization:",
-        initError
-      );
-      if (window.NotificationService) {
-        window.NotificationService.showStatusNotification(
-          "Error initializing speech services: " + initError.message,
-          "error"
-        );
-      } else {
-        console.error("TalkType ERROR: Error initializing speech services: " + initError.message);
+      // Only initialize audio processing if not already done
+      if (!window.audioProcessingService) {
+        console.log("TalkType: Creating AudioProcessingService instance directly");
+        window.audioProcessingService = new window.AudioProcessingService();
       }
     }
-  });
+
+    // Check if services initialized correctly
+    if (!window.audioService || !window.apiService) {
+      console.error("TalkType: Service initialization failed!");
+      if (window.NotificationService) {
+        window.NotificationService.showStatusNotification("Error initializing TalkType services", "error");
+      } else {
+        console.error("TalkType ERROR: Error initializing TalkType services");
+      }
+      return;
+    }
+
+    console.log("TalkType: Audio and API services initialized successfully");
+
+    // Check for browser mic support as an early diagnostic
+    if (window.audioService.isRecordingSupported()) {
+      console.log("TalkType: Browser supports recording");
+    } else {
+      console.warn("TalkType: Browser may not support recording!");
+      if (window.NotificationService) {
+        window.NotificationService.showStatusNotification(
+          "Your browser may not support recording. Chrome is recommended.",
+          "info"
+        );
+      } else {
+        console.warn("TalkType: Your browser may not support recording. Chrome is recommended.");
+      }
+    }
+
+    // If no API key, show prompt but still allow initialization
+    if (!window.apiKey) {
+      console.warn("TalkType: No API key found in storage.");
+      if (window.NotificationService) {
+        window.NotificationService.showStatusNotification(
+          "Please set your API key in the extension options.",
+          "warning"
+        );
+      } else {
+        console.warn("TalkType: Please set your API key in the extension options.");
+      }
+    }
+  } catch (initError) {
+    console.error(
+      "TalkType: Error during audio/API service initialization:",
+      initError
+    );
+    if (window.NotificationService) {
+      window.NotificationService.showStatusNotification(
+        "Error initializing speech services: " + initError.message,
+        "error"
+      );
+    } else {
+      console.error("TalkType ERROR: Error initializing speech services: " + initError.message);
+    }
+  }
+}
+
+/**
+ * Legacy full initialization function for backward compatibility
+ */
+function initializeExtensionCore() {
+  console.log("TalkType: Using legacy initialization function");
+  initializeCoreServices();
 }
 
 /**
@@ -248,6 +328,7 @@ function resetInitialization() {
 
 // Export the functions for use in content.js
 window.InitializationHelpers = {
+  initializeCoreServices,
   initializeExtensionCore,
   injectServiceScripts,
   resetInitialization

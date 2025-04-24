@@ -14,53 +14,112 @@ const FocusTrackingService = {
   smartModeEnabled: false,
 
   /**
-   * Initialize focus tracking for contextual transcription
+   * Initialize focus tracking for contextual transcription with global initialization tracking
    */
   initialize() {
+    // Check for existing initialization to prevent duplicates
+    if (window.TalkTypeServices && window.TalkTypeServices.initStatus.focus) {
+      console.log("TalkType: Focus tracking already initialized, skipping");
+      return;
+    }
+    
     console.log("TalkType: Initializing enhanced focus tracking");
     
-    // Initial check - see if any element is already focused
-    const currentActive = this.getDeepActiveElement();
-    if (currentActive && window.InputDetectionService.isValidTextInputElement(currentActive)) {
-      console.log("TalkType: Found already focused element:", currentActive);
-      this.activeInput = currentActive;
-      
-      // Notify popup about the initially active input
-      if (this.smartModeEnabled) {
-        this.notifyActiveInputChanged(true, {
-          type: this.activeInput.tagName,
-          id: this.activeInput.id || "(no id)",
-          className: this.activeInput.className || "(no class)",
-        });
+    // Detect if we're in Messenger and set global flag
+    const isMessenger = window.location.hostname.includes('messenger.com') || 
+                     (window.location.hostname.includes('facebook.com') && 
+                      window.location.pathname.includes('/messages'));
+    
+    if (isMessenger) {
+      console.log("TalkType: Messenger detected - using minimal focus tracking");
+      if (window.TalkTypeServices) {
+        window.TalkTypeServices.isMessenger = true;
       }
     }
+    
+    // Initial check - see if any element is already focused, with safe traversal
+    try {
+      const currentActive = this.getDeepActiveElement();
+      
+      // Only process if InputDetectionService is available
+      if (currentActive && window.InputDetectionService && 
+          window.InputDetectionService.isValidTextInputElement(currentActive)) {
+        console.log("TalkType: Found already focused element:", currentActive);
+        this.activeInput = currentActive;
+        
+        // Notify popup about the initially active input
+        if (this.smartModeEnabled) {
+          this.notifyActiveInputChanged(true, {
+            type: this.activeInput.tagName,
+            id: this.activeInput.id || "(no id)",
+            className: this.activeInput.className || "(no class)",
+          });
+        }
+      }
+    } catch (e) {
+      console.log("TalkType: Error during initial focus check:", e);
+    }
 
-    // Set up shadow DOM detection and listening
-    this.setupShadowDomTracking();
+    // For Messenger, use only minimal essential tracking
+    if (isMessenger) {
+      // Just set up basic document focus listeners without shadow DOM or interval checking
+      this.setupDocumentFocusListeners();
+    } else {
+      // For non-Messenger, use the full tracking suite
+      // Set up shadow DOM detection and listening
+      this.setupShadowDomTracking();
+      
+      // Set up iframe tracking
+      this.setupIframeTracking();
+      
+      // Track focus events on the main document
+      this.setupDocumentFocusListeners();
+      
+      // Set up interval check as fallback detection mechanism
+      this.setupIntervalChecking();
+      
+      // Special handling for Google products
+      this.setupGoogleInputDetection();
+    }
     
-    // Set up iframe tracking
-    this.setupIframeTracking();
-    
-    // Track focus events on the main document
-    this.setupDocumentFocusListeners();
-    
-    // Set up interval check as fallback detection mechanism
-    this.setupIntervalChecking();
-    
-    // Special handling for Google products
-    this.setupGoogleInputDetection();
+    // Mark focus tracking as initialized
+    if (window.TalkTypeServices) {
+      window.TalkTypeServices.initStatus.focus = true;
+    }
   },
   
   /**
-   * Get the active element including shadow DOM traversal
+   * Get the active element including shadow DOM traversal with safety limits
    * @returns {Element} The deepest active element
    */
   getDeepActiveElement() {
+    // If we're in Messenger, use a very minimal approach to avoid interference
+    const isMessenger = window.location.hostname.includes('messenger.com') || 
+                       (window.location.hostname.includes('facebook.com') && 
+                        window.location.pathname.includes('/messages'));
+    
+    // For Messenger, just return document.activeElement without traversal
+    if (isMessenger) {
+      return document.activeElement;
+    }
+    
+    // For all other sites, use a safe approach with depth limiting
     let active = document.activeElement;
     
-    // Traverse shadow DOM trees to find the deepest active element
-    while (active && active.shadowRoot && active.shadowRoot.activeElement) {
-      active = active.shadowRoot.activeElement;
+    // Set a safety counter to prevent potential infinite loops
+    let maxDepth = 3; // Maximum shadow DOM nesting to check
+    let currentDepth = 0;
+    
+    // Safely traverse shadow DOM trees with depth limiting
+    try {
+      while (active && active.shadowRoot && active.shadowRoot.activeElement && currentDepth < maxDepth) {
+        active = active.shadowRoot.activeElement;
+        currentDepth++;
+      }
+    } catch (e) {
+      // If any error occurs during traversal, just return what we have so far
+      console.log("TalkType: Error in shadow DOM traversal, using current element");
+      return active;
     }
     
     // Handle the case where the active element is an iframe
@@ -69,14 +128,9 @@ const FocusTrackingService = {
         // Try to access iframe document (may fail due to cross-origin restrictions)
         const iframeDoc = active.contentDocument || active.contentWindow?.document;
         if (iframeDoc && iframeDoc.activeElement) {
-          // Only use the iframe's active element if it's not the body (meaning nothing is focused)
+          // Only use the iframe's active element if it's not the body
           if (iframeDoc.activeElement !== iframeDoc.body) {
             active = iframeDoc.activeElement;
-            
-            // Also traverse shadow DOM inside the iframe if present
-            while (active && active.shadowRoot && active.shadowRoot.activeElement) {
-              active = active.shadowRoot.activeElement;
-            }
           }
         }
       } catch (error) {
@@ -85,21 +139,22 @@ const FocusTrackingService = {
       }
     }
     
+    // Site-specific handling (without recursive checking)
+    const hostname = window.location.hostname;
+    
     // Special case for Google Docs
-    if (window.location.hostname.includes("docs.google.com")) {
+    if (hostname.includes("docs.google.com")) {
       const editor = document.querySelector(".kix-appview-editor");
-      if (editor) {
-        const isInsideEditor = active === editor || editor.contains(active);
-        if (!isInsideEditor) {
-          console.log("TalkType: Google Docs detected - using editor as target");
-          active = editor;
-        }
+      if (editor && active && !editor.contains(active)) {
+        console.log("TalkType: Google Docs detected - using editor as target");
+        active = editor;
       }
     }
     
-    // Special case for Gmail
-    if (window.location.hostname.includes("mail.google.com") || window.location.hostname.includes("gmail")) {
-      if (!window.InputDetectionService.isValidTextInputElement(active)) {
+    // Special case for Gmail - only if we're not already on a valid input
+    if (hostname.includes("mail.google.com") || hostname.includes("gmail")) {
+      // Only check if needed
+      if (active === document.body || active === document.documentElement) {
         const gmailComposer = document.querySelector(
           'div[role="textbox"][aria-label*="compose"], div[g_editable="true"], div.Am.Al.editable[role="textbox"]'
         );
@@ -114,120 +169,95 @@ const FocusTrackingService = {
   },
   
   /**
-   * Set up tracking for shadow DOM elements
+   * Set up lightweight tracking for shadow DOM elements on demand with proper tracking
    */
   setupShadowDomTracking() {
-    const shadowRoots = [];
+    // Check if already initialized
+    if (window.TalkTypeServices && window.TalkTypeServices.initStatus.shadowDOM) {
+      console.log("TalkType: Shadow DOM tracking already initialized");
+      return;
+    }
     
-    // Function to recursively find shadow roots
-    const findShadowRoots = (node) => {
-      if (node.shadowRoot) {
-        shadowRoots.push(node.shadowRoot);
-        
-        // Attach focus event listeners to this shadow root
-        node.shadowRoot.addEventListener("focusin", (event) => {
-          if (window.InputDetectionService.isValidTextInputElement(event.target)) {
-            console.log("TalkType: Text input focused in shadow DOM:", event.target);
-            this.setActiveInput(event.target, { inShadowDom: true });
-          }
-        });
-        
-        // Look for shadow roots in the shadow DOM
-        Array.from(node.shadowRoot.querySelectorAll("*")).forEach(findShadowRoots);
-      }
-      
-      // Check all child elements
-      if (node.querySelectorAll) {
-        Array.from(node.querySelectorAll("*")).forEach(findShadowRoots);
-      }
-    };
+    console.log("TalkType: Setting up on-demand shadow DOM tracking");
     
-    // Start the shadow root search
-    findShadowRoots(document.documentElement);
+    // We're using a minimal approach that doesn't require heavy traversal
+    // The getDeepActiveElement method now safely handles shadow DOM traversal
+    // when it's actually needed
     
-    // Monitor documentElement for dynamically added shadow roots
-    const shadowObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            // Check if the new node or any of its children have shadow roots
-            findShadowRoots(node);
-          }
-        });
-      });
-    });
-    
-    shadowObserver.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-    });
+    // Mark as initialized to prevent duplicate setup
+    if (window.TalkTypeServices) {
+      window.TalkTypeServices.initStatus.shadowDOM = true;
+    }
   },
   
   /**
-   * Set up tracking for iframe elements
+   * Set up lightweight tracking for iframe elements with proper tracking
    */
   setupIframeTracking() {
-    // Find all iframes in the document
-    const iframes = document.querySelectorAll("iframe");
+    // Check for an existing event handler using a global flag
+    if (window.TalkTypeServices && window.TalkTypeServices.iframeTrackerInitialized) {
+      console.log("TalkType: Iframe tracking already initialized");
+      return;
+    }
     
-    iframes.forEach((iframe) => {
-      try {
-        // This will throw an error for cross-origin iframes
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        
-        // Set up focus tracking in the iframe
-        if (iframeDoc) {
-          // Track focus events inside the iframe
-          iframeDoc.addEventListener("focusin", (event) => {
-            if (window.InputDetectionService.isValidTextInputElement(event.target)) {
-              console.log("TalkType: Text input focused in iframe:", event.target);
-              this.setActiveInput(event.target, { inIframe: true });
-            }
-          });
-        }
-      } catch (e) {
-        // Cross-origin iframe - can't access content
-        console.log("TalkType: Cannot access iframe content (likely cross-origin):", e);
-      }
-    });
+    console.log("TalkType: Setting up on-demand iframe tracking");
     
-    // Set up a MutationObserver to detect dynamically added iframes
-    const iframeObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeName === "IFRAME") {
-            try {
-              const iframeDoc = node.contentDocument || node.contentWindow.document;
-              
-              if (iframeDoc) {
-                iframeDoc.addEventListener("focusin", (event) => {
-                  if (window.InputDetectionService.isValidTextInputElement(event.target)) {
-                    console.log("TalkType: Text input focused in new iframe:", event.target);
-                    this.setActiveInput(event.target, { inIframe: true });
-                  }
-                });
-              }
-            } catch (e) {
-              // Cross-origin iframe - can't access
-              console.log("TalkType: Cannot access new iframe content (likely cross-origin):", e);
+    // For Messenger, reduce to minimal tracking
+    const isMessenger = window.location.hostname.includes('messenger.com') || 
+                      (window.location.hostname.includes('facebook.com') && 
+                       window.location.pathname.includes('/messages'));
+    
+    if (!isMessenger) {
+      // Only add click handler for non-Messenger sites
+      // We'll rely on the getDeepActiveElement method to check iframes when needed
+      const clickHandler = (event) => {
+        // After a click, check if an iframe was clicked
+        setTimeout(() => {
+          try {
+            const deepActive = this.getDeepActiveElement();
+            if (deepActive && window.InputDetectionService && 
+                window.InputDetectionService.isValidTextInputElement(deepActive)) {
+              console.log("TalkType: Detecting text input after click (possible iframe):", deepActive);
+              this.setActiveInput(deepActive);
             }
+          } catch (e) {
+            console.log("TalkType: Error in iframe click handler:", e);
           }
-        });
-      });
-    });
+        }, 100);
+      };
+      
+      // Add the handler and store it for potential cleanup
+      document.addEventListener("click", clickHandler);
+      
+      // Store the handler reference
+      if (window.TalkTypeServices) {
+        window.TalkTypeServices.iframeClickHandler = clickHandler;
+      }
+    }
     
-    iframeObserver.observe(document.body, { childList: true, subtree: true });
+    // Mark as initialized to prevent duplicate setup
+    if (window.TalkTypeServices) {
+      window.TalkTypeServices.iframeTrackerInitialized = true;
+    }
   },
   
   /**
-   * Set up document-level focus event listeners
+   * Set up enhanced document-level focus event listeners
    */
   setupDocumentFocusListeners() {
     // Track focus events on the main document
     document.addEventListener("focusin", (event) => {
-      // Check if the focused element is a text input
-      if (window.InputDetectionService.isValidTextInputElement(event.target)) {
-        console.log("TalkType: Text input focused:", event.target);
+      // Get the deepest active element, which handles shadow DOM and iframes
+      const deepActive = this.getDeepActiveElement();
+      
+      // Check if the deep active element is a valid text input
+      if (deepActive && window.InputDetectionService.isValidTextInputElement(deepActive)) {
+        console.log("TalkType: Text input focused (deep checking):", deepActive);
+        this.setActiveInput(deepActive);
+      } 
+      // Fallback to the direct event target if needed
+      else if (window.InputDetectionService.isValidTextInputElement(event.target)) {
+        console.log("TalkType: Text input focused (event target):", event.target);
         this.setActiveInput(event.target);
       }
     });
@@ -240,7 +270,7 @@ const FocusTrackingService = {
         // or switching quickly between inputs
         setTimeout(() => {
           // Check if a new focus event happened during the delay
-          // or if there's a focused element in shadow DOM or iframe
+          // using getDeepActiveElement to handle shadow DOM and iframes
           const deepActive = this.getDeepActiveElement();
           
           if (
@@ -256,23 +286,33 @@ const FocusTrackingService = {
   },
   
   /**
-   * Set up interval-based checking for active inputs
+   * Set up reduced interval-based checking for active inputs with shared interval
    */
   setupIntervalChecking() {
-    // Regularly check document.activeElement as a fallback
-    setInterval(() => {
-      const deepActive = this.getDeepActiveElement();
-      
-      // If we have no active input but there is a focused text input element
-      if (
-        !this.activeInput &&
-        deepActive &&
-        window.InputDetectionService.isValidTextInputElement(deepActive)
-      ) {
-        console.log("TalkType: Detected focused element via interval check:", deepActive);
-        this.setActiveInput(deepActive, { detectionMethod: "interval" });
+    // Use a shared interval if possible
+    if (window.TalkTypeServices && window.TalkTypeServices.focusCheckInterval) {
+      console.log("TalkType: Using existing focus check interval");
+      return;
+    }
+    
+    // Create a lightweight interval with reduced frequency
+    const checkInterval = setInterval(() => {
+      // Only check if we don't already have an active input
+      if (!this.activeInput) {
+        const deepActive = this.getDeepActiveElement();
+        
+        // Only process if we found a valid text input
+        if (deepActive && window.InputDetectionService.isValidTextInputElement(deepActive)) {
+          console.log("TalkType: Detected focused element via interval check:", deepActive);
+          this.setActiveInput(deepActive, { detectionMethod: "interval" });
+        }
       }
-    }, 1000); // Check every second as a fallback mechanism
+    }, 3000); // Reduced frequency - check every 3 seconds instead of every second
+    
+    // Store the interval ID globally to prevent duplicates
+    if (window.TalkTypeServices) {
+      window.TalkTypeServices.focusCheckInterval = checkInterval;
+    }
   },
   
   /**

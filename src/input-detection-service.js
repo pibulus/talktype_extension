@@ -11,9 +11,45 @@ const InputDetectionService = {
    * Initialize input detection to find all text input elements on the page
    */
   initializeInputDetection() {
-    console.log("TalkType: Initializing input detection...");
-
-    // Track inputs for contextual features, but don't add mic buttons
+    // Prevent duplicate initialization
+    if (window.TalkTypeServices && window.TalkTypeServices.initStatus.input) {
+      console.log("TalkType: Input detection already initialized, skipping");
+      return;
+    }
+    
+    console.log("TalkType: Initializing input detection (lazy mode)...");
+    
+    // Check if we're on Messenger to apply special handling
+    const isMessenger = window.TalkTypeServices?.isMessenger || 
+                      window.location.hostname.includes('messenger.com') || 
+                      (window.location.hostname.includes('facebook.com') && 
+                       window.location.pathname.includes('/messages'));
+                       
+    // For Messenger, be extra careful and use minimal detection
+    if (isMessenger) {
+      console.log("TalkType: Using minimal input detection for Messenger");
+      
+      // Just find basic inputs without extensive querying
+      const standardInputs = document.querySelectorAll(
+        'input[type="text"], textarea'
+      );
+      console.log(
+        `TalkType: Found ${standardInputs.length} standard input elements on Messenger`
+      );
+      
+      // Mark as initialized and return early for Messenger
+      if (window.TalkTypeServices) {
+        window.TalkTypeServices.initStatus.input = true;
+      }
+      
+      return {
+        standardInputs,
+        clearTextInputs: [],
+        chatInputs: []
+      };
+    }
+    
+    // For non-Messenger sites, do normal detection
     const standardInputs = document.querySelectorAll(
       'input[type="text"], input[type="search"], input:not([type]), textarea'
     );
@@ -60,17 +96,7 @@ const InputDetectionService = {
       `TalkType: Found ${clearTextInputs.length} additional text inputs with specific attributes (for tracking only)`
     );
 
-    // Add mic buttons to valid text inputs if MicButtonManager is available
-    if (window.MicButtonManager) {
-      clearTextInputs.forEach((element) => {
-        if (
-          !element.dataset.hasMicButton &&
-          this.isValidTextInputElement(element)
-        ) {
-          window.MicButtonManager.addMicrophoneToInput(element);
-        }
-      });
-    }
+    // No longer adding mic buttons to inputs, just tracking them for context menu support
 
     // Special case for Messenger and other chat inputs which often have special classes
     const chatInputs = document.querySelectorAll(`
@@ -88,6 +114,11 @@ const InputDetectionService = {
     // Clean up log messages
     console.log("TalkType: Input detection completed");
     
+    // Mark as initialized
+    if (window.TalkTypeServices) {
+      window.TalkTypeServices.initStatus.input = true;
+    }
+    
     return {
       standardInputs,
       clearTextInputs,
@@ -96,63 +127,131 @@ const InputDetectionService = {
   },
   
   /**
-   * Sets up a MutationObserver to detect and handle dynamically added input elements
+   * Sets up a more targeted MutationObserver for input elements
+   * with an improved performance approach for complex pages
    */
   observeDynamicInputs() {
-    console.log("TalkType: Setting up MutationObserver for dynamic inputs");
+    console.log("TalkType: Setting up targeted MutationObserver for dynamic inputs");
     
-    // Create observer instance to watch for new inputs
+    // Prevent duplicate observers
+    if (window.TalkTypeServices && window.TalkTypeServices.inputObserver) {
+      console.log("TalkType: Using existing input observer");
+      return window.TalkTypeServices.inputObserver;
+    }
+    
+    // Create observer instance with more limited scope
     const inputObserver = new MutationObserver((mutations) => {
+      // Skip processing if user isn't interacting with the page
+      if (!document.hasFocus()) return;
+      
+      // Heavy debouncing for performance - only process mutations every 2 seconds on complex pages
+      if (this._processingMutations) {
+        return; // Skip if already processing mutations
+      }
+      
+      // Set processing lock with longer timeout
+      this._processingMutations = true;
+      setTimeout(() => {
+        this._processingMutations = false;
+      }, 2000);
+      
+      // Check if this could be a messenger.com page which needs special handling
+      const isMessenger = window.location.hostname.includes('messenger.com') || 
+                         (window.location.hostname.includes('facebook.com') && 
+                          window.location.pathname.includes('/messages'));
+      
+      // For Messenger, we'll use an even more conservative approach
+      if (isMessenger) {
+        // For Messenger, we'll rely primarily on focus events rather than mutation detection
+        // This gives Messenger more room to initialize its own components
+        return;
+      }
+      
+      // Count how many nodes we process to avoid excessive CPU usage
+      let nodesProcessed = 0;
+      const MAX_NODES = 50; // Limit how many nodes we'll check per batch
+      
+      // Flag to track if we found any inputs
       let inputsAdded = false;
       
-      // Process DOM mutations
-      mutations.forEach((mutation) => {
+      // Process a limited number of mutations
+      for (let i = 0; i < Math.min(mutations.length, 10); i++) {
+        const mutation = mutations[i];
         if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-          // Check each added node for inputs or containers that might have inputs
-          mutation.addedNodes.forEach((node) => {
-            // Skip non-element nodes
-            if (node.nodeType !== Node.ELEMENT_NODE) return;
+          // Only process a limited number of added nodes
+          for (let j = 0; j < Math.min(mutation.addedNodes.length, 5); j++) {
+            const node = mutation.addedNodes[j];
             
-            // Check if the node itself is an input element
+            // Skip non-element nodes and limit total processed
+            if (node.nodeType !== Node.ELEMENT_NODE || nodesProcessed++ > MAX_NODES) continue;
+            
+            // Check if the node itself is an input element - quick check
             if (node.matches && (
-                node.matches('input[type="text"], input[type="search"], input:not([type]), textarea') ||
+                node.matches('input[type="text"], textarea') ||
                 node.matches('[role="textbox"], [contenteditable="true"]')
             )) {
               inputsAdded = true;
-              return;
+              break;
             }
             
-            // Check for inputs inside the added node
-            if (node.querySelectorAll) {
-              const hasInputs = node.querySelectorAll(
-                'input[type="text"], input[type="search"], input:not([type]), textarea, [role="textbox"], [contenteditable="true"]'
-              ).length > 0;
-              
-              if (hasInputs) {
-                inputsAdded = true;
+            // Only check immediate children to reduce processing - one level deep
+            if (node.children && node.children.length < 10) {  // Only if not too many children
+              try {
+                for (let k = 0; k < node.children.length; k++) {
+                  const child = node.children[k];
+                  if (child.matches && (
+                    child.matches('input[type="text"], textarea') ||
+                    child.matches('[role="textbox"], [contenteditable="true"]')
+                  )) {
+                    inputsAdded = true;
+                    break;
+                  }
+                }
+              } catch (e) {
+                // Silently ignore errors during checking
               }
             }
-          });
+            
+            if (inputsAdded) break;
+          }
         }
-      });
+        if (inputsAdded) break;
+      }
       
-      // If new inputs were added, reinitialize input detection
+      // If new inputs were found, schedule a very delayed detection to not interfere with page load
       if (inputsAdded) {
-        console.log("TalkType: New input elements detected, refreshing detection");
-        this.initializeInputDetection();
+        console.log("TalkType: New input elements detected, scheduling refresh");
+        
+        // Use a much longer delay for the initialization
+        setTimeout(() => {
+          // Only initialize if the document still has focus
+          if (document.hasFocus()) {
+            this.initializeInputDetection();
+          }
+        }, 1000);
       }
     });
     
-    // Start observing the entire document with configured parameters
-    inputObserver.observe(document.documentElement, {
+    // Start observing a more limited part of the document
+    // Prefer observing the body instead of documentElement for better performance
+    const observeTarget = document.body || document.documentElement;
+    inputObserver.observe(observeTarget, {
       childList: true,
       subtree: true
     });
     
-    console.log("TalkType: Dynamic input observation activated");
+    console.log("TalkType: Targeted dynamic input observation activated");
+    
+    // Store observer reference to prevent duplicates
+    if (window.TalkTypeServices) {
+      window.TalkTypeServices.inputObserver = inputObserver;
+    }
     
     return inputObserver;
   },
+  
+  // Flag to prevent multiple simultaneous mutation processing
+  _processingMutations: false,
   
   /**
    * Check if an element is a valid text input that can receive transcribed text

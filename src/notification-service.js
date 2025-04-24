@@ -15,6 +15,16 @@
  */
 
 const notificationService = {
+  // Register with ServiceRegistry if available
+  registerWithRegistry: function() {
+    if (window.ServiceRegistry) {
+      window.ServiceRegistry.register('NotificationService', {
+        factory: () => this,
+        dependencies: [],
+        lazy: false
+      });
+    }
+  },
   /**
    * Show a status notification with enhanced visual appeal
    * @param {string} message - The message to display in the notification
@@ -774,6 +784,9 @@ const notificationService = {
     return notification;
   }
 };
+
+// Register with registry
+notificationService.registerWithRegistry();
 
 // Expose the service as a global variable like other services
 window.NotificationService = notificationService;

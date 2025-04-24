@@ -6,11 +6,16 @@ class SettingsDialogManager {
   }
 
   initialize() {
-    if (this.initialized) return;
+    // Global initialization tracking
+    if (window.settingsDialogInitialized || this.initialized) {
+      console.log("TalkType: SettingsDialogManager already initialized");
+      return;
+    }
 
     // Add required CSS styles if not already added
     this.addRequiredStyles();
     this.initialized = true;
+    window.settingsDialogInitialized = true;
   }
 
   addRequiredStyles() {

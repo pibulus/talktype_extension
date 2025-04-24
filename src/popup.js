@@ -871,18 +871,42 @@ function updateContextualModeUI(isContextual) {
   }
 }
 
-// Pre-load initialization - start without waiting for DOM content
+/**
+ * Initialize extension services when popup opens
+ */
+function initializeExtensionServices() {
+  console.log("Popup: Triggering service initialization");
+  
+  // Send message to content script to initialize necessary services
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs && tabs[0]) {
+      chrome.tabs.sendMessage(
+        tabs[0].id,
+        { action: "initializeServices", services: ["core", "audio", "api", "input"] },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.error("Error sending initialization message:", chrome.runtime.lastError);
+            return;
+          }
+          
+          if (response && response.success) {
+            console.log("Popup: Services initialization triggered");
+          } else {
+            console.warn("Popup: Service initialization failed or not required");
+          }
+        }
+      );
+    }
+  });
+}
+
+// We don't need to pre-initialize services anymore as we're using lazy loading
 const startInit = () => {
-  // Pre-initialize global services
-  try {
-    audioService = new AudioRecordingService();
-  } catch (error) {
-    console.error("Error in pre-initialization:", error);
-    // We'll handle this later in the DOMContentLoaded event
-  }
+  // Function kept for backward compatibility, but doesn't eagerly initialize services
+  console.log("Popup: Using lazy initialization strategy");
 };
 
-// Run pre-initialization immediately
+// Run pre-initialization immediately - now just logs intent
 startInit();
 
 // Initialize the popup
@@ -904,6 +928,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Initialize services first
   await window.SettingsService.initialize();
+
+  // Trigger service initialization when popup opens
+  initializeExtensionServices();
 
   // Check API key in parallel with rendering
   const hasApiKey = await checkApiKey();
@@ -1096,9 +1123,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     e.preventDefault();
     console.log("Settings button clicked");
 
-    // Use the settings dialog manager to open settings
-    window.SettingsDialogManager.initialize();
-    window.SettingsDialogManager.openSettings();
+    // Use the settings dialog manager to open settings - don't reinitialize
+    if (window.SettingsDialogManager) {
+      window.SettingsDialogManager.openSettings();
+    }
   });
 
   // Add About header click listener

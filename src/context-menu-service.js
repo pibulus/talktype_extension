@@ -17,13 +17,28 @@ class ContextMenuService {
     this.contextMenuRecordingIndicator = null;
     this.targetInputElement = null;
     
+    // Register with ServiceRegistry if available
+    if (window.ServiceRegistry) {
+      window.ServiceRegistry.register('ContextMenuService', {
+        factory: () => this,
+        dependencies: ['AudioProcessingService', 'NotificationService', 'InputDetectionService'],
+        lazy: false
+      });
+    }
+    
+    console.log("TalkType: ✅ ContextMenuService initialized as singleton");
+  }
+  
+  // Static initialize method to support the expected interface in content.js
+  initialize() {
     // Set up message listener for context menu actions
     this.setupMessageListener();
     
     // Verify the context menu is working by checking if we receive the confirmation message
     this.verifyContextMenuSetup();
     
-    console.log("TalkType: ✅ ContextMenuService initialized as singleton");
+    console.log("TalkType: ✅ ContextMenuService initialization method called");
+    return this;
   }
   
   // Method to verify context menu is properly set up
@@ -44,7 +59,7 @@ class ContextMenuService {
     }, 2000);
   }
 
-  // Initialize and set up message listener
+  // Initialize and set up message listener with lazy initialization support
   setupMessageListener() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.log("TalkType: Context menu message received:", request);
@@ -53,7 +68,23 @@ class ContextMenuService {
       sendResponse({ received: true, status: "processing" });
       
       if (request.action === "startTranscriptionFromContextMenu") {
-        this.handleContextMenuAction(request);
+        // First ensure services are initialized before processing the request
+        if (window.TalkTypeServices && !window.TalkTypeServices.initStatus.core) {
+          console.log("TalkType: Initializing services for context menu request");
+          
+          // Initialize required services first
+          if (window.InitializationHelpers) {
+            window.InitializationHelpers.initializeCoreServices();
+          }
+          
+          // Short delay to allow initialization to complete
+          setTimeout(() => {
+            this.handleContextMenuAction(request);
+          }, 200);
+        } else {
+          // Services already initialized, proceed normally
+          this.handleContextMenuAction(request);
+        }
         return true;
       }
       
@@ -275,6 +306,16 @@ class ContextMenuService {
       // Show recording indicator
       this.contextMenuRecordingIndicator = this.createContextMenuRecordingIndicator();
       
+      // Get notification service through registry if available
+      let notificationService;
+      
+      if (window.ServiceRegistry) {
+        // Use ServiceRegistry with dynamic loading if needed
+        notificationService = await Promise.resolve(window.ServiceRegistry.get('NotificationService'));
+      } else {
+        notificationService = window.NotificationService;
+      }
+      
       // Set active input for use during transcription
       window.activeInput = this.targetInputElement;
       
@@ -287,17 +328,56 @@ class ContextMenuService {
           chrome.storage.sync.get(["apiKey"], resolve);
         });
         
-        // Create services
-        window.audioService = new window.AudioRecordingService();
-        window.apiService = new window.GeminiApiService(apiKey);
+        // Create services using ServiceRegistry if available
+        if (window.ServiceRegistry) {
+          // These will be dynamically loaded if not available
+          window.audioService = await Promise.resolve(window.ServiceRegistry.get('AudioRecordingService'));
+          window.apiService = await Promise.resolve(window.ServiceRegistry.get('GeminiApiService'));
+        } else {
+          // Fallback to direct instantiation with safety check
+          if (typeof window.AudioRecordingService === 'function') {
+            window.audioService = new window.AudioRecordingService();
+          } else {
+            throw new Error('AudioRecordingService class not available');
+          }
+          
+          if (typeof window.GeminiApiService === 'function') {
+            window.apiService = new window.GeminiApiService(apiKey);
+          } else {
+            throw new Error('GeminiApiService class not available');
+          }
+        }
         
         if (!apiKey) {
-          window.NotificationService.showStatusNotification(
+          notificationService.showStatusNotification(
             "Please set your API key in the extension options",
             "error"
           );
           return;
         }
+      }
+      
+      // Initialize audio processing service if needed
+      let audioProcessingService;
+      
+      if (window.ServiceRegistry) {
+        // Use ServiceRegistry with dynamic loading if needed
+        audioProcessingService = await Promise.resolve(window.ServiceRegistry.get('AudioProcessingService'));
+      } else if (!window.audioProcessingService) {
+        // Fallback to direct instantiation with safety check
+        if (typeof window.AudioProcessingService === 'function') {
+          console.log("TalkType: Creating AudioProcessingService instance directly");
+          window.audioProcessingService = new window.AudioProcessingService();
+          audioProcessingService = window.audioProcessingService;
+        } else {
+          throw new Error('AudioProcessingService class not available');
+        }
+      } else {
+        audioProcessingService = window.audioProcessingService;
+      }
+      
+      if (!audioProcessingService) {
+        throw new Error("Audio processing service not available");
       }
       
       // Set recording flag - use contextMenuRecording for local state
@@ -310,8 +390,8 @@ class ContextMenuService {
         isRecording: true,
       });
       
-      // Start recording
-      await window.audioProcessingService.startRecording(this.targetInputElement, null);
+      // Start recording using service registry or direct access
+      await audioProcessingService.startRecording(this.targetInputElement);
       console.log("TalkType: Context menu recording started");
       
       // Add global click handler to stop recording when clicked elsewhere
@@ -320,7 +400,25 @@ class ContextMenuService {
       }, 500); // Small delay to avoid immediate triggering
     } catch (error) {
       console.error("TalkType: Error starting context menu recording:", error);
-      window.NotificationService.showStatusNotification(`Recording error: ${error.message}`, "error");
+      
+      // Get notification service through registry if available
+      let notificationService;
+      
+      try {
+        if (window.ServiceRegistry) {
+          notificationService = await Promise.resolve(window.ServiceRegistry.get('NotificationService'));
+        } else {
+          notificationService = window.NotificationService;
+        }
+        
+        if (notificationService) {
+          notificationService.showStatusNotification(`Recording error: ${error.message}`, "error");
+        }
+      } catch (notificationError) {
+        console.error("TalkType: Error showing notification:", notificationError);
+        // Fallback to console.error in case notification service fails
+        console.error(`TalkType: Recording error: ${error.message}`);
+      }
       this.contextMenuRecording = false;
       window.isRecording = false;
       
@@ -354,8 +452,32 @@ class ContextMenuService {
         this.contextMenuRecordingIndicator.style.background = "rgba(70, 174, 247, 0.85)";
       }
       
+      // Get notification service through registry if available
+      let notificationService;
+      
+      if (window.ServiceRegistry) {
+        // Use ServiceRegistry with dynamic loading if needed
+        notificationService = await Promise.resolve(window.ServiceRegistry.get('NotificationService'));
+      } else {
+        notificationService = window.NotificationService;
+      }
+      
+      // Get the audio processing service through the registry if available
+      let audioProcessingService;
+      
+      if (window.ServiceRegistry) {
+        // Use ServiceRegistry with dynamic loading if needed
+        audioProcessingService = await Promise.resolve(window.ServiceRegistry.get('AudioProcessingService'));
+      } else {
+        audioProcessingService = window.audioProcessingService;
+      }
+      
+      if (!audioProcessingService) {
+        throw new Error("Audio processing service not available");
+      }
+      
       // Use audioProcessingService to stop recording - it will handle transcription and insertion
-      await window.audioProcessingService.stopRecording();
+      await audioProcessingService.stopRecording();
       
       // Reset local recording flag only - AudioProcessingService manages window.isRecording
       this.contextMenuRecording = false;
@@ -367,10 +489,28 @@ class ContextMenuService {
       });
       
       // Show success notification
-      window.NotificationService.showStatusNotification("Transcription complete", "success");
+      notificationService.showStatusNotification("Transcription complete", "success");
     } catch (error) {
       console.error("TalkType: Error during context menu transcription:", error);
-      window.NotificationService.showStatusNotification(`Transcription error: ${error.message}`, "error");
+      
+      // Get notification service through registry if available
+      let notificationService;
+      
+      try {
+        if (window.ServiceRegistry) {
+          notificationService = await Promise.resolve(window.ServiceRegistry.get('NotificationService'));
+        } else {
+          notificationService = window.NotificationService;
+        }
+        
+        if (notificationService) {
+          notificationService.showStatusNotification(`Transcription error: ${error.message}`, "error");
+        }
+      } catch (notificationError) {
+        console.error("TalkType: Error showing notification:", notificationError);
+        // Fallback to console.error in case notification service fails
+        console.error(`TalkType: Transcription error: ${error.message}`);
+      }
     } finally {
       // Clean up
       if (this.contextMenuRecordingIndicator) {

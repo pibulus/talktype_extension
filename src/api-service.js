@@ -8,6 +8,21 @@ class GeminiApiService {
       "https://generativelanguage.googleapis.com/upload/v1beta/files";
     this.generateEndpoint =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+      
+    // Register with ServiceRegistry if available
+    this.registerWithServiceRegistry();
+  }
+  
+  // Register with ServiceRegistry to ensure service is available
+  registerWithServiceRegistry() {
+    if (window.ServiceRegistry && !window.ServiceRegistry.hasService('GeminiApiService')) {
+      console.log("TalkType: GeminiApiService registering with ServiceRegistry");
+      window.ServiceRegistry.register('GeminiApiService', {
+        factory: () => this,
+        dependencies: [],
+        lazy: false
+      });
+    }
   }
 
   /**
@@ -351,3 +366,26 @@ class GeminiApiService {
 
 // Export the service
 window.GeminiApiService = GeminiApiService;
+
+// Create an instance to ensure it's available in ServiceRegistry
+document.addEventListener('DOMContentLoaded', () => {
+  // Only create a default instance if we have API key and ServiceRegistry
+  if (window.ServiceRegistry && window.apiKey) {
+    console.log("TalkType: Pre-registering GeminiApiService on DOMContentLoaded");
+    if (!window.apiService) {
+      window.apiService = new GeminiApiService(window.apiKey);
+    }
+  }
+});
+
+// Also ensure registration on window load as a fallback
+window.addEventListener('load', () => {
+  if (window.ServiceRegistry && window.apiKey && !window.ServiceRegistry.hasService('GeminiApiService')) {
+    console.log("TalkType: Ensuring GeminiApiService is registered on window load");
+    if (!window.apiService) {
+      window.apiService = new GeminiApiService(window.apiKey);
+    } else if (typeof window.apiService.registerWithServiceRegistry === 'function') {
+      window.apiService.registerWithServiceRegistry();
+    }
+  }
+});

@@ -16,7 +16,17 @@ const MessageHandlerService = {
   initialize() {
     console.log("TalkType: Initializing MessageHandlerService");
     
-    // Set up message listener if not already added
+    // Enhanced guard to prevent duplicate listeners
+    // Use TalkTypeServices registry for global state tracking if available
+    if (window.TalkTypeServices && window.TalkTypeServices.initStatus) {
+      if (window.TalkTypeServices.initStatus.messageHandler) {
+        console.log("TalkType: MessageHandlerService already initialized, skipping setup");
+        return;
+      }
+      window.TalkTypeServices.initStatus.messageHandler = true;
+    }
+    
+    // Legacy guard as backup
     if (!window.talkTypeMessageListenerAdded) {
       window.talkTypeMessageListenerAdded = true;
       this.setupMessageListener();
@@ -507,16 +517,26 @@ const MessageHandlerService = {
   },
 
   /**
-   * Helper function to get the deepest active element (traversing shadow DOM)
-   * @returns {Element} - The deepest active element
+   * Helper function to get the active element (safe version)
+   * @returns {Element} - The active element
    */
   getDeepActiveElement() {
-    // Use FocusTrackingService if available
+    // Use FocusTrackingService if available (preferred)
     if (window.FocusTrackingService) {
       return window.FocusTrackingService.getDeepActiveElement();
     }
     
-    // Fallback to simple document.activeElement if FocusTrackingService not available
+    // Safe fallback for Messenger
+    const isMessenger = window.location.hostname.includes('messenger.com') || 
+                      (window.location.hostname.includes('facebook.com') && 
+                       window.location.pathname.includes('/messages'));
+                      
+    if (isMessenger) {
+      // For Messenger, avoid any shadow DOM traversal
+      return document.activeElement;
+    }
+    
+    // Basic fallback for other sites - just return active element without traversal
     return document.activeElement;
   },
 
