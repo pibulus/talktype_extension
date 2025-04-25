@@ -778,11 +778,16 @@ class AudioProcessingService {
                 }
                 
                 if (typingSimulator) {
-                  const typingSuccess = await typingSimulator.simulateTyping(currentInput, transcription, {
-                    showVisualFeedback: true,
-                    minDelay: 20,  // faster typing for better UX
-                    maxDelay: 60
-                  });
+                  // Set typing speed based on transcription length
+                  if (transcription.length > 100) {
+                    typingSimulator.setTypingSpeed('VERY_FAST');
+                  } else if (transcription.length > 50) {
+                    typingSimulator.setTypingSpeed('FAST');
+                  } else {
+                    typingSimulator.setTypingSpeed('MODERATE');
+                  }
+                  
+                  const typingSuccess = await typingSimulator.simulateTyping(currentInput, transcription);
                   
                   if (typingSuccess) {
                     console.log("TalkType: Typing simulation successful for Lexical editor");
@@ -818,11 +823,9 @@ class AudioProcessingService {
               }
               
               if (typingSimulator) {
-                const typingSuccess = await typingSimulator.simulateTyping(currentInput, transcription, {
-                  showVisualFeedback: true,
-                  minDelay: 15,  // faster for fallback case
-                  maxDelay: 40
-                });
+                // Always use VERY_FAST for fallback cases
+                typingSimulator.setTypingSpeed('VERY_FAST');
+                const typingSuccess = await typingSimulator.simulateTyping(currentInput, transcription);
                 
                 if (typingSuccess) {
                   console.log("TalkType: Typing simulation fallback successful");

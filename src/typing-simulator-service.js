@@ -6,6 +6,28 @@
  */
 
 class TypingSimulatorService {
+  // Configuration constants for typing simulation
+  static CONFIG = {
+    // Speed settings (milliseconds)
+    TYPING_SPEED: {
+      VERY_FAST: { min: 10, max: 30 }, // ~30 chars per second
+      FAST: { min: 20, max: 60 }, // ~15 chars per second
+      MODERATE: { min: 30, max: 90 }, // ~10 chars per second
+      SLOW: { min: 50, max: 120 }, // ~7 chars per second
+      VERY_SLOW: { min: 80, max: 200 }, // ~4 chars per second
+    },
+
+    // Default speed setting
+    DEFAULT_SPEED: "VERY_SLOW",
+
+    // Delay settings (milliseconds)
+    INITIAL_DELAY: 300, // Delay before typing starts
+    FINAL_DELAY: 500, // Delay after typing completes
+
+    // Visual feedback settings
+    SHOW_VISUAL_FEEDBACK: true,
+  };
+
   constructor() {
     // Singleton protection
     if (window._typingSimulatorInstance) {
@@ -13,6 +35,9 @@ class TypingSimulatorService {
     }
 
     window._typingSimulatorInstance = this;
+
+    // Current speed setting (can be changed at runtime)
+    this.currentSpeed = TypingSimulatorService.CONFIG.DEFAULT_SPEED;
 
     // Register with ServiceRegistry if available
     this.registerWithServiceRegistry();
@@ -35,6 +60,28 @@ class TypingSimulatorService {
   }
 
   /**
+   * Set the typing speed
+   * @param {string} speedSetting - Speed setting name from CONFIG.TYPING_SPEED (e.g., 'FAST', 'MODERATE')
+   */
+  setTypingSpeed(speedSetting) {
+    if (TypingSimulatorService.CONFIG.TYPING_SPEED[speedSetting]) {
+      this.currentSpeed = speedSetting;
+      console.log(`TalkType: Typing speed set to ${speedSetting}`);
+      return true;
+    }
+    console.error(`TalkType: Invalid speed setting: ${speedSetting}`);
+    return false;
+  }
+
+  /**
+   * Get the current typing speed configuration
+   * @returns {Object} Current min/max delay settings
+   */
+  getTypingSpeedSettings() {
+    return TypingSimulatorService.CONFIG.TYPING_SPEED[this.currentSpeed];
+  }
+
+  /**
    * Simulate keyboard typing with visual effects for rich text editors
    * @param {HTMLElement} element - The element to insert text into
    * @param {string} text - The text to insert
@@ -44,12 +91,15 @@ class TypingSimulatorService {
   async simulateTyping(element, text, options = {}) {
     if (!element || !text) return false;
 
+    // Get current speed settings
+    const speedSettings = this.getTypingSpeedSettings();
+
     const defaults = {
-      showVisualFeedback: true,
-      minDelay: 3, // milliseconds between characters (minimum)
-      maxDelay: 9, // milliseconds between characters (maximum)
-      initialDelay: 300, // milliseconds before typing starts
-      finalDelay: 500, // milliseconds after typing completes
+      showVisualFeedback: TypingSimulatorService.CONFIG.SHOW_VISUAL_FEEDBACK,
+      minDelay: speedSettings.min,
+      maxDelay: speedSettings.max,
+      initialDelay: TypingSimulatorService.CONFIG.INITIAL_DELAY,
+      finalDelay: TypingSimulatorService.CONFIG.FINAL_DELAY,
     };
 
     const config = { ...defaults, ...options };
@@ -185,6 +235,25 @@ class TypingSimulatorService {
   }
 
   /**
+   * Get gradient background based on typing speed
+   * @returns {string} CSS gradient for the speed
+   */
+  getSpeedGradient() {
+    const speedGradients = {
+      VERY_FAST:
+        "linear-gradient(135deg, rgba(255, 99, 71, 0.85), rgba(255, 140, 0, 0.75))", // Reddish-orange for very fast
+      FAST: "linear-gradient(135deg, rgba(255, 165, 0, 0.85), rgba(255, 215, 0, 0.75))", // Orange-yellow for fast
+      MODERATE:
+        "linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75))", // Purple-blue for moderate (default)
+      SLOW: "linear-gradient(135deg, rgba(34, 139, 34, 0.85), rgba(46, 204, 113, 0.75))", // Green for slow
+      VERY_SLOW:
+        "linear-gradient(135deg, rgba(0, 128, 128, 0.85), rgba(32, 178, 170, 0.75))", // Teal for very slow
+    };
+
+    return speedGradients[this.currentSpeed] || speedGradients["MODERATE"];
+  }
+
+  /**
    * Create a visual typing indicator overlay
    * @returns {HTMLElement} The created indicator element
    */
@@ -200,12 +269,16 @@ class TypingSimulatorService {
     // Create container for the typing indicator
     const indicator = document.createElement("div");
     indicator.id = "talktype-typing-indicator";
+
+    // Get gradient based on current speed
+    const speedGradient = this.getSpeedGradient();
+
     indicator.style.cssText = `
       position: fixed;
       bottom: 120px;
       right: 40px;
       z-index: 2147483646;
-      background: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
+      background: ${speedGradient};
       color: white;
       padding: 12px 20px;
       border-radius: 20px;
@@ -239,9 +312,11 @@ class TypingSimulatorService {
       flex-direction: column;
     `;
 
-    // Add label
+    // Add label with speed indication
     const label = document.createElement("div");
-    label.textContent = "TalkType is typing";
+    label.textContent = `TalkType is typing (${this.currentSpeed
+      .toLowerCase()
+      .replace("_", " ")})`;
     label.style.fontWeight = "600";
     textContainer.appendChild(label);
 
