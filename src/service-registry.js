@@ -26,7 +26,8 @@ class ServiceRegistry {
       'NotificationService': 'notification-service.js',
       'InputDetectionService': 'input-detection-service.js',
       'FocusTrackingService': 'focus-tracking-service.js',
-      'ContextMenuService': 'context-menu-service.js'
+      'ContextMenuService': 'context-menu-service.js',
+      'TypingSimulatorService': 'typing-simulator-service.js'
     };
     
     console.log("TalkType: ✅ ServiceRegistry created with dynamic resolution");

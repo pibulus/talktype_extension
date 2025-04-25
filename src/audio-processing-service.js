@@ -767,18 +767,35 @@ class AudioProcessingService {
 
               // Special handling for Messenger's Lexical editor
               if (currentInput.getAttribute("data-lexical-editor") === "true") {
-                console.log("TalkType: Detected Facebook Lexical editor, using clipboard insertion");
-                const clipboardSuccess = await this.insertTextViaClipboard(currentInput, transcription);
+                console.log("TalkType: Detected Facebook Lexical editor, using typing simulation");
                 
-                if (clipboardSuccess) {
-                  console.log("TalkType: Clipboard insertion successful for Lexical editor");
-                  // Skip the standard events since clipboard method already fires them
-                  return;
+                // Get typing simulator through service registry if available
+                let typingSimulator;
+                if (window.ServiceRegistry) {
+                  typingSimulator = await Promise.resolve(window.ServiceRegistry.get('TypingSimulatorService'));
                 } else {
-                  console.log("TalkType: Clipboard insertion failed, falling back to standard method");
-                  currentInput.focus();
-                  currentInput.click();
+                  typingSimulator = window.typingSimulator;
                 }
+                
+                if (typingSimulator) {
+                  const typingSuccess = await typingSimulator.simulateTyping(currentInput, transcription, {
+                    showVisualFeedback: true,
+                    minDelay: 20,  // faster typing for better UX
+                    maxDelay: 60
+                  });
+                  
+                  if (typingSuccess) {
+                    console.log("TalkType: Typing simulation successful for Lexical editor");
+                    // Skip the standard events since typing simulation already fires them
+                    return;
+                  } else {
+                    console.log("TalkType: Typing simulation failed, falling back to standard method");
+                  }
+                }
+                
+                // If typing simulation is not available or failed, try to focus
+                currentInput.focus();
+                currentInput.click();
               }
 
               // Dispatch events to notify frameworks of content changes
@@ -789,16 +806,34 @@ class AudioProcessingService {
             } catch (e) {
               console.error("TalkType: Error inserting into contenteditable:", e);
               
-              // Try clipboard insertion as a fallback
-              console.log("TalkType: Trying clipboard insertion as fallback for contenteditable");
-              const clipboardSuccess = await this.insertTextViaClipboard(currentInput, transcription);
+              // Try typing simulation as a fallback
+              console.log("TalkType: Trying typing simulation as fallback for contenteditable");
               
-              if (!clipboardSuccess) {
-                // Last resort fallback to simple approach
-                console.log("TalkType: Clipboard fallback also failed, using textContent");
-                currentInput.textContent = transcription;
-                currentInput.dispatchEvent(new Event("input", { bubbles: true }));
+              // Get typing simulator through service registry if available
+              let typingSimulator;
+              if (window.ServiceRegistry) {
+                typingSimulator = await Promise.resolve(window.ServiceRegistry.get('TypingSimulatorService'));
+              } else {
+                typingSimulator = window.typingSimulator;
               }
+              
+              if (typingSimulator) {
+                const typingSuccess = await typingSimulator.simulateTyping(currentInput, transcription, {
+                  showVisualFeedback: true,
+                  minDelay: 15,  // faster for fallback case
+                  maxDelay: 40
+                });
+                
+                if (typingSuccess) {
+                  console.log("TalkType: Typing simulation fallback successful");
+                  return;
+                }
+              }
+              
+              // Last resort fallback to simple approach
+              console.log("TalkType: All insertion methods failed, using textContent");
+              currentInput.textContent = transcription;
+              currentInput.dispatchEvent(new Event("input", { bubbles: true }));
             }
           } else if (
             currentInput.tagName === "INPUT" ||
