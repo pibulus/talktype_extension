@@ -1,41 +1,112 @@
-// API Service for audio transcription
+// API Service for audio transcription via Gemini
+
+// Transcription style prompts - ported from TalkType webapp
+const TRANSCRIPTION_PROMPTS = {
+  standard:
+    'Transcribe this audio into clean, well-punctuated text. Remove filler words (um, uh, like, you know). If a phrase repeats 3+ times, transcribe it only once. Use proper capitalization and punctuation. Return only the transcription text with no preamble or commentary.',
+  surlyPirate:
+    'Transcribe this audio file accurately, but rewrite it in the style of a surly pirate. Use pirate slang, expressions, and attitude. Arr! Return only the pirate-style transcription, no additional text.',
+  leetSpeak:
+    'Tr4n5cr1b3 th15 4ud10 f1l3 4ccur4t3ly, but c0nv3rt 1t 1nt0 l33t 5p34k. U53 num3r1c 5ub5t1tut10n5 (3=e, 4=a, 1=i, 0=o, 5=s, 7=t) 4nd h4ck3r j4rg0n wh3n p0551bl3. R3turn 0nly th3 l33t 5p34k tr4n5cr1pt10n, n0 4dd1t10n4l t3xt.',
+  sparklePop:
+    "OMG!!! Transcribe this audio file like TOTALLY accurately, but make it SUPER bubbly and enthusiastic!!! Use LOTS of emojis, exclamation points, and teen slang!!!! Sprinkle in words like 'literally,' 'totally,' 'sooo,' 'vibes,' and 'obsessed'!!! Add sparkle emojis, hearts, and rainbow emojis throughout!!! Make it EXTRA and over-the-top excited!!!",
+  codeWhisperer:
+    'Transcribe this audio file accurately and completely, but reformat it into clear, structured, technical language suitable for a coding prompt. Remove redundancies, organize thoughts logically, use precise technical terminology, and structure content with clear sections. Return only the optimized, programmer-friendly transcription.',
+  quillAndInk:
+    'Transcribe this audio file with the eloquence and stylistic flourishes of a 19th century Victorian novelist, in the vein of Jane Austen or Charles Dickens. Employ elaborate sentences, period-appropriate vocabulary, literary devices, and a generally formal and ornate prose style. The transcription should maintain the original meaning but transform the manner of expression entirely.',
+};
+
+// Human-readable style labels
+const STYLE_LABELS = {
+  standard: 'Clean & Accurate',
+  surlyPirate: 'Surly Pirate',
+  leetSpeak: 'L33t Sp34k',
+  sparklePop: 'Sparkle Pop',
+  codeWhisperer: 'Code Whisperer',
+  quillAndInk: 'Quill & Ink',
+};
+
+// Generation config per style type
+// Standard = deterministic (temp 0), creative styles = some randomness
+const STYLE_CONFIGS = {
+  standard:      { temperature: 0, topP: 1.0, topK: 1, maxOutputTokens: 4096 },
+  surlyPirate:   { temperature: 0.7, topP: 0.9, topK: 40, maxOutputTokens: 4096 },
+  leetSpeak:     { temperature: 0.3, topP: 0.9, topK: 20, maxOutputTokens: 4096 },
+  sparklePop:    { temperature: 0.8, topP: 0.9, topK: 40, maxOutputTokens: 4096 },
+  codeWhisperer: { temperature: 0.1, topP: 0.95, topK: 10, maxOutputTokens: 4096 },
+  quillAndInk:   { temperature: 0.7, topP: 0.9, topK: 40, maxOutputTokens: 4096 },
+};
 
 class GeminiApiService {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    // Gemini API endpoints
-    this.uploadEndpoint =
-      "https://generativelanguage.googleapis.com/upload/v1beta/files";
+    this.style = 'standard';
     this.generateEndpoint =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+  }
+
+  setStyle(style) {
+    this.style = TRANSCRIPTION_PROMPTS[style] ? style : 'standard';
+  }
+
+  getPrompt() {
+    return TRANSCRIPTION_PROMPTS[this.style] || TRANSCRIPTION_PROMPTS.standard;
+  }
+
+  getGenerationConfig() {
+    return STYLE_CONFIGS[this.style] || STYLE_CONFIGS.standard;
   }
 
   /**
-   * Transcribe audio data using Gemini API
-   * @param {Blob} audioBlob - The recorded audio as a Blob
-   * @param {Function} progressCallback - Optional callback function to report progress
-   * @returns {Promise<string>} - The transcribed text
+   * Transcribe audio using inline base64 (single request, no upload step)
    */
   async transcribeAudio(audioBlob, progressCallback = null) {
     try {
-      // Step 1: Upload the audio file to Gemini
-      if (progressCallback) progressCallback('upload-start', 0);
-      
-      const fileUri = await this.uploadAudioFile(audioBlob, progressCallback);
-      if (!fileUri) {
-        throw new Error("Failed to upload audio file");
-      }
-      
-      if (progressCallback) progressCallback('upload-complete', 50);
+      if (progressCallback) progressCallback('preparing', 10);
 
-      // Step 2: Generate content using the uploaded file
-      if (progressCallback) progressCallback('transcription-start', 50);
-      
-      const result = await this.generateContentFromAudio(fileUri);
-      
-      if (progressCallback) progressCallback('transcription-complete', 100);
-      
-      return result;
+      // Convert blob to raw base64 (strip the data URL prefix)
+      const base64Data = await this._blobToBase64Raw(audioBlob);
+      const mimeType = audioBlob.type || "audio/webm";
+
+      if (progressCallback) progressCallback('sending', 30);
+
+      // Single request with inline audio data
+      const response = await fetch(
+        `${this.generateEndpoint}?key=${this.apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: this.getPrompt() },
+                { inline_data: { mime_type: mimeType, data: base64Data } },
+              ],
+            }],
+            generationConfig: this.getGenerationConfig(),
+          }),
+        }
+      );
+
+      if (progressCallback) progressCallback('processing', 70);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const msg = errorData.error?.message || `Status ${response.status}`;
+        throw new Error(`Transcription failed: ${msg}`);
+      }
+
+      const data = await response.json();
+
+      if (progressCallback) progressCallback('complete', 100);
+
+      // Extract transcription text from response
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        throw new Error("No transcription returned. The audio may be too short or unclear.");
+      }
+
+      return text;
     } catch (error) {
       console.error("Transcription error:", error);
       throw error;
@@ -43,164 +114,14 @@ class GeminiApiService {
   }
 
   /**
-   * Upload audio file to Gemini API
-   * @param {Blob} audioBlob - The recorded audio blob
-   * @param {Function} progressCallback - Optional callback function to report progress
-   * @returns {Promise<string>} - The file URI for the uploaded file
-   */
-  async uploadAudioFile(audioBlob, progressCallback = null) {
-    try {
-      // Step 1: Get the audio file details
-      const mimeType = audioBlob.type || "audio/webm";
-      const numBytes = audioBlob.size;
-      const displayName = "AUDIO";
-
-      if (progressCallback) progressCallback('preparing-metadata', 5);
-
-      // Step 2: Initial resumable request to define metadata
-      const uploadUrlResponse = await fetch(
-        `${this.uploadEndpoint}?key=${this.apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "X-Goog-Upload-Protocol": "resumable",
-            "X-Goog-Upload-Command": "start",
-            "X-Goog-Upload-Header-Content-Length": numBytes.toString(),
-            "X-Goog-Upload-Header-Content-Type": mimeType,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ file: { display_name: displayName } }),
-        }
-      );
-
-      if (!uploadUrlResponse.ok) {
-        const errorText = await uploadUrlResponse.text();
-        throw new Error(
-          `Failed to initiate upload: ${uploadUrlResponse.status} - ${errorText}`
-        );
-      }
-
-      if (progressCallback) progressCallback('initial-request-complete', 20);
-
-      // Get the upload URL from the response headers
-      const uploadUrl = uploadUrlResponse.headers.get("X-Goog-Upload-URL");
-      if (!uploadUrl) {
-        throw new Error("No upload URL received from Gemini API");
-      }
-
-      if (progressCallback) progressCallback('starting-file-upload', 25);
-
-      // Step 3: Upload the actual bytes
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "POST",
-        headers: {
-          "Content-Length": numBytes.toString(),
-          "X-Goog-Upload-Offset": "0",
-          "X-Goog-Upload-Command": "upload, finalize",
-        },
-        body: audioBlob,
-      });
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(
-          `Failed to upload file: ${uploadResponse.status} - ${errorText}`
-        );
-      }
-
-      if (progressCallback) progressCallback('file-upload-complete', 45);
-
-      // Get the file info from the response
-      const fileInfo = await uploadResponse.json();
-
-      // Return the file URI
-      return fileInfo.file?.uri;
-    } catch (error) {
-      console.error("Error uploading audio:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Generate content from an audio file using Gemini API
-   * @param {string} fileUri - The URI of the uploaded audio file
-   * @param {Function} progressCallback - Optional callback function to report progress
-   * @returns {Promise<string>} - The transcribed text
-   */
-  async generateContentFromAudio(fileUri, progressCallback = null) {
-    try {
-      if (progressCallback) progressCallback('sending-transcription-request', 55);
-      
-      // Call Gemini API to process the audio file
-      const response = await fetch(
-        `${this.generateEndpoint}?key=${this.apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  { text: "Transcribe this audio clip" },
-                  { file_data: { mime_type: "audio/webm", file_uri: fileUri } },
-                ],
-              },
-            ],
-          }),
-        }
-      );
-
-      if (progressCallback) progressCallback('transcription-response-received', 75);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          `Gemini API request failed with status ${response.status}: ${
-            errorData.error?.message || ""
-          }`
-        );
-      }
-
-      const data = await response.json();
-      
-      if (progressCallback) progressCallback('processing-response', 90);
-
-      // Extract the transcription from the response
-      if (
-        data.candidates &&
-        data.candidates.length > 0 &&
-        data.candidates[0].content &&
-        data.candidates[0].content.parts &&
-        data.candidates[0].content.parts.length > 0
-      ) {
-        return data.candidates[0].content.parts[0].text;
-      } else {
-        throw new Error("Unexpected response format from Gemini API");
-      }
-    } catch (error) {
-      console.error("Error generating content from audio:", error);
-      throw error;
-    }
-  }
-
-  /**
    * Verify that the API key is valid
-   * @returns {Promise<boolean>} - Whether the key is valid
    */
   async verifyApiKey() {
     try {
-      // Make a simple request to verify the API key
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`
       );
-      if (response.ok) {
-        return true;
-      } else {
-        console.error("API key verification failed:", await response.text());
-        return false;
-      }
+      return response.ok;
     } catch (error) {
       console.error("API key verification error:", error);
       return false;
@@ -208,19 +129,24 @@ class GeminiApiService {
   }
 
   /**
-   * Convert Blob to base64 string
-   * @param {Blob} blob - The audio blob
-   * @returns {Promise<string>} - Base64 encoded string
+   * Convert Blob to raw base64 string (no data URL prefix)
    */
-  _blobToBase64(blob) {
+  _blobToBase64Raw(blob) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
+      reader.onloadend = () => {
+        // Strip "data:audio/webm;base64," prefix to get raw base64
+        const result = reader.result;
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
   }
 }
 
-// Export the service
+// Export the service and style data
 window.GeminiApiService = GeminiApiService;
+window.TRANSCRIPTION_PROMPTS = TRANSCRIPTION_PROMPTS;
+window.STYLE_LABELS = STYLE_LABELS;

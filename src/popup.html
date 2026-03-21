@@ -25,14 +25,15 @@
   </style>
   <style>
     :root {
-      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
-      --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
+      --brand-purple: #6F42C1;
+      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(155, 107, 232, 0.75));
+      --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.9), rgba(155, 107, 232, 0.85));
       --progress-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.9), rgba(247, 70, 180, 0.8), rgba(255, 152, 0, 0.85));
-      --glass-bg: rgba(255, 255, 255, 0.65);
-      --glass-border: rgba(255, 255, 255, 0.7);
-      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-      --text-primary: rgba(60, 64, 67, 0.95);
-      --text-secondary: rgba(60, 64, 67, 0.85);
+      --glass-bg: rgba(255, 255, 255, 0.45);
+      --glass-border: rgba(255, 255, 255, 0.8);
+      --glass-shadow: 0 8px 32px rgba(111, 66, 193, 0.06);
+      --text-primary: rgba(50, 50, 60, 0.95);
+      --text-secondary: rgba(50, 50, 60, 0.75);
       --accent-color: rgb(111, 66, 193);
       --light-accent: rgba(111, 66, 193, 0.1);
     }
@@ -52,11 +53,11 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       padding: 14px 18px 14px; /* Reduced padding */
-      background: linear-gradient(225deg, rgba(255, 255, 255, 0.9), rgba(240, 245, 255, 0.95));
-      border-radius: 20px; /* Curvier corners */
-      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+      background: linear-gradient(145deg, #f5f0ff 0%, #fdf0ff 35%, #f0f4ff 70%, #f8f0ff 100%);
+      border-radius: 20px;
+      box-shadow: 0 2px 20px rgba(111, 66, 193, 0.08);
       position: relative;
-      border: 2px solid var(--glass-border); /* Thicker border */
+      border: 1.5px solid rgba(111, 66, 193, 0.12);
       color: #333;
       display: block !important; /* Force display */
       opacity: 1 !important; /* Force opacity */
@@ -96,11 +97,13 @@
     /* Light glass effect */
     .glass {
       background: var(--glass-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 18px; /* Curvier corners */
-      border: 2px solid var(--glass-border); /* Thicker border */
-      box-shadow: var(--glass-shadow);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      border: 1.5px solid var(--glass-border);
+      box-shadow:
+        var(--glass-shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
       padding: 12px;
       transition: all 0.2s ease;
       margin-bottom: 14px;
@@ -112,15 +115,15 @@
       position: absolute;
       width: 150%;
       height: 80px;
-      background: linear-gradient(90deg, rgba(var(--accent-color), 0), rgba(255, 255, 255, 0.05), rgba(var(--accent-color), 0));
+      background: linear-gradient(90deg, transparent, rgba(111, 66, 193, 0.04), transparent);
       transform: rotate(-45deg);
       top: -40px;
       left: -20%;
       animation: beam 12s linear infinite;
       z-index: 0;
-      opacity: 0.5;
+      opacity: 0.6;
     }
-    
+
     @keyframes beam {
       0% { transform: rotate(-45deg) translateX(-100%); }
       100% { transform: rotate(-45deg) translateX(200%); }
@@ -290,7 +293,9 @@
     }
     
     .status-text {
-      font-weight: 500;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.2px;
     }
     
     .buttons {
@@ -306,9 +311,9 @@
     button {
       background: var(--primary-gradient);
       color: white;
-      border: 2px solid var(--glass-border); /* Thicker border */
+      border: 1.5px solid rgba(111, 66, 193, 0.2);
       padding: 10px 15px;
-      border-radius: 16px; /* Curvier corners */
+      border-radius: 16px;
       cursor: pointer;
       font-weight: 500;
       transition: all 0.2s ease;
@@ -337,6 +342,7 @@
     
     button:hover {
       background: var(--hover-gradient);
+      border-color: rgba(111, 66, 193, 0.35);
       transform: translateY(-1px) scale(1.02);
       box-shadow: 0 8px 20px rgba(111, 66, 193, 0.18);
     }
@@ -374,13 +380,21 @@
       border: 1px solid rgba(255, 0, 80, 0.2);
     }
     
-    /* Container for the recording animation to maintain consistent height */
+    /* Container for recording animation - collapses when not active */
     #recording-container {
-      height: 90px; /* Fixed height to prevent layout shifts */
-      margin-bottom: 10px; /* Add some space between animation and buttons */
+      min-height: 0;
+      max-height: 0;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                  margin 0.4s ease;
+    }
+
+    #recording-container.active {
+      max-height: 100px;
+      margin-bottom: 10px;
     }
     
     .recording-animation {
@@ -503,7 +517,7 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-radius: 18px; /* Curvier corners */
-      border: 2px solid rgba(255, 255, 255, 0.25); /* Subtler border */
+      border: 1.5px solid rgba(111, 66, 193, 0.15);
       padding: 14px; /* Slightly more padding */
       margin-top: 8px; /* Reduced margin */
       min-height: 70px; /* Smaller min-height */
@@ -664,6 +678,14 @@
     .api-key-success.show {
       transform: translateY(-70px);
       opacity: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>

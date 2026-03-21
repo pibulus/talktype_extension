@@ -1,23 +1,58 @@
 // Options page script
 
-// Save options to Chrome storage
+// Style preview descriptions
+const STYLE_PREVIEWS = {
+  standard: 'Removes filler words and stutters. Just the clean goods.',
+  surlyPirate: 'Arr! Yer words be rewritten in the tongue of a salty sea dog.',
+  leetSpeak: 'Y0ur w0rd5 g3t c0nv3rt3d 1nt0 h4ck3r sp34k. 1337!',
+  sparklePop: 'OMG your words become TOTALLY bubbly and sparkly!!! Like, SO extra!!!',
+  codeWhisperer: 'Restructures your speech into clean, technical language for coding prompts.',
+  quillAndInk: 'Your words are rendered in the most elegant Victorian prose, dear reader.',
+};
+
+// Save API key to Chrome storage
 function saveOptions() {
   const apiKey = document.getElementById('apiKey').value;
-  
+
   chrome.storage.sync.set(
     { apiKey },
     () => {
-      // Update status to let user know options were saved
       const status = document.getElementById('status');
-      status.textContent = 'Options saved.';
+      status.textContent = 'API key saved.';
       status.className = 'status success';
       status.style.display = 'block';
-      
+
       setTimeout(() => {
         status.style.display = 'none';
       }, 2000);
     }
   );
+}
+
+// Save transcription style
+function saveStyle() {
+  const style = document.getElementById('transcriptionStyle').value;
+
+  chrome.storage.sync.set(
+    { transcriptionStyle: style },
+    () => {
+      const status = document.getElementById('styleStatus');
+      status.textContent = 'Style saved! New transcriptions will use this style.';
+      status.className = 'status success';
+      status.style.display = 'block';
+
+      setTimeout(() => {
+        status.style.display = 'none';
+      }, 2500);
+    }
+  );
+}
+
+// Update the style preview text
+function updateStylePreview() {
+  const style = document.getElementById('transcriptionStyle').value;
+  const preview = document.getElementById('stylePreview');
+  preview.textContent = STYLE_PREVIEWS[style] || STYLE_PREVIEWS.standard;
 }
 
 // Check microphone permission status
@@ -194,12 +229,14 @@ function requestMicrophonePermission() {
 // Restore options from Chrome storage
 function restoreOptions() {
   chrome.storage.sync.get(
-    { apiKey: '' },
+    { apiKey: '', transcriptionStyle: 'standard' },
     (items) => {
       document.getElementById('apiKey').value = items.apiKey;
+      document.getElementById('transcriptionStyle').value = items.transcriptionStyle;
+      updateStylePreview();
     }
   );
-  
+
   // Check microphone permission
   checkMicrophonePermission();
 }
@@ -214,5 +251,7 @@ function openChromeSettings() {
 // Initialize the page
 document.addEventListener('DOMContentLoaded', restoreOptions);
 document.getElementById('save').addEventListener('click', saveOptions);
+document.getElementById('saveStyle').addEventListener('click', saveStyle);
+document.getElementById('transcriptionStyle').addEventListener('change', updateStylePreview);
 document.getElementById('requestPermission').addEventListener('click', requestMicrophonePermission);
 document.getElementById('openChromeSettings').addEventListener('click', openChromeSettings);

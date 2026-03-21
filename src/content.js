@@ -10,33 +10,10 @@ let activeInput = null;
 let apiKey = ''; // This should be set through extension options
 let smartModeEnabled = true; // Default to enabled
 
-// Initialize immediately AND ensure it runs on all DOM changes
+// Initialize - document_idle guarantees DOM is ready
 console.log('TalkType content script loading...');
-// Force immediate initialization
-initializeExtension();
+initializeExtensionCore();
 
-// Set an immediate timeout to ensure it runs after DOM is loaded
-setTimeout(() => {
-  console.log('TalkType running delayed initialization...');
-  initializeExtension();
-}, 500);
-
-// Function to initialize the extension with robust error handling
-function initializeExtension() {
-  console.log('TalkType: Extension initializing...');
-  
-  // Ensure script execution environment is ready
-  if (document.readyState === 'loading') {
-    console.log('TalkType: Document still loading, deferring initialization');
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(initializeExtensionCore, 100);
-    });
-    return;
-  }
-  
-  // If document is already loaded, proceed with initialization
-  initializeExtensionCore();
-}
 
 // Core initialization logic, separated for clarity
 function initializeExtensionCore() {
@@ -45,19 +22,12 @@ function initializeExtensionCore() {
     console.error('TalkType: AudioRecordingService is not defined! Check that audio-service.js is loaded.');
     console.log('TalkType: Available global objects:', Object.keys(window).filter(k => k.includes('Service')));
     showStatusNotification('TalkType initialization error: Required scripts missing', 'error');
-    
-    // Inject script directly as a fallback
-    injectServiceScripts();
     return;
   }
-  
+
   if (typeof window.GeminiApiService === 'undefined') {
     console.error('TalkType: GeminiApiService is not defined! Check that api-service.js is loaded.');
-    console.log('TalkType: Available global objects:', Object.keys(window).filter(k => k.includes('Service')));
     showStatusNotification('TalkType initialization error: Required scripts missing', 'error');
-    
-    // Inject script directly as a fallback
-    injectServiceScripts();
     return;
   }
   
@@ -69,7 +39,7 @@ function initializeExtensionCore() {
   }
   
   // Get API key directly from storage for more reliable access
-  chrome.storage.sync.get(['apiKey', 'smartModeEnabled'], function(result) {
+  chrome.storage.sync.get(['apiKey', 'smartModeEnabled', 'transcriptionStyle'], function(result) {
     if (chrome.runtime.lastError) {
       console.error('TalkType: Error accessing storage:', chrome.runtime.lastError);
       showStatusNotification('Error accessing extension storage. Try reloading the page.', 'error');
@@ -92,7 +62,11 @@ function initializeExtensionCore() {
       
       console.log('TalkType: Creating GeminiApiService instance with API key');
       apiService = new window.GeminiApiService(apiKey);
-      
+      if (result.transcriptionStyle) {
+        apiService.setStyle(result.transcriptionStyle);
+        console.log('TalkType: Transcription style set to:', result.transcriptionStyle);
+      }
+
       // Check if services initialized correctly
       if (!audioService || !apiService) {
         console.error('TalkType: Service initialization failed!');
@@ -134,57 +108,7 @@ function initializeExtensionCore() {
   });
 }
 
-// Inject service scripts as a fallback
-function injectServiceScripts() {
-  console.log('TalkType: Attempting to inject service scripts as fallback');
-  
-  // Create and inject the audio service script
-  const audioScript = document.createElement('script');
-  audioScript.src = chrome.runtime.getURL('audio-service.js');
-  audioScript.onload = function() {
-    console.log('TalkType: Successfully injected audio-service.js');
-    
-    // Now inject the API service script
-    const apiScript = document.createElement('script');
-    apiScript.src = chrome.runtime.getURL('api-service.js');
-    apiScript.onload = function() {
-      console.log('TalkType: Successfully injected api-service.js');
-      
-      // Try initialization again after scripts are loaded
-      setTimeout(initializeExtensionCore, 100);
-    };
-    apiScript.onerror = function(e) {
-      console.error('TalkType: Failed to inject api-service.js:', e);
-    };
-    document.head.appendChild(apiScript);
-  };
-  audioScript.onerror = function(e) {
-    console.error('TalkType: Failed to inject audio-service.js:', e);
-  };
-  document.head.appendChild(audioScript);
-}
 
-// Also initialize on DOM content loaded and load events to ensure it works in all scenarios
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('TalkType: DOMContentLoaded event fired');
-  if (!audioService || !apiService) {
-    initializeExtension();
-  }
-});
-
-// Also try on window load
-window.addEventListener('load', () => {
-  console.log('TalkType: Window load event fired');
-  if (!audioService || !apiService) {
-    initializeExtension();
-  }
-  
-  // Double check after a slight delay to catch any late-loading elements
-  setTimeout(() => {
-    console.log('TalkType: Final initialization check');
-    initializeInputDetection();
-  }, 1000);
-});
 
 // Function to initialize focus tracking for smart mode
 function initializeFocusTracking() {
@@ -1042,14 +966,15 @@ function addMicrophoneToInput(inputElement) {
             
             // Initialize directly with storage API key
             await new Promise((resolve) => {
-              chrome.storage.sync.get(['apiKey'], function(result) {
+              chrome.storage.sync.get(['apiKey', 'transcriptionStyle'], function(result) {
                 if (result && result.apiKey) {
                   apiKey = result.apiKey;
-                  
+
                   // Create services directly
                   audioService = new window.AudioRecordingService();
                   apiService = new window.GeminiApiService(apiKey);
-                  
+                  if (result.transcriptionStyle) apiService.setStyle(result.transcriptionStyle);
+
                   console.log('TalkType: Services initialized directly');
                   resolve();
                 } else {
@@ -1406,11 +1331,12 @@ async function startRecording(targetInput, indicator) {
       
       if (typeof window.GeminiApiService !== 'undefined') {
         // Get API key from storage synchronously to avoid async issues
-        chrome.storage.sync.get(['apiKey'], function(result) {
+        chrome.storage.sync.get(['apiKey', 'transcriptionStyle'], function(result) {
           apiKey = result.apiKey || '';
-          
+
           console.log('TalkType: Creating API service with key:', apiKey ? 'Valid key' : 'Empty key');
           apiService = new window.GeminiApiService(apiKey);
+          if (result.transcriptionStyle) apiService.setStyle(result.transcriptionStyle);
           
           console.log('TalkType: Services restored, retrying recording');
           showStatusNotification('Services reconnected! Trying again...', 'info');
@@ -1428,10 +1354,6 @@ async function startRecording(targetInput, indicator) {
     } catch (directInitError) {
       console.error('TalkType: Failed to create services directly:', directInitError);
     }
-    
-    // As a last resort, try a full reinitialization
-    console.log('TalkType: Falling back to full reinitialization');
-    injectServiceScripts();
     
     // Show error message
     showStatusNotification('Could not initialize TalkType. Please refresh the page or check your API key in options.', 'error');
@@ -1687,15 +1609,16 @@ async function stopRecording() {
     try {
       // Ensure we have fresh API key
       const apiKeyResult = await new Promise((resolve) => {
-        chrome.storage.sync.get(['apiKey'], result => resolve(result));
+        chrome.storage.sync.get(['apiKey', 'transcriptionStyle'], result => resolve(result));
       });
-      
+
       if (!apiKeyResult || !apiKeyResult.apiKey) {
         throw new Error('No API key found. Please set your API key in the extension options.');
       }
-      
-      // Create a fresh API service
+
+      // Create a fresh API service with current style
       const transcriptionService = new window.GeminiApiService(apiKeyResult.apiKey);
+      if (apiKeyResult.transcriptionStyle) transcriptionService.setStyle(apiKeyResult.transcriptionStyle);
       
       // Make sure the service is valid
       if (!transcriptionService) {
@@ -1727,37 +1650,44 @@ async function stopRecording() {
         showStatusNotification('Transcription complete!', 'success');
       }
       
-      // Insert the transcription directly into the input element
+      // Insert the transcription at cursor position (append if no selection)
       if (currentInput) {
+        currentInput.focus();
+
         if (currentInput.isContentEditable) {
-          // For contentEditable elements
-          currentInput.textContent = transcription;
+          // For contentEditable elements - insert at cursor using execCommand
+          // This preserves existing content and supports undo
+          document.execCommand('insertText', false, transcription);
           currentInput.dispatchEvent(new Event('input', { bubbles: true }));
           console.log('TalkType: Inserted text into contenteditable element');
-        } 
+        }
         else if (currentInput.tagName === 'INPUT' || currentInput.tagName === 'TEXTAREA') {
-          // For standard input/textarea elements
-          currentInput.value = transcription;
+          // For standard input/textarea - insert at cursor position
+          const start = currentInput.selectionStart || currentInput.value.length;
+          const end = currentInput.selectionEnd || currentInput.value.length;
+          const before = currentInput.value.substring(0, start);
+          const after = currentInput.value.substring(end);
+          const spacer = before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n') ? ' ' : '';
+          currentInput.value = before + spacer + transcription + after;
+          const newPos = before.length + spacer.length + transcription.length;
+
           currentInput.dispatchEvent(new Event('input', { bubbles: true }));
           currentInput.dispatchEvent(new Event('change', { bubbles: true }));
           console.log('TalkType: Inserted text into input/textarea element');
-          
-          // Focus the input and place cursor at the end
-          currentInput.focus();
-          
-          // Set selection range if supported
+
+          // Place cursor after inserted text
           if (typeof currentInput.setSelectionRange === 'function') {
-            currentInput.setSelectionRange(transcription.length, transcription.length);
+            currentInput.setSelectionRange(newPos, newPos);
           }
-        } 
+        }
         else {
-          // Fallback for other elements - try innerText
+          // Fallback - try execCommand first, then innerText append
           try {
-            currentInput.innerText = transcription;
+            document.execCommand('insertText', false, transcription);
             currentInput.dispatchEvent(new Event('input', { bubbles: true }));
-            console.log('TalkType: Inserted text using innerText fallback');
+            console.log('TalkType: Inserted text using execCommand fallback');
           } catch (e) {
-            console.error('TalkType: Unable to set text on element:', e);
+            console.error('TalkType: Unable to insert text on element:', e);
           }
         }
       } else {
@@ -1833,137 +1763,11 @@ async function stopRecording() {
   }
 }
 
-// Function to process audio data and get transcription
-async function processAudioData(audioBlob) {
-  if (!activeInput) {
-    console.error('TalkType: No active input element found');
-    showStatusNotification('Error: No active input element', 'error');
-    return;
-  }
-  
-  try {
-    // Show processing indicator
-    activeInput.classList.add('audio-to-text-processing');
-    
-    // Create a vaporwave processing notification with glass morphism
-    const processingNotification = showStatusNotification('Transcribing...', 'processing');
-    
-    // Ensure we have a fresh API service with the latest key
-    // Get fresh API key from background script
-    console.log('TalkType: Getting fresh API key for transcription');
-    
-    let apiKeyResponse;
-    try {
-      apiKeyResponse = await new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({action: 'getApiKey'}, response => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(`Failed to get API key: ${chrome.runtime.lastError.message}`));
-            return;
-          }
-          resolve(response);
-        });
-      });
-    } catch (keyError) {
-      console.error('TalkType: Failed to get API key for transcription:', keyError);
-      throw new Error('Failed to get API key. Please refresh the page and try again.');
-    }
-    
-    if (!apiKeyResponse || !apiKeyResponse.apiKey) {
-      console.error('TalkType: No API key found in background response');
-      throw new Error('API key not found. Please set your API key in extension options.');
-    }
-    
-    // Create a fresh API service with the latest key
-    console.log('TalkType: Creating fresh API service for transcription');
-    const freshApiService = new GeminiApiService(apiKeyResponse.apiKey);
-    
-    // Verify API key is valid
-    console.log('TalkType: Verifying API key for transcription');
-    const isValid = await freshApiService.verifyApiKey();
-    if (!isValid) {
-      console.error('TalkType: API key validation failed during transcription');
-      throw new Error('Invalid API key. Please check settings.');
-    }
-    
-    // Send audio to API for transcription
-    console.log('TalkType: Starting transcription with verified API key');
-    const transcription = await freshApiService.transcribeAudio(audioBlob);
-    
-    // Insert transcribed text based on element type
-    if (activeInput.isContentEditable) {
-      // For contentEditable elements
-      activeInput.textContent = transcription;
-      
-      // Trigger input event for reactive frameworks
-      activeInput.dispatchEvent(new Event('input', { bubbles: true }));
-    } else if (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA') {
-      // For standard input/textarea elements
-      activeInput.value = transcription;
-      
-      // Trigger input events to make sure any listeners are notified
-      // This ensures that frameworks like React, Angular, etc. detect the change
-      activeInput.dispatchEvent(new Event('input', { bubbles: true }));
-      activeInput.dispatchEvent(new Event('change', { bubbles: true }));
-      
-      // If it's a textarea, resize appropriately
-      if (activeInput.tagName.toLowerCase() === 'textarea' && activeInput.scrollHeight > activeInput.clientHeight) {
-        const originalHeight = activeInput.style.height;
-        activeInput.style.height = 'auto';
-        activeInput.style.height = (activeInput.scrollHeight) + 'px';
-        
-        // Reset after 1s to allow for any auto-resize scripts
-        setTimeout(() => {
-          if (originalHeight) {
-            activeInput.style.height = originalHeight;
-          }
-        }, 1000);
-      }
-      
-      // Focus the input and place cursor at the end
-      activeInput.focus();
-      
-      // Set selection range if supported by this element
-      if (typeof activeInput.setSelectionRange === 'function') {
-        activeInput.setSelectionRange(transcription.length, transcription.length);
-      }
-    } else {
-      // Fallback for other elements - try innerText
-      try {
-        activeInput.innerText = transcription;
-        activeInput.dispatchEvent(new Event('input', { bubbles: true }));
-      } catch (e) {
-        console.error('TalkType: Unable to set text on element:', e);
-      }
-    }
-    
-    // Show simple success notification
-    showStatusNotification('Transcription complete', 'success');
-    
-    console.log('TalkType: Transcription complete:', transcription);
-  } catch (error) {
-    console.error('TalkType: Transcription failed:', error);
-    
-    // Show error notification instead of alert
-    showStatusNotification(`❌ Transcription failed: ${error.message}`, 'error');
-  } finally {
-    // Remove processing indicator
-    if (activeInput) {
-      activeInput.classList.remove('audio-to-text-processing');
-    }
-    
-    // Reset active input
-    activeInput = null;
-  }
-}
 
 // Function to show status notifications with enhanced visual appeal
 function showStatusNotification(message, type = 'info') {
   console.log('TalkType: Showing notification -', message, type);
   
-  // Don't show notifications if they were recently disabled
-  if (window.audioToTextNotificationsDisabled) {
-    return;
-  }
   
   // Remove ALL existing notifications to avoid duplicates
   const existingNotifications = document.querySelectorAll(`.audio-to-text-notification`);

@@ -1,40 +1,46 @@
-/* Styles for Audio to Text extension */
+/* TalkType extension - injected styles */
 
-/* Microphone button styles */
+/* ===================================================================
+   BRAND TOKENS
+   =================================================================== */
+
+/* Microphone button - lives on every website, must look premium */
 .audio-to-text-mic-button {
   position: absolute;
   z-index: 5;
   background: rgba(111, 66, 193, 0.15);
-  border: 1px solid rgba(111, 66, 193, 0.3);
+  border: 1.5px solid rgba(111, 66, 193, 0.3);
   border-radius: 50%;
   cursor: pointer;
-  width: 28px;
-  height: 28px;
-  padding: 2px;
+  width: 32px;
+  height: 32px;
+  padding: 3px;
   opacity: 1;
   transform: scale(1);
-  transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), 
-              opacity 0.3s ease, 
-              background 0.2s ease, 
-              box-shadow 0.2s ease;
-  box-shadow: 0 2px 6px rgba(111, 66, 193, 0.4);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28),
+              opacity 0.3s ease,
+              background 0.2s ease,
+              box-shadow 0.3s ease,
+              border-color 0.2s ease;
+  box-shadow: 0 2px 8px rgba(111, 66, 193, 0.3);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   outline: none !important;
 }
 
 .audio-to-text-mic-button:hover {
-  transform: scale(1.1);
-  opacity: 1;
-  background: rgba(111, 66, 193, 0.15);
-  border: 1px solid rgba(111, 66, 193, 0.4);
-  box-shadow: 0 2px 4px rgba(111, 66, 193, 0.3);
+  transform: scale(1.12);
+  background: rgba(111, 66, 193, 0.22);
+  border-color: rgba(111, 66, 193, 0.5);
+  box-shadow:
+    0 4px 12px rgba(111, 66, 193, 0.35),
+    0 0 0 3px rgba(111, 66, 193, 0.08);
   animation: subtle-glow 2s infinite;
 }
 
 .audio-to-text-mic-button:active {
-  transform: scale(0.95);
-  box-shadow: 0 0 2px rgba(0,0,0,0.1);
+  transform: scale(0.92);
+  box-shadow: 0 1px 4px rgba(111, 66, 193, 0.3);
 }
 
 .audio-to-text-mic-button img {
@@ -44,46 +50,49 @@
   transition: transform 0.2s ease;
 }
 
-/* Recording indicator styles */
+/* Recording indicator dot */
 .audio-to-text-recording-indicator {
   display: none;
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: #9c27b0;
+  background-color: #ff5c8a;
   position: absolute;
   top: -3px;
   right: -3px;
-  box-shadow: 0 0 5px rgba(156, 39, 176, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 6px rgba(255, 92, 138, 0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
   z-index: 10000;
 }
 
-/* Animation classes */
-.pulse-animation {
-  animation: pulse-mic 1.5s infinite;
+/* ===================================================================
+   ANIMATIONS
+   =================================================================== */
+
+@keyframes subtle-glow {
+  0%, 100% {
+    box-shadow:
+      0 2px 8px rgba(111, 66, 193, 0.3),
+      0 0 0 3px rgba(111, 66, 193, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 3px 12px rgba(111, 66, 193, 0.5),
+      0 0 0 4px rgba(111, 66, 193, 0.12);
+  }
 }
 
-.wiggle-animation {
-  animation: wiggle-mic 0.5s ease;
-}
-
-.wiggle-reverse-animation {
-  animation: wiggle-mic 0.3s ease reverse;
-}
-
-/* Animation keyframes - moved here from inline styles */
 @keyframes pulse-mic {
   0% {
-    box-shadow: 0 0 0 0 rgba(156, 39, 176, 0.7);
+    box-shadow: 0 0 0 0 rgba(111, 66, 193, 0.6);
     opacity: 1;
   }
   50% {
-    box-shadow: 0 0 10px 3px rgba(156, 39, 176, 0.4);
+    box-shadow: 0 0 10px 4px rgba(111, 66, 193, 0.3);
     opacity: 0.9;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(156, 39, 176, 0);
+    box-shadow: 0 0 0 0 rgba(111, 66, 193, 0);
     opacity: 1;
   }
 }
@@ -97,9 +106,14 @@
 }
 
 @keyframes gentle-pulse {
-  0% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
-  50% { box-shadow: 0 12px 40px rgba(255, 255, 255, 0.5); border-color: rgba(255, 255, 255, 0.5); }
-  100% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
+  0%, 100% {
+    box-shadow: 0 8px 25px rgba(111, 66, 193, 0.3);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 12px 40px rgba(111, 66, 193, 0.5);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
 }
 
 @keyframes gradientBg {
@@ -109,9 +123,8 @@
 }
 
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
-  100% { transform: translateY(0px); }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
 }
 
 @keyframes sparkle {
@@ -119,7 +132,28 @@
   50% { opacity: 1; }
 }
 
-/* Processing styles */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Animation utility classes */
+.pulse-animation {
+  animation: pulse-mic 1.5s infinite;
+}
+
+.wiggle-animation {
+  animation: wiggle-mic 0.5s ease;
+}
+
+.wiggle-reverse-animation {
+  animation: wiggle-mic 0.3s ease reverse;
+}
+
+/* ===================================================================
+   PROCESSING STATE
+   =================================================================== */
+
 .audio-to-text-processing {
   position: relative;
 }
@@ -138,12 +172,10 @@
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+/* ===================================================================
+   NOTIFICATION STYLES
+   =================================================================== */
 
-/* Notification styles */
 .talktype-notification-icon {
   display: inline-block;
   margin-right: 10px;
@@ -152,22 +184,22 @@
 }
 
 .talktype-gradient-notification {
-  background: linear-gradient(90deg, #4568DC, #7474BF, #348AC7, #56CCF2);
+  background: linear-gradient(90deg, #7B4FCF, #9B6BE8, #6B8EE8, #56CCF2);
   background-size: 300% 100%;
   animation: gradientBg 3s ease infinite;
 }
 
 .talktype-recording-notification {
-  background: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.8));
+  background: linear-gradient(135deg, rgba(111, 66, 193, 0.9), rgba(155, 107, 232, 0.85));
   animation: gentle-pulse 2s infinite;
 }
 
 .talktype-success-notification {
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.85), rgba(105, 220, 155, 0.8));
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(105, 219, 124, 0.85));
 }
 
 .talktype-error-notification {
-  background: linear-gradient(135deg, rgba(244, 67, 54, 0.85), rgba(255, 87, 34, 0.8));
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.9), rgba(255, 87, 34, 0.85));
 }
 
 .talktype-sparkle {
@@ -177,4 +209,16 @@
   border-radius: 50%;
   background-color: white;
   opacity: 0;
+}
+
+/* ===================================================================
+   ACCESSIBILITY
+   =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

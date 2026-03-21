@@ -5,14 +5,15 @@
   <title>TalkType - Options</title>
   <style>
     :root {
-      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
-      --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
-      --glass-bg: rgba(255, 255, 255, 0.25);
-      --glass-border: rgba(255, 255, 255, 0.4);
+      --brand-purple: #6F42C1;
+      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(155, 107, 232, 0.75));
+      --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.9), rgba(155, 107, 232, 0.85));
+      --glass-bg: rgba(255, 255, 255, 0.2);
+      --glass-border: rgba(255, 255, 255, 0.35);
       --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       --text-primary: rgba(255, 255, 255, 0.95);
       --text-secondary: rgba(255, 255, 255, 0.85);
-      --accent: rgba(64, 112, 244, 1);
+      --accent: rgba(111, 66, 193, 1);
     }
     
     body {
@@ -20,7 +21,7 @@
       margin: 0;
       padding: 0;
       background-attachment: fixed;
-      background: linear-gradient(225deg, #4568DC, #7474BF, #348AC7, #56CCF2);
+      background: linear-gradient(225deg, #7B4FCF, #9B6BE8, #6B8EE8, #56CCF2);
       background-size: 400% 400%;
       animation: gradientBG 15s ease infinite;
       color: var(--text-primary);
@@ -54,20 +55,23 @@
     
     .card {
       background: var(--glass-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-radius: 16px;
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
+      border: 1.5px solid var(--glass-border);
+      box-shadow:
+        var(--glass-shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
       padding: 25px;
       margin-bottom: 20px;
       transition: all 0.2s ease;
     }
-    
+
     .card-header {
-      font-size: 20px;
-      font-weight: 500;
+      font-size: 17px;
+      font-weight: 600;
       margin-bottom: 20px;
+      letter-spacing: 0.3px;
       color: white;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       display: flex;
@@ -113,7 +117,6 @@
     button {
       background: var(--primary-gradient);
       color: white;
-      border: 1px solid var(--glass-border);
       padding: 12px 20px;
       border-radius: 10px;
       cursor: pointer;
@@ -238,12 +241,6 @@
       color: var(--text-secondary);
     }
     
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 15px;
-    }
-    
     .footer {
       text-align: center;
       margin: 30px 0;
@@ -260,6 +257,66 @@
       height: 24px;
       fill: white;
       margin-right: 6px;
+    }
+
+    /* Select dropdown */
+    .select-wrapper {
+      position: relative;
+    }
+
+    .select-wrapper::after {
+      content: '';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid rgba(255, 255, 255, 0.7);
+      pointer-events: none;
+    }
+
+    select option {
+      background: #3a2a5a;
+      color: white;
+      padding: 8px;
+    }
+
+    #stylePreview {
+      border-left: 3px solid rgba(255, 255, 255, 0.3);
+      padding-left: 16px;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.75);
+      transition: all 0.3s ease;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .btn-group button {
+      flex: 1;
+    }
+
+    button {
+      border: 1.5px solid var(--glass-border);
+    }
+
+    .info {
+      border: 1.5px solid var(--glass-border);
+      border-radius: 16px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
@@ -284,19 +341,49 @@
       </div>
       
       <div class="form-group">
-        <label for="apiKey">API Key</label>
-        <input type="text" id="apiKey" placeholder="Enter any text as API key for the demo">
+        <label for="apiKey">Gemini API Key</label>
+        <input type="text" id="apiKey" placeholder="Paste your Gemini API key here">
       </div>
-      
+
       <div class="note">
         <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1s1 .45 1 1v4c0 .55-.45 1-1 1zm1-8h-2V7h2v2z"/>
         </svg>
-        <span>For this demo, the transcription is simulated so any text will work as an API key.</span>
+        <span>Get a free API key from <strong>aistudio.google.com</strong>. Your key stays in your browser and is only sent directly to Google for transcription.</span>
       </div>
-      
+
       <button id="save" class="primary">Save Settings</button>
       <div id="status" class="status"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+        </svg>
+        Transcription Style
+      </div>
+
+      <div class="form-group">
+        <label for="transcriptionStyle">How should your voice sound as text?</label>
+        <div class="select-wrapper">
+          <select id="transcriptionStyle" style="width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1.5px solid var(--glass-border); background: rgba(255, 255, 255, 0.07); color: white; font-size: 15px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-sizing: border-box; cursor: pointer; appearance: none; -webkit-appearance: none;">
+            <option value="standard">Clean & Accurate</option>
+            <option value="surlyPirate">Surly Pirate</option>
+            <option value="leetSpeak">L33t Sp34k</option>
+            <option value="sparklePop">Sparkle Pop</option>
+            <option value="codeWhisperer">Code Whisperer</option>
+            <option value="quillAndInk">Quill & Ink</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="stylePreview" class="note" style="min-height: 40px;">
+        Removes filler words and stutters. Just the clean goods.
+      </div>
+
+      <button id="saveStyle" class="primary">Save Style</button>
+      <div id="styleStatus" class="status"></div>
     </div>
     
     <div class="card">
@@ -352,7 +439,7 @@
     </div>
     
     <div class="footer">
-      TalkType &copy; 2025
+      TalkType &copy; 2026
     </div>
   </div>
   

@@ -88,6 +88,7 @@ async function startRecording() {
     }
     
     // Show animation
+    document.getElementById('recording-container').classList.add('active');
     const recordingAnimation = document.getElementById('recording-animation');
     recordingAnimation.classList.add('active');
     
@@ -218,8 +219,9 @@ async function stopRecording() {
   
   try {
     // Hide recording animation
+    document.getElementById('recording-container').classList.remove('active');
     recordingAnimation.classList.remove('active');
-    
+
     // Update status indicator
     statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Processing</span></div>';
     
@@ -398,14 +400,14 @@ async function stopRecording() {
     
   } catch (error) {
     console.error('Error in recording/transcription:', error);
-    statusElement.innerHTML = `
-      <div class="error-message">
-        <svg class="icon" style="color: #ff5252" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path>
-        </svg>
-        <span>Error: ${error.message}</span>
-      </div>
-    `;
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.innerHTML = `<svg class="icon" style="color: #ff5252" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>`;
+    const errorSpan = document.createElement('span');
+    errorSpan.textContent = 'Error: ' + error.message;
+    errorDiv.appendChild(errorSpan);
+    statusElement.textContent = '';
+    statusElement.appendChild(errorDiv);
     transcriptionText.textContent = 'Transcription failed. Please try again.';
     
     // Restore button in case of error
@@ -776,8 +778,9 @@ function handleRecordingError(error) {
   `;
   
   // Hide animation
+  document.getElementById('recording-container').classList.remove('active');
   document.getElementById('recording-animation').classList.remove('active');
-  
+
   // Handle permission errors specially
   if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -809,14 +812,14 @@ function handleRecordingError(error) {
     }
   } else {
     // Show other errors
-    statusElement.innerHTML = `
-      <div class="error-message">
-        <svg class="icon" style="color: #ff5252" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path>
-        </svg>
-        <span>Error: ${error.message}</span>
-      </div>
-    `;
+    const errorDiv2 = document.createElement('div');
+    errorDiv2.className = 'error-message';
+    errorDiv2.innerHTML = `<svg class="icon" style="color: #ff5252" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>`;
+    const errorSpan2 = document.createElement('span');
+    errorSpan2.textContent = 'Error: ' + error.message;
+    errorDiv2.appendChild(errorSpan2);
+    statusElement.textContent = '';
+    statusElement.appendChild(errorDiv2);
   }
   
   // Add error message styling
