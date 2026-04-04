@@ -6,6 +6,10 @@ This document outlines the development approach and implementation details for t
 
 TalkType is a modern browser extension that adds sleek voice-to-text functionality to any webpage. It features a contemporary glass morphism UI, adaptive theme support, and intuitive microphone interaction. Users can dictate text using their microphone, which is then transcribed via the Gemini API and inserted into any text input field.
 
+Current implementation note:
+- This extension currently uses a Gemini-only transcription flow
+- It does not yet implement the newer Deepgram/live architecture that exists in the main TalkType app
+
 ## 2. Core Components
 
 ### 2.1 Content Script (`content.js`)
@@ -62,6 +66,7 @@ Implementation details:
 The background script manages extension state and handles:
 
 - Storing and retrieving user preferences (API key)
+- Storing extension settings in Chrome `storage.sync`
 - Handling messages between content script and popup
 - Initializing the extension on installation
 - Managing system theme detection for icon switching
@@ -81,7 +86,7 @@ The options page allows users to:
 - Enter and save their Gemini API key
 - Configure extension preferences
 - Test microphone access
-- View extension documentation
+- View extension guidance
 
 Implementation details:
 - Create glass-morphism UI for settings entry
@@ -144,6 +149,10 @@ Implementation details:
 - Prepare for Browser Extension Stores submission
 - Create promotional materials
 - Update documentation
+
+Current reality:
+- Core feature set is implemented and manually testable in Chrome
+- Automated tests are not currently present in this repository
 
 ## 4. Technical Challenges
 

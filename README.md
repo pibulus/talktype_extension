@@ -16,7 +16,7 @@ TalkType is a Chrome extension that drops a mic button next to every text field 
 - Six transcription styles with personality (see below)
 - Single inline API request -- no upload pipeline, no middleware
 - Uses your own Gemini API key (free tier available)
-- Zero data stored. Zero tracking. Your mic, your key, your words.
+- No app-side accounts, analytics, or server middleware. Your mic, your key, your words.
 
 ## Transcription Styles
 
@@ -77,8 +77,9 @@ No build step. No bundler. Vanilla JS all the way through.
 
 - Mic activates only when you click record
 - Audio goes to Gemini API for transcription, nowhere else
-- Nothing stored -- not on our end, not anywhere
-- Your API key stays in Chrome's local storage on your machine
+- We do not run an app server or store transcripts ourselves
+- Your API key and extension preferences are stored with Chrome's `storage.sync`
+- Transcriptions are inserted into the page and copied to your clipboard, but this extension does not keep a local transcript history
 - No analytics, no telemetry, no user accounts
 
 ## Tech
@@ -87,6 +88,12 @@ No build step. No bundler. Vanilla JS all the way through.
 - Gemini 2.5 Flash (single inline base64 request)
 - Vanilla JavaScript, no dependencies
 - Style-specific generation configs (temperature 0 for accuracy, higher for creative styles)
+
+## Current Scope
+
+- This extension currently uses a Gemini-only transcription flow
+- It does not yet share the newer Deepgram/live transcription architecture used in the main TalkType app
+- No automated test suite is bundled in this repo; validation is currently manual in Chrome
 
 ## Version
 
