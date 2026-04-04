@@ -1606,6 +1606,8 @@ async function stopRecording() {
     // Process the audio data directly instead of creating another function
     console.log('TalkType: Processing audio data directly...');
     
+    let progressNotification = null;
+
     try {
       // Ensure we have fresh API key
       const apiKeyResult = await new Promise((resolve) => {
@@ -1626,7 +1628,7 @@ async function stopRecording() {
       }
       
       // Show transcribing notification with progress bar
-      const progressNotification = createProgressNotification('Transcribing audio...');
+      progressNotification = createProgressNotification('Transcribing audio...');
       
       // Process the audio and get the transcription
       // Add callback to update progress bar during transcription
@@ -1652,44 +1654,7 @@ async function stopRecording() {
       
       // Insert the transcription at cursor position (append if no selection)
       if (currentInput) {
-        currentInput.focus();
-
-        if (currentInput.isContentEditable) {
-          // For contentEditable elements - insert at cursor using execCommand
-          // This preserves existing content and supports undo
-          document.execCommand('insertText', false, transcription);
-          currentInput.dispatchEvent(new Event('input', { bubbles: true }));
-          console.log('TalkType: Inserted text into contenteditable element');
-        }
-        else if (currentInput.tagName === 'INPUT' || currentInput.tagName === 'TEXTAREA') {
-          // For standard input/textarea - insert at cursor position
-          const start = currentInput.selectionStart || currentInput.value.length;
-          const end = currentInput.selectionEnd || currentInput.value.length;
-          const before = currentInput.value.substring(0, start);
-          const after = currentInput.value.substring(end);
-          const spacer = before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n') ? ' ' : '';
-          currentInput.value = before + spacer + transcription + after;
-          const newPos = before.length + spacer.length + transcription.length;
-
-          currentInput.dispatchEvent(new Event('input', { bubbles: true }));
-          currentInput.dispatchEvent(new Event('change', { bubbles: true }));
-          console.log('TalkType: Inserted text into input/textarea element');
-
-          // Place cursor after inserted text
-          if (typeof currentInput.setSelectionRange === 'function') {
-            currentInput.setSelectionRange(newPos, newPos);
-          }
-        }
-        else {
-          // Fallback - try execCommand first, then innerText append
-          try {
-            document.execCommand('insertText', false, transcription);
-            currentInput.dispatchEvent(new Event('input', { bubbles: true }));
-            console.log('TalkType: Inserted text using execCommand fallback');
-          } catch (e) {
-            console.error('TalkType: Unable to insert text on element:', e);
-          }
-        }
+        insertTextIntoInput(currentInput, transcription);
       } else {
         console.error('TalkType: No input element to insert transcription into');
       }
@@ -2038,6 +2003,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return true;
 });
 
+function insertTextIntoInput(targetInput, text) {
+  targetInput.focus();
+
+  if (targetInput.isContentEditable) {
+    document.execCommand('insertText', false, text);
+    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+    console.log('TalkType: Inserted text into contenteditable element');
+    return;
+  }
+
+  if (targetInput.tagName === 'INPUT' || targetInput.tagName === 'TEXTAREA') {
+    const start = targetInput.selectionStart ?? targetInput.value.length;
+    const end = targetInput.selectionEnd ?? targetInput.value.length;
+    const before = targetInput.value.substring(0, start);
+    const after = targetInput.value.substring(end);
+    const spacer =
+      start === end && before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n')
+        ? ' '
+        : '';
+
+    targetInput.value = before + spacer + text + after;
+    const newPos = before.length + spacer.length + text.length;
+
+    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+    targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log('TalkType: Inserted text into input/textarea element');
+
+    if (typeof targetInput.setSelectionRange === 'function') {
+      targetInput.setSelectionRange(newPos, newPos);
+    }
+    return;
+  }
+
+  document.execCommand('insertText', false, text);
+  targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+  console.log('TalkType: Inserted text using execCommand fallback');
+}
+
 // Function to insert transcription into active input element
 function insertTranscriptionIntoActiveInput(text) {
   if (!activeInput) {
@@ -2047,34 +2050,8 @@ function insertTranscriptionIntoActiveInput(text) {
   }
   
   try {
-    if (activeInput.isContentEditable) {
-      // For contentEditable elements (like in Gmail, Google Docs, etc.)
-      activeInput.textContent = text;
-      activeInput.dispatchEvent(new Event('input', { bubbles: true }));
-      console.log('TalkType: Inserted text into contenteditable element');
-    } 
-    else if (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA') {
-      // For standard input/textarea elements
-      activeInput.value = text;
-      activeInput.dispatchEvent(new Event('input', { bubbles: true }));
-      activeInput.dispatchEvent(new Event('change', { bubbles: true }));
-      console.log('TalkType: Inserted text into input/textarea element');
-      
-      // Focus the input and place cursor at the end
-      activeInput.focus();
-      
-      // Set selection range if supported
-      if (typeof activeInput.setSelectionRange === 'function') {
-        activeInput.setSelectionRange(text.length, text.length);
-      }
-    } 
-    else {
-      // Fallback for other elements - try innerText
-      activeInput.innerText = text;
-      activeInput.dispatchEvent(new Event('input', { bubbles: true }));
-      console.log('TalkType: Inserted text using innerText fallback');
-    }
-    
+    insertTextIntoInput(activeInput, text);
+
     // Show success notification
     showStatusNotification('Text inserted successfully', 'success');
     return true;

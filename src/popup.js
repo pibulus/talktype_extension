@@ -680,24 +680,12 @@ function completeProgressAnimation() {
           recordButton.classList.remove('button-progress-container');
           recordButton.disabled = false;
           delete recordButton.dataset.originalContent;
-          
-          // Re-attach the event listener for the record button
-          recordButton.addEventListener('click', async () => {
-            if (isRecording) {
-              await stopRecording();
-            } else {
-              await startRecording();
-            }
-          });
-          
-          // DON'T show the settings button again
-          // We want to keep it hidden to maintain layout stability
-          /* 
+
+          // Restore the settings button once processing finishes.
           const settingsButton = document.getElementById('options');
           if (settingsButton) {
             settingsButton.style.display = 'block';
           }
-          */
         }
       }, 1200); // Slightly longer delay to ensure user sees "Complete" state
     }, 800); // Wait for animation to complete

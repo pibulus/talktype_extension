@@ -1,28 +1,27 @@
 // Background service worker for TalkType extension
 
 // Initialize extension when installed
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('TalkType extension installed');
 
-  // Set default settings if not already set
-  const settings = await chrome.storage.sync.get(['apiKey', 'smartModeEnabled', 'transcriptionStyle']);
-  if (!settings.apiKey) {
+  if (details.reason === 'install') {
     await chrome.storage.sync.set({
-      apiKey: '',
       enabledSites: ['*'],
       smartModeEnabled: true,
       transcriptionStyle: 'standard'
     });
 
-    // Open options page on first install
     chrome.runtime.openOptionsPage();
-  } else {
-    // Ensure newer settings exist for upgrades
-    const updates = {};
-    if (settings.smartModeEnabled === undefined) updates.smartModeEnabled = true;
-    if (settings.transcriptionStyle === undefined) updates.transcriptionStyle = 'standard';
-    if (Object.keys(updates).length) await chrome.storage.sync.set(updates);
+    return;
   }
+
+  // Ensure newer settings exist for upgrades without treating a missing API key as a reinstall.
+  const settings = await chrome.storage.sync.get(['enabledSites', 'smartModeEnabled', 'transcriptionStyle']);
+  const updates = {};
+  if (settings.enabledSites === undefined) updates.enabledSites = ['*'];
+  if (settings.smartModeEnabled === undefined) updates.smartModeEnabled = true;
+  if (settings.transcriptionStyle === undefined) updates.transcriptionStyle = 'standard';
+  if (Object.keys(updates).length) await chrome.storage.sync.set(updates);
 });
 
 // Handle messages from content scripts and popup
