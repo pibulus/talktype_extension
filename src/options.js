@@ -12,7 +12,7 @@ const STYLE_PREVIEWS = {
 
 // Save API key to Chrome storage
 function saveOptions() {
-  const apiKey = document.getElementById('apiKey').value;
+  const apiKey = document.getElementById('apiKey').value.trim();
 
   chrome.storage.sync.set(
     { apiKey },

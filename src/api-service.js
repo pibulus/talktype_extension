@@ -1,5 +1,8 @@
 // API Service for audio transcription via Gemini
 
+const MODEL_ID = 'gemini-3.1-flash-lite-preview';
+const GENERATE_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent`;
+
 // Transcription style prompts - ported from TalkType webapp
 const TRANSCRIPTION_PROMPTS = {
   standard:
@@ -39,10 +42,9 @@ const STYLE_CONFIGS = {
 
 class GeminiApiService {
   constructor(apiKey) {
-    this.apiKey = apiKey;
+    this.apiKey = apiKey?.trim() || '';
     this.style = 'standard';
-    this.generateEndpoint =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    this.generateEndpoint = GENERATE_ENDPOINT;
   }
 
   setStyle(style) {
@@ -62,6 +64,10 @@ class GeminiApiService {
    */
   async transcribeAudio(audioBlob, progressCallback = null) {
     try {
+      if (!this.apiKey) {
+        throw new Error('Missing Gemini API key. Add it in the extension options first.');
+      }
+
       if (progressCallback) progressCallback('preparing', 10);
 
       // Convert blob to raw base64 (strip the data URL prefix)
@@ -92,8 +98,8 @@ class GeminiApiService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const msg = errorData.error?.message || `Status ${response.status}`;
-        throw new Error(`Transcription failed: ${msg}`);
+        const message = errorData.error?.message || `Status ${response.status}`;
+        throw new Error(this._humanizeApiError(response.status, message));
       }
 
       const data = await response.json();
@@ -118,6 +124,8 @@ class GeminiApiService {
    */
   async verifyApiKey() {
     try {
+      if (!this.apiKey) return false;
+
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`
       );
@@ -143,6 +151,28 @@ class GeminiApiService {
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
+  }
+
+  _humanizeApiError(status, message) {
+    const lower = message.toLowerCase();
+
+    if (status === 400 || lower.includes('api key not valid')) {
+      return 'Invalid Gemini API key. Check the key in extension settings.';
+    }
+
+    if (status === 403 || lower.includes('permission')) {
+      return 'Gemini rejected this request. Check API access and billing for the key.';
+    }
+
+    if (status === 429 || lower.includes('quota') || lower.includes('rate limit')) {
+      return 'Gemini is rate-limiting this key right now. Try again in a moment.';
+    }
+
+    if (status >= 500) {
+      return 'Gemini is having a moment. Try again shortly.';
+    }
+
+    return `Transcription failed: ${message}`;
   }
 }
 

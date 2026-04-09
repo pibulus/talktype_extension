@@ -9,7 +9,7 @@ TalkType is a Chrome extension that drops a mic button next to every text field 
 ## What it does
 
 - Adds a mic button to any text input on any website (including contenteditable fields)
-- Records audio and transcribes via Google Gemini 2.5 Flash
+- Records audio and transcribes via Google Gemini 3.1 Flash-Lite Preview
 - Inserts text at cursor position without overwriting what's already there
 - Auto-copies transcription to clipboard
 - Glass morphism UI that adapts to light and dark mode
@@ -85,7 +85,7 @@ No build step. No bundler. Vanilla JS all the way through.
 ## Tech
 
 - Chrome Manifest V3
-- Gemini 2.5 Flash (single inline base64 request)
+- Gemini 3.1 Flash-Lite Preview (single inline base64 request)
 - Vanilla JavaScript, no dependencies
 - Style-specific generation configs (temperature 0 for accuracy, higher for creative styles)
 

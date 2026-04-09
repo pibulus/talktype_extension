@@ -232,19 +232,17 @@ async function stopRecording() {
     // Transform recording button into progress bar
     transformButtonToProgressBar(recordButton);
     
-    // Get API key and create fresh service instance to avoid 404 errors
+    // Get API key and create fresh service instance to avoid stale state
     const { apiKey } = await chrome.storage.sync.get(['apiKey']);
-    
+
+    if (!apiKey || !apiKey.trim()) {
+      throw new Error('Missing Gemini API key. Add it in settings first.');
+    }
+
     // Create a new API service instance to prevent stale state
     apiService = null;
     apiService = new GeminiApiService(apiKey);
-    
-    // Verify API key
-    const isValidKey = await apiService.verifyApiKey();
-    if (!isValidKey) {
-      throw new Error('Invalid API key. Please check your key in Options.');
-    }
-    
+
     // Update status indicator with random fun messages
     showTranscribingStatus(statusElement, true);
     
