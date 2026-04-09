@@ -379,6 +379,76 @@
       text-align: center;
       border: 1px solid rgba(255, 0, 80, 0.2);
     }
+
+    .setup-card {
+      position: relative;
+      z-index: 1;
+      padding: 14px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.62), rgba(245, 240, 255, 0.88));
+      border-color: rgba(111, 66, 193, 0.18);
+    }
+
+    .setup-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(111, 66, 193, 0.8);
+      margin-bottom: 6px;
+    }
+
+    .setup-card h2 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      line-height: 1.2;
+      color: var(--text-primary);
+    }
+
+    .setup-list {
+      margin: 0 0 12px;
+      padding-left: 18px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .setup-list li + li {
+      margin-top: 4px;
+    }
+
+    .setup-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .setup-button {
+      flex: 1;
+      min-height: 44px;
+      border-radius: 14px;
+      font-size: 13px;
+      padding: 10px 12px;
+    }
+
+    .setup-button.secondary {
+      background: rgba(255, 255, 255, 0.6);
+      color: var(--text-primary);
+      border-color: rgba(111, 66, 193, 0.12);
+      text-shadow: none;
+      box-shadow: 0 4px 10px rgba(111, 66, 193, 0.08);
+    }
+
+    .setup-button.secondary:hover {
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .setup-hint {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-secondary);
+    }
     
     /* Container for recording animation - collapses when not active */
     #recording-container {
@@ -707,6 +777,27 @@
   
   <div id="apiKeyError" class="error" style="display: none;">
     Please set your API key in the options
+  </div>
+
+  <div id="setup-card" class="glass setup-card" style="display: none;" role="region" aria-label="Extension setup">
+    <div class="setup-kicker">Quick setup</div>
+    <h2>Get TalkType ready in under a minute</h2>
+    <ol class="setup-list">
+      <li>Add your Gemini API key</li>
+      <li>Grant microphone access</li>
+      <li>Click into any text box and start talking</li>
+    </ol>
+    <div class="setup-actions">
+      <button id="setup-open-options" class="setup-button primary">
+        Open setup
+      </button>
+      <button id="setup-open-gemini" class="setup-button secondary">
+        Get API key
+      </button>
+    </div>
+    <p id="setup-hint" class="setup-hint">
+      TalkType uses your own Gemini key. No app account, no server middleman.
+    </p>
   </div>
   
   <div id="recording-container">

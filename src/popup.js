@@ -9,6 +9,52 @@ let hasActiveInput = false;
 let activeInputInfo = null;
 let smartModeEnabled = true; // Default to enabled
 const MAX_RECORDING_TIME = 30000; // 30 seconds
+const GEMINI_KEY_URL = 'https://aistudio.google.com/app/apikey';
+
+async function getSetupState() {
+  const result = await chrome.storage.sync.get(['apiKey', 'microphonePermission']);
+  return {
+    hasApiKey: Boolean(result.apiKey?.trim()),
+    microphonePermission: result.microphonePermission || 'unknown'
+  };
+}
+
+async function updateSetupCard() {
+  const setupCard = document.getElementById('setup-card');
+  const setupHint = document.getElementById('setup-hint');
+  const setupList = document.querySelector('.setup-list');
+
+  if (!setupCard || !setupHint || !setupList) return;
+
+  const { hasApiKey, microphonePermission } = await getSetupState();
+  const micReady = microphonePermission === 'granted';
+
+  if (hasApiKey && micReady) {
+    setupCard.style.display = 'none';
+    return;
+  }
+
+  setupCard.style.display = 'block';
+
+  if (!hasApiKey) {
+    setupHint.textContent =
+      'Start with your Gemini key. TalkType stores it in Chrome and sends audio straight to Google.';
+    setupList.innerHTML = `
+      <li>Add your Gemini API key</li>
+      <li>Grant microphone access</li>
+      <li>Click into any text box and start talking</li>
+    `;
+    return;
+  }
+
+  setupHint.textContent =
+    'Your key is set. Next up: microphone access, then try TalkType inside Gmail, Slack, Notion, or any text box.';
+  setupList.innerHTML = `
+    <li>Grant microphone access</li>
+    <li>Click into a text box on the current page</li>
+    <li>Hit record and TalkType will place the text at your cursor</li>
+  `;
+}
 
 // Check if API key is set
 async function checkApiKey() {
@@ -20,11 +66,13 @@ async function checkApiKey() {
     apiKeyError.style.display = 'block';
     recordButton.classList.add('disabled');
     recordButton.disabled = true;
+    updateSetupCard();
     return false;
   } else {
     apiKeyError.style.display = 'none';
     recordButton.classList.remove('disabled');
     recordButton.disabled = false;
+    updateSetupCard();
     return true;
   }
 }
@@ -1006,6 +1054,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Check API key in parallel with rendering
   checkApiKey();
+  updateSetupCard();
   
   // Get smart mode setting
   chrome.storage.sync.get(['smartModeEnabled'], (result) => {
@@ -1073,6 +1122,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     copyButton.addEventListener('mouseup', () => {
       copyButton.style.transform = 'scale(1.15)';
+    });
+  }
+
+  const setupOpenOptionsButton = document.getElementById('setup-open-options');
+  if (setupOpenOptionsButton) {
+    setupOpenOptionsButton.addEventListener('click', openOptions);
+  }
+
+  const setupOpenGeminiButton = document.getElementById('setup-open-gemini');
+  if (setupOpenGeminiButton) {
+    setupOpenGeminiButton.addEventListener('click', () => {
+      chrome.tabs.create({ url: GEMINI_KEY_URL });
     });
   }
   
@@ -1807,10 +1868,12 @@ async function checkMicPermissionAndUpdateButton() {
         }
         // Save status to storage
         chrome.storage.sync.set({ microphonePermission: 'granted' });
+        updateSetupCard();
       } else {
         if (permButton) {
           permButton.style.display = 'block';
         }
+        updateSetupCard();
       }
       
       // Listen for permission changes
@@ -1824,6 +1887,7 @@ async function checkMicPermissionAndUpdateButton() {
         if (permissionStatus.state === 'granted') {
           chrome.storage.sync.set({ microphonePermission: 'granted' });
         }
+        updateSetupCard();
       };
     }
   } catch (error) {

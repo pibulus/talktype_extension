@@ -1,4 +1,5 @@
 // Options page script
+const GEMINI_KEY_URL = 'https://aistudio.google.com/app/apikey';
 
 // Style preview descriptions
 const STYLE_PREVIEWS = {
@@ -255,3 +256,6 @@ document.getElementById('saveStyle').addEventListener('click', saveStyle);
 document.getElementById('transcriptionStyle').addEventListener('change', updateStylePreview);
 document.getElementById('requestPermission').addEventListener('click', requestMicrophonePermission);
 document.getElementById('openChromeSettings').addEventListener('click', openChromeSettings);
+document.getElementById('openAiStudio').addEventListener('click', () => {
+  chrome.tabs.create({ url: GEMINI_KEY_URL });
+});
