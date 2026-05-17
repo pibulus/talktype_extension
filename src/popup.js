@@ -12,7 +12,7 @@ const MAX_RECORDING_TIME = 30000; // 30 seconds
 const GEMINI_KEY_URL = 'https://aistudio.google.com/app/apikey';
 
 async function getSetupState() {
-  const result = await chrome.storage.sync.get(['apiKey', 'microphonePermission']);
+  const result = await window.TalkTypeStorage.getWithApiKey(['apiKey', 'microphonePermission']);
   return {
     hasApiKey: Boolean(result.apiKey?.trim()),
     microphonePermission: result.microphonePermission || 'unknown'
@@ -38,7 +38,7 @@ async function updateSetupCard() {
 
   if (!hasApiKey) {
     setupHint.textContent =
-      'Start with your Gemini key. TalkType stores it in Chrome and sends audio straight to Google.';
+      'Start with your Gemini key. TalkType stores it locally in Chrome and sends audio straight to Google.';
     setupList.innerHTML = `
       <li>Add your Gemini API key</li>
       <li>Grant microphone access</li>
@@ -58,7 +58,7 @@ async function updateSetupCard() {
 
 // Check if API key is set
 async function checkApiKey() {
-  const result = await chrome.storage.sync.get(['apiKey']);
+  const result = await window.TalkTypeStorage.getWithApiKey(['apiKey']);
   const apiKeyError = document.getElementById('apiKeyError');
   const recordButton = document.getElementById('startRecording');
   
@@ -281,7 +281,7 @@ async function stopRecording() {
     transformButtonToProgressBar(recordButton);
     
     // Get API key and create fresh service instance to avoid stale state
-    const { apiKey } = await chrome.storage.sync.get(['apiKey']);
+    const { apiKey } = await window.TalkTypeStorage.getWithApiKey(['apiKey']);
 
     if (!apiKey || !apiKey.trim()) {
       throw new Error('Missing Gemini API key. Add it in settings first.');
@@ -1689,9 +1689,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.appendChild(apiKeyPopup);
       
       // Fetch and populate current API key
-      chrome.storage.sync.get(['apiKey'], (result) => {
-        if (result.apiKey) {
-          document.getElementById('api-key-field').value = result.apiKey;
+      window.TalkTypeStorage.getApiKey().then((storedApiKey) => {
+        if (storedApiKey) {
+          document.getElementById('api-key-field').value = storedApiKey;
         }
       });
       
@@ -1699,7 +1699,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('save-api-key').addEventListener('click', () => {
         const apiKey = document.getElementById('api-key-field').value.trim();
         if (apiKey) {
-          chrome.storage.sync.set({ apiKey }, () => {
+          window.TalkTypeStorage.setApiKey(apiKey).then(() => {
             // Show success message with animation
             const successMsg = document.querySelector('.api-key-success');
             successMsg.classList.add('show');

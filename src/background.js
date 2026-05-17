@@ -1,8 +1,10 @@
 // Background service worker for TalkType extension
+importScripts('storage-service.js');
 
 // Initialize extension when installed
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('TalkType extension installed');
+  await globalThis.TalkTypeStorage.migrateApiKeyToLocal();
 
   if (details.reason === 'install') {
     await chrome.storage.sync.set({
@@ -30,9 +32,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
 
   if (message.action === 'getApiKey') {
-    chrome.storage.sync.get(['apiKey'], (result) => {
-      sendResponse({ apiKey: result.apiKey || '' });
-    });
+    globalThis.TalkTypeStorage.getApiKey()
+      .then((apiKey) => sendResponse({ apiKey }))
+      .catch(() => sendResponse({ apiKey: '' }));
     return true;
   }
 

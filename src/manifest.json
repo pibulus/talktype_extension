@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TalkType",
-  "version": "1.3",
+  "version": "1.4",
   "description": "Voice-to-text for any text input with personality-driven transcription styles",
   "permissions": ["activeTab", "storage"],
   "host_permissions": ["<all_urls>"],
@@ -21,7 +21,13 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["permission-dialog.js", "audio-service.js", "api-service.js", "content.js"],
+      "js": [
+        "permission-dialog.js",
+        "storage-service.js",
+        "audio-service.js",
+        "api-service.js",
+        "content.js"
+      ],
       "css": ["styles.css"],
       "run_at": "document_idle"
     }
@@ -54,6 +60,7 @@
         "icons/icon_black/*",
         "icons/icon_white/*",
         "styles.css",
+        "storage-service.js",
         "audio-service.js",
         "api-service.js"
       ],

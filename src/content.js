@@ -38,14 +38,8 @@ function initializeExtensionCore() {
     return;
   }
   
-  // Get API key directly from storage for more reliable access
-  chrome.storage.sync.get(['apiKey', 'smartModeEnabled', 'transcriptionStyle'], function(result) {
-    if (chrome.runtime.lastError) {
-      console.error('TalkType: Error accessing storage:', chrome.runtime.lastError);
-      showStatusNotification('Error accessing extension storage. Try reloading the page.', 'error');
-      return;
-    }
-    
+  // Get API key from local storage and preferences from sync storage.
+  window.TalkTypeStorage.getWithApiKey(['apiKey', 'smartModeEnabled', 'transcriptionStyle']).then(function(result) {
     console.log('TalkType: Got API key from storage:', result.apiKey ? 'Valid key' : 'Empty key');
     apiKey = result.apiKey || '';
     
@@ -105,6 +99,9 @@ function initializeExtensionCore() {
       console.error('TalkType: Error during service initialization:', initError);
       showStatusNotification('Error initializing speech services: ' + initError.message, 'error');
     }
+  }).catch((error) => {
+    console.error('TalkType: Error accessing storage:', error);
+    showStatusNotification('Error accessing extension storage. Try reloading the page.', 'error');
   });
 }
 
@@ -966,7 +963,7 @@ function addMicrophoneToInput(inputElement) {
             
             // Initialize directly with storage API key
             await new Promise((resolve) => {
-              chrome.storage.sync.get(['apiKey', 'transcriptionStyle'], function(result) {
+              window.TalkTypeStorage.getWithApiKey(['apiKey', 'transcriptionStyle']).then(function(result) {
                 if (result && result.apiKey) {
                   apiKey = result.apiKey;
 
@@ -982,6 +979,10 @@ function addMicrophoneToInput(inputElement) {
                   showStatusNotification('Please set your API key in extension options', 'error');
                   resolve(); // Resolve anyway to continue
                 }
+              }).catch((error) => {
+                console.error('TalkType: Error reading API key from storage:', error);
+                showStatusNotification('Error reading API key from extension storage', 'error');
+                resolve();
               });
             });
             
@@ -1330,8 +1331,7 @@ async function startRecording(targetInput, indicator) {
       }
       
       if (typeof window.GeminiApiService !== 'undefined') {
-        // Get API key from storage synchronously to avoid async issues
-        chrome.storage.sync.get(['apiKey', 'transcriptionStyle'], function(result) {
+        window.TalkTypeStorage.getWithApiKey(['apiKey', 'transcriptionStyle']).then(function(result) {
           apiKey = result.apiKey || '';
 
           console.log('TalkType: Creating API service with key:', apiKey ? 'Valid key' : 'Empty key');
@@ -1348,6 +1348,9 @@ async function startRecording(targetInput, indicator) {
               startRecordingCore(targetInput, indicator);
             }
           }, 500);
+        }).catch((error) => {
+          console.error('TalkType: Error restoring services:', error);
+          showStatusNotification('Could not reconnect TalkType services', 'error');
         });
         return;
       }
@@ -1610,9 +1613,10 @@ async function stopRecording() {
 
     try {
       // Ensure we have fresh API key
-      const apiKeyResult = await new Promise((resolve) => {
-        chrome.storage.sync.get(['apiKey', 'transcriptionStyle'], result => resolve(result));
-      });
+      const apiKeyResult = await window.TalkTypeStorage.getWithApiKey([
+        'apiKey',
+        'transcriptionStyle'
+      ]);
 
       if (!apiKeyResult || !apiKeyResult.apiKey) {
         throw new Error('No API key found. Please set your API key in the extension options.');

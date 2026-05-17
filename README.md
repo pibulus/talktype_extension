@@ -9,7 +9,7 @@ TalkType is a Chrome extension that drops a mic button next to every text field 
 ## What it does
 
 - Adds a mic button to any text input on any website (including contenteditable fields)
-- Records audio and transcribes via Google Gemini 3.1 Flash-Lite Preview
+- Records audio and transcribes through Gemini 3 Flash, with Gemini 3.1 Flash-Lite fallbacks
 - Inserts text at cursor position without overwriting what's already there
 - Auto-copies transcription to clipboard
 - Glass morphism UI that adapts to light and dark mode
@@ -24,7 +24,7 @@ Pick a voice. Each style has its own generation config tuned for the job.
 
 | Style | What you get |
 |---|---|
-| **Clean & Accurate** | Straight transcription. Filler words removed, proper punctuation. Temp 0 for precision. |
+| **Clean & Accurate** | Straight transcription. Filler words removed only when they are clearly non-semantic. |
 | **Surly Pirate** | Your words, but angrier and saltier. Arr. |
 | **L33t Sp34k** | Num3r1c sub5t1tut10n5 and h4ck3r j4rg0n. |
 | **Sparkle Pop** | SUPER bubbly!!! Emojis everywhere!!! Literally obsessed!!! |
@@ -33,11 +33,12 @@ Pick a voice. Each style has its own generation config tuned for the job.
 
 ## Installation
 
-1. Clone or download this repo
+1. Download the extension zip from TalkType or clone this repo
 2. Open `chrome://extensions/` in Chrome
 3. Toggle **Developer mode** (top-right)
-4. Click **Load unpacked** and select the `src` folder
-5. TalkType appears in your toolbar
+4. Click **Load unpacked**
+5. If you downloaded the zip, select the unzipped `talktype-extension` folder. If you cloned the repo, select the `src` folder.
+6. TalkType appears in your toolbar
 
 ## Setup
 
@@ -78,16 +79,18 @@ No build step. No bundler. Vanilla JS all the way through.
 - Mic activates only when you click record
 - Audio goes to Gemini API for transcription, nowhere else
 - We do not run an app server or store transcripts ourselves
-- Your API key and extension preferences are stored with Chrome's `storage.sync`
+- Your API key is stored in Chrome's local extension storage on this device
+- Non-secret preferences are stored with Chrome's `storage.sync`
 - Transcriptions are inserted into the page and copied to your clipboard, but this extension does not keep a local transcript history
 - No analytics, no telemetry, no user accounts
 
 ## Tech
 
 - Chrome Manifest V3
-- Gemini 3.1 Flash-Lite Preview (single inline base64 request)
+- Gemini 3 Flash primary model with Gemini 3.1 Flash-Lite fallbacks
+- Browser-recorded audio is converted to WAV when needed before the single inline base64 request
 - Vanilla JavaScript, no dependencies
-- Style-specific generation configs (temperature 0 for accuracy, higher for creative styles)
+- Style-specific prompts, with Gemini 3 kept on its recommended default temperature
 
 ## Current Scope
 
@@ -97,7 +100,7 @@ No build step. No bundler. Vanilla JS all the way through.
 
 ## Version
 
-1.3
+1.4
 
 ## License
 

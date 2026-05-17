@@ -11,13 +11,12 @@ const STYLE_PREVIEWS = {
   quillAndInk: 'Your words are rendered in the most elegant Victorian prose, dear reader.',
 };
 
-// Save API key to Chrome storage
+// Save API key to local Chrome extension storage
 function saveOptions() {
   const apiKey = document.getElementById('apiKey').value.trim();
 
-  chrome.storage.sync.set(
-    { apiKey },
-    () => {
+  window.TalkTypeStorage.setApiKey(apiKey)
+    .then(() => {
       const status = document.getElementById('status');
       status.textContent = 'API key saved.';
       status.className = 'status success';
@@ -26,8 +25,13 @@ function saveOptions() {
       setTimeout(() => {
         status.style.display = 'none';
       }, 2000);
-    }
-  );
+    })
+    .catch(() => {
+      const status = document.getElementById('status');
+      status.textContent = 'Could not save API key.';
+      status.className = 'status error';
+      status.style.display = 'block';
+    });
 }
 
 // Save transcription style
@@ -229,14 +233,14 @@ function requestMicrophonePermission() {
 
 // Restore options from Chrome storage
 function restoreOptions() {
-  chrome.storage.sync.get(
-    { apiKey: '', transcriptionStyle: 'standard' },
-    (items) => {
-      document.getElementById('apiKey').value = items.apiKey;
-      document.getElementById('transcriptionStyle').value = items.transcriptionStyle;
-      updateStylePreview();
-    }
-  );
+  Promise.all([
+    window.TalkTypeStorage.getApiKey(),
+    chrome.storage.sync.get({ transcriptionStyle: 'standard' })
+  ]).then(([apiKey, items]) => {
+    document.getElementById('apiKey').value = apiKey;
+    document.getElementById('transcriptionStyle').value = items.transcriptionStyle;
+    updateStylePreview();
+  });
 
   // Check microphone permission
   checkMicrophonePermission();

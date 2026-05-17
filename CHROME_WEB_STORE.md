@@ -13,13 +13,14 @@ What is already good:
 - direct Gemini transcription flow works without app-side middleware
 - content script insertion model is coherent
 - README/setup instructions are current
+- temporary manual install zip is linked from the TalkType web app
 
 ## Biggest Remaining Gaps
 
-1. Public install surface
+1. Store install surface
 
 - There is no Chrome Web Store listing yet.
-- The TalkType web app should point to either the store listing or a temporary manual install page.
+- The TalkType web app now has a temporary manual install page and downloadable zip.
 
 2. Store assets
 
@@ -39,7 +40,8 @@ The extension is privacy-friendly, and the main TalkType site should host a clea
 - what audio is sent to Google
 - that the user provides their own Gemini key
 - that TalkType does not run its own transcription server for the extension
-- what is stored in `chrome.storage.sync`
+- that the API key is stored locally in Chrome extension storage
+- what preferences are stored in `chrome.storage.sync`
 
 Suggested URL:
 
