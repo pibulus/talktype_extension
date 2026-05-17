@@ -65,7 +65,7 @@ async function checkApiKey() {
   const result = await window.TalkTypeStorage.getWithApiKey(['apiKey']);
   const apiKeyError = document.getElementById('apiKeyError');
   const recordButton = document.getElementById('startRecording');
-  
+
   if (!result.apiKey) {
     apiKeyError.style.display = 'block';
     recordButton.classList.add('disabled');
@@ -89,23 +89,23 @@ function openOptions() {
 // Start recording immediately
 async function startRecording() {
   if (isRecording) return;
-  
+
   // Show transcription area
   const transcriptionContainer = document.getElementById('transcription-container');
   transcriptionContainer.style.display = 'block';
   const transcriptionText = document.getElementById('transcription-text');
   transcriptionText.textContent = '';
-  
+
   // Hide copy button when starting a new recording
   const copyButtonWrapper = document.getElementById('copy-button-wrapper');
   if (copyButtonWrapper) {
     copyButtonWrapper.style.display = 'none';
   }
-  
+
   // Update status
   const statusElement = document.getElementById('status');
   const recordButton = document.getElementById('startRecording');
-  
+
   try {
     // Check if API key is set
     const hasApiKey = await checkApiKey();
@@ -120,12 +120,12 @@ async function startRecording() {
       `;
       return;
     }
-    
+
     // Initialize service if not already done
     if (!audioService) {
       audioService = new AudioRecordingService();
     }
-    
+
     // Check recording support
     if (!audioService.isRecordingSupported()) {
       statusElement.innerHTML = `
@@ -138,12 +138,12 @@ async function startRecording() {
       `;
       return;
     }
-    
+
     // Show animation
     document.getElementById('recording-container').classList.add('active');
     const recordingAnimation = document.getElementById('recording-animation');
     recordingAnimation.classList.add('active');
-    
+
     // Update button
     recordButton.innerHTML = `
       <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -151,7 +151,7 @@ async function startRecording() {
       </svg>
       Stop Recording
     `;
-    
+
     // Update status
     statusElement.innerHTML = `
       <div class="status-indicator status-recording">
@@ -159,24 +159,24 @@ async function startRecording() {
         <span class="status-text">Recording...</span>
       </div>
     `;
-    
+
     // Hide settings button while recording
     const settingsButton = document.getElementById('options');
     if (settingsButton) {
       settingsButton.style.display = 'none';
     }
-    
+
     // Start recording
     await audioService.startRecording();
     isRecording = true;
-    
+
     // Auto-stop after MAX_RECORDING_TIME
     recordingTimeout = setTimeout(() => {
       if (isRecording) {
         stopRecording();
       }
     }, MAX_RECORDING_TIME);
-    
+
   } catch (error) {
     console.error('Error starting recording:', error);
     handleRecordingError(error);
@@ -190,7 +190,7 @@ function showClipboardNotification() {
   if (existingNotification) {
     document.body.removeChild(existingNotification);
   }
-  
+
   // Create notification element
   const notification = document.createElement('div');
   notification.className = 'clipboard-notification';
@@ -201,7 +201,7 @@ function showClipboardNotification() {
     <span>Copied to clipboard</span>
   `;
   document.body.appendChild(notification);
-  
+
   // Add styles if not already added
   if (!document.getElementById('clipboard-notification-style')) {
     const style = document.createElement('style');
@@ -237,12 +237,12 @@ function showClipboardNotification() {
     `;
     document.head.appendChild(style);
   }
-  
+
   // Animate in
   setTimeout(() => {
     notification.classList.add('show');
   }, 10);
-  
+
   // Animate out and remove
   setTimeout(() => {
     notification.classList.remove('show');
@@ -257,18 +257,18 @@ function showClipboardNotification() {
 // Stop recording and transcribe
 async function stopRecording() {
   if (!isRecording || !audioService) return;
-  
+
   // Clear timeout
   if (recordingTimeout) {
     clearTimeout(recordingTimeout);
     recordingTimeout = null;
   }
-  
+
   const statusElement = document.getElementById('status');
   const recordButton = document.getElementById('startRecording');
   const recordingAnimation = document.getElementById('recording-animation');
   const transcriptionText = document.getElementById('transcription-text');
-  
+
   try {
     // Hide recording animation
     document.getElementById('recording-container').classList.remove('active');
@@ -276,14 +276,14 @@ async function stopRecording() {
 
     // Update status indicator
     statusElement.innerHTML = '<div class="status-indicator"><span class="pulse-dot" style="background-color: rgb(255, 64, 129);"></span><span class="status-text">Processing</span></div>';
-    
+
     // Stop recording and get audio data
     const audioBlob = await audioService.stopRecording();
     isRecording = false;
-    
+
     // Transform recording button into progress bar
     transformButtonToProgressBar(recordButton);
-    
+
     // Get API key and create fresh service instance to avoid stale state
     const { apiKey, transcriptionStyle } =
       await window.TalkTypeStorage.getWithApiKey(['apiKey', 'transcriptionStyle']);
@@ -299,36 +299,36 @@ async function stopRecording() {
 
     // Update status indicator with random fun messages
     showTranscribingStatus(statusElement, true);
-    
+
     // Actually transcribe the audio
     const transcription = await apiService.transcribeAudio(audioBlob, updateProgressCallback);
-    
+
     // Complete the progress animation
     completeProgressAnimation();
-    
+
     // Dynamically adjust the transcription container height based on content
     const adjustTranscriptionContainer = (text) => {
       const transcriptionContainer = document.getElementById('transcription-container');
       const transcriptionText = document.getElementById('transcription-text');
-      
+
       if (!transcriptionContainer || !transcriptionText) return;
-      
+
       // Reset any previous inline styles to get natural height
       transcriptionText.style.maxHeight = '';
-      
+
       // Set the text content first
       transcriptionText.textContent = text || 'No speech detected.';
-      
+
       // Calculate optimal height based on content
       const textHeight = transcriptionText.scrollHeight;
       const maxHeight = 250; // Match CSS max-height value
-      
+
       // Set an appropriate max-height
       if (textHeight > maxHeight) {
         // If content is larger than max height, enable scrolling
         transcriptionText.style.maxHeight = `${maxHeight}px`;
         transcriptionText.style.overflowY = 'auto';
-        
+
         // Ensure the container expands to max allowed height
         transcriptionContainer.style.height = 'auto';
         transcriptionContainer.style.overflowY = 'auto';
@@ -336,37 +336,37 @@ async function stopRecording() {
         // If content fits, disable scrolling and set exact height
         transcriptionText.style.maxHeight = `${textHeight}px`;
         transcriptionText.style.overflowY = 'hidden';
-        
+
         // Adjust container height to fit content exactly
         transcriptionContainer.style.height = 'auto';
         transcriptionContainer.style.overflowY = 'hidden';
       }
-      
+
       // Force reflow to ensure animation works
       transcriptionContainer.offsetHeight;
     };
-    
+
     // Try to insert text into the active input field if in smart mode
     if (smartModeEnabled && hasActiveInput && transcription && transcription.trim()) {
       try {
         console.log('Smart Mode enabled and active input detected, attempting to insert text');
-        
+
         // Send message to content script to insert the transcription
         const activeTab = await new Promise(resolve => {
           chrome.tabs.query({active: true, currentWindow: true}, tabs => {
             resolve(tabs[0]);
           });
         });
-        
+
         if (activeTab && activeTab.id) {
           // Try to insert the transcription into the active input
           const response = await chrome.tabs.sendMessage(activeTab.id, {
             action: 'insertTranscription',
             text: transcription
           });
-          
+
           console.log('Insertion response:', response);
-          
+
           if (response && response.success) {
             // If successful, still copy to clipboard as a backup
             try {
@@ -374,25 +374,25 @@ async function stopRecording() {
             } catch (clipErr) {
               console.warn('Failed to copy text after insertion: ', clipErr);
             }
-            
+
             // Show success indicator
             statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Inserted</span></div>';
-            
+
             // Still show the text in the popup with dynamic height adjustment
             transcriptionText.style.opacity = '0';
             transcriptionText.style.transition = 'opacity 0.3s ease';
-            
+
             // Apply dynamic height adjustment
             adjustTranscriptionContainer(transcription);
-            
+
             transcriptionText.style.opacity = '1';
-            
+
             // Show copy button
             const copyButtonWrapper = document.getElementById('copy-button-wrapper');
             if (copyButtonWrapper) {
               copyButtonWrapper.style.display = 'block';
             }
-            
+
             // Reset status after a delay
             setTimeout(() => {
               if (!isRecording) {
@@ -400,7 +400,7 @@ async function stopRecording() {
                 updateSmartModeUI(); // Update to show current smart mode status
               }
             }, 3000);
-            
+
             return; // Exit early as we've handled the insertion
           }
         }
@@ -409,9 +409,9 @@ async function stopRecording() {
         // Continue with normal flow if insertion fails
       }
     }
-    
+
     // If smart mode insertion failed or was not attempted, handle normally
-    
+
     // Copy to clipboard
     if (transcription && transcription.trim()) {
       try {
@@ -422,10 +422,10 @@ async function stopRecording() {
         console.error('Failed to copy text: ', err);
       }
     }
-    
+
     // Show the transcription with "Complete" status
     statusElement.innerHTML = '<div class="status-indicator status-complete"><span class="pulse-dot"></span><span class="status-text">Complete</span></div>';
-    
+
     // Reset status to "Ready" after 3 seconds
     setTimeout(() => {
       if (!isRecording) {
@@ -433,23 +433,23 @@ async function stopRecording() {
         updateSmartModeUI(); // Update to show current smart mode status
       }
     }, 3000);
-    
+
     // Animate the transcription text with dynamic height
     transcriptionText.style.opacity = '0';
     transcriptionText.style.transition = 'opacity 0.3s ease';
-    
+
     // Apply dynamic height adjustment
     adjustTranscriptionContainer(transcription);
-    
+
     // Show with animation
     transcriptionText.style.opacity = '1';
-    
+
     // Show copy button when transcription is available
     const copyButtonWrapper = document.getElementById('copy-button-wrapper');
     if (copyButtonWrapper) {
       copyButtonWrapper.style.display = 'block';
     }
-    
+
   } catch (error) {
     console.error('Error in recording/transcription:', error);
     const errorDiv = document.createElement('div');
@@ -461,18 +461,18 @@ async function stopRecording() {
     statusElement.textContent = '';
     statusElement.appendChild(errorDiv);
     transcriptionText.textContent = 'Transcription failed. Please try again.';
-    
+
     // Restore button in case of error
     recordButton.innerHTML = `
       <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
         <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
       </svg>
-      Record & Transcribe
+      Start Talking
     `;
     recordButton.disabled = false;
     recordButton.classList.remove('button-progress-container');
-    
+
     // Show settings button again
     const settingsButton = document.getElementById('options');
     if (settingsButton) {
@@ -494,7 +494,7 @@ function transformButtonToProgressBar(button) {
         overflow: hidden;
         border-radius: 16px;
       }
-      
+
       .button-progress-bar {
         position: absolute;
         top: 0;
@@ -508,11 +508,11 @@ function transformButtonToProgressBar(button) {
         z-index: 0;
         opacity: 0.85;
       }
-      
+
       .button-progress-bar.complete {
         animation: gradient-shift 1.5s ease forwards, glow 1.5s ease forwards;
       }
-      
+
       .button-progress-bar::after {
         content: '';
         position: absolute;
@@ -523,7 +523,7 @@ function transformButtonToProgressBar(button) {
         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         animation: progress-shine 2s infinite;
       }
-      
+
       .button-progress-content {
         position: relative;
         z-index: 1;
@@ -532,23 +532,23 @@ function transformButtonToProgressBar(button) {
         justify-content: center;
         width: 100%;
       }
-      
+
       @keyframes progress-shine {
         0% { left: -100%; }
         100% { left: 200%; }
       }
-      
+
       @keyframes gradient-shift {
         0% { background-position: 0% 50%; }
         100% { background-position: 100% 50%; }
       }
-      
+
       @keyframes glow {
-        0% { box-shadow: 0 0 5px rgba(111, 66, 193, 0.3); }
-        50% { box-shadow: 0 0 20px rgba(111, 66, 193, 0.6), 0 0 30px rgba(247, 70, 180, 0.4); }
-        100% { box-shadow: 0 0 10px rgba(111, 66, 193, 0.5); }
+        0% { box-shadow: 0 0 5px rgba(255, 92, 159, 0.3); }
+        50% { box-shadow: 0 0 20px rgba(255, 92, 159, 0.6), 0 0 30px rgba(255, 92, 159, 0.4); }
+        100% { box-shadow: 0 0 10px rgba(255, 92, 159, 0.5); }
       }
-      
+
       /* Copy notification */
       .copy-notification {
         position: fixed;
@@ -567,12 +567,12 @@ function transformButtonToProgressBar(button) {
         display: flex;
         align-items: center;
       }
-      
+
       .copy-notification.show {
         transform: translateX(-50%) translateY(0);
         opacity: 1;
       }
-      
+
       .copy-notification svg {
         margin-right: 8px;
         width: 16px;
@@ -581,14 +581,14 @@ function transformButtonToProgressBar(button) {
     `;
     document.head.appendChild(progressStyles);
   }
-  
+
   // Preserve button content
   const buttonContent = button.innerHTML;
-  
+
   // Transform button to progress bar
   button.classList.add('button-progress-container');
   button.disabled = true;
-  
+
   // Create progress structure
   button.innerHTML = `
     <div id="progress-bar" class="button-progress-bar"></div>
@@ -599,16 +599,16 @@ function transformButtonToProgressBar(button) {
       <span>Processing</span>
     </div>
   `;
-  
+
   // Hide settings button while showing progress
   const settingsButton = document.getElementById('options');
   if (settingsButton) {
     settingsButton.style.display = 'none';
   }
-  
+
   // Store original content for later restoration
   button.dataset.originalContent = buttonContent;
-  
+
   // Start progress animation
   startFakeProgressAnimation();
 }
@@ -626,13 +626,13 @@ function startFakeProgressAnimation() {
     } else if (fakeProgress < 95) {
       fakeProgress += 0.3; // Slow down
     }
-    
+
     // Cap at 95%
     if (fakeProgress > 95) {
       fakeProgress = 95;
       clearInterval(window.progressInterval);
     }
-    
+
     // Update progress bar
     const progressBar = document.getElementById('progress-bar');
     if (progressBar) {
@@ -661,12 +661,12 @@ function showTranscribingStatus(container, randomMessage = false) {
       "Almost there",
       "Processing audio"
     ];
-    
+
     // Choose a message - either random or default
-    const message = randomMessage ? 
-      processingMessages[Math.floor(Math.random() * processingMessages.length)] : 
+    const message = randomMessage ?
+      processingMessages[Math.floor(Math.random() * processingMessages.length)] :
       "Processing";
-    
+
     statusElement.innerHTML = `
       <div class="status-indicator status-processing">
         <span class="pulse-dot"></span>
@@ -674,7 +674,7 @@ function showTranscribingStatus(container, randomMessage = false) {
       </div>
     `;
   }
-  
+
   // Progress bar animation is handled by startFakeProgressAnimation()
 }
 
@@ -691,7 +691,7 @@ function completeProgressAnimation() {
   if (window.progressInterval) {
     clearInterval(window.progressInterval);
   }
-  
+
   // Get the progress bar
   const progressBar = document.getElementById('progress-bar');
   if (progressBar) {
@@ -699,35 +699,35 @@ function completeProgressAnimation() {
     progressBar.style.width = '100%';
     progressBar.style.transition = 'width 0.5s cubic-bezier(0.1, 0.9, 0.2, 1.2)';
     progressBar.classList.add('complete');
-    
+
     // Update the progress content text to show "Complete"
     const progressContent = document.querySelector('.button-progress-content span');
     if (progressContent) {
       progressContent.textContent = 'Complete';
     }
-    
+
     // Update icon to checkmark
     const progressIcon = document.querySelector('.button-progress-content svg path');
     if (progressIcon) {
       progressIcon.setAttribute('d', 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z');
     }
-    
+
     // Show the copy notification
     setTimeout(() => {
       showCopyNotification();
-      
+
       // Restore button after a short delay
       setTimeout(() => {
         const recordButton = document.getElementById('startRecording');
-        
+
         if (recordButton) {
-          // Always use the original mic icon and "Record & Transcribe" text
+          // Always use the original mic icon and primary action text.
           recordButton.innerHTML = `
             <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
               <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
             </svg>
-            Record & Transcribe
+            Start Talking
           `;
           recordButton.classList.remove('button-progress-container');
           recordButton.disabled = false;
@@ -758,7 +758,7 @@ function showCopyNotification() {
       <span>Copied to clipboard</span>
     `;
     document.body.appendChild(notification);
-    
+
     // Add custom styles for top notification
     const notifStyle = document.createElement('style');
     notifStyle.id = 'top-notification-style';
@@ -781,7 +781,7 @@ function showCopyNotification() {
         display: flex;
         align-items: center;
       }
-      
+
       .copy-notification.show {
         transform: translateX(-50%) translateY(0);
         opacity: 1;
@@ -789,14 +789,14 @@ function showCopyNotification() {
     `;
     document.head.appendChild(notifStyle);
   }
-  
+
   const notification = document.getElementById('copy-notification');
-  
+
   // Show the notification
   setTimeout(() => {
     notification.classList.add('show');
   }, 100);
-  
+
   // Hide after 2.5 seconds
   setTimeout(() => {
     notification.classList.remove('show');
@@ -807,16 +807,16 @@ function showCopyNotification() {
 function handleRecordingError(error) {
   const statusElement = document.getElementById('status');
   const recordButton = document.getElementById('startRecording');
-  
+
   // Reset button state
   recordButton.innerHTML = `
     <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
       <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
     </svg>
-    Record & Transcribe
+    Start Talking
   `;
-  
+
   // Hide animation
   document.getElementById('recording-container').classList.remove('active');
   document.getElementById('recording-animation').classList.remove('active');
@@ -824,7 +824,7 @@ function handleRecordingError(error) {
   // Handle permission errors specially
   if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    
+
     if (isMac) {
       statusElement.innerHTML = `
         <div class="error-message">
@@ -844,7 +844,7 @@ function handleRecordingError(error) {
         </div>
       `;
     }
-    
+
     // Make sure permission button is visible
     const permButton = document.getElementById('fixPermissions');
     if (permButton) {
@@ -861,7 +861,7 @@ function handleRecordingError(error) {
     statusElement.textContent = '';
     statusElement.appendChild(errorDiv2);
   }
-  
+
   // Add error message styling
   if (!document.getElementById('error-message-style')) {
     const style = document.createElement('style');
@@ -888,35 +888,35 @@ function openPermissionFix() {
   // Show the permission dialog with smooth animation
   const permissionDialog = document.getElementById('permissionDialog');
   permissionDialog.style.display = 'flex';
-  
+
   // Force reflow before adding show class to ensure animation works
   permissionDialog.offsetHeight;
   permissionDialog.classList.add('show');
-  
+
   // Setup permission button
   const permissionBtn = document.getElementById('permissionBtn');
   const permissionStatus = document.getElementById('permission-status');
-  
+
   // Add click handler for permission button
   permissionBtn.onclick = async () => {
     try {
       // Request microphone access directly
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
+
       // Stop the stream right away, we just needed permission
       stream.getTracks().forEach(track => track.stop());
-      
+
       // Store permission status
       chrome.storage.sync.set({ microphonePermission: 'granted' });
-      
+
       // Show success message
       permissionStatus.textContent = 'Microphone access granted!';
       permissionStatus.style.color = '#a0ff9d';
-      
+
       permissionBtn.textContent = 'Access Granted';
       permissionBtn.disabled = true;
       permissionBtn.style.backgroundColor = 'rgba(76, 175, 80, 0.7)';
-      
+
       // Close the dialog after a short delay
       setTimeout(() => {
         permissionDialog.style.display = 'none';
@@ -924,10 +924,10 @@ function openPermissionFix() {
         // Refresh the status message
         document.getElementById('status').textContent = 'Ready to transcribe! Microphone access granted.';
       }, 1500);
-      
+
     } catch (error) {
       console.error('Error requesting microphone permission:', error);
-      
+
       // Show detailed error message
       permissionStatus.innerHTML = `
         <span style="color: #ff88a9;">Microphone access denied.</span><br>
@@ -940,7 +940,7 @@ function openPermissionFix() {
       `;
     }
   };
-  
+
   // Setup close button with smooth animation
   document.getElementById('closeDialog').onclick = () => {
     permissionDialog.classList.remove('show');
@@ -963,15 +963,15 @@ startInit();
 function updateSmartModeUI() {
   const statusElement = document.getElementById('status');
   if (!statusElement) return;
-  
+
   // Don't override status if recording
   if (isRecording) return;
-  
+
   // Get current smart mode status
   chrome.storage.sync.get(['smartModeEnabled'], (result) => {
     // Update global variable
     smartModeEnabled = result.smartModeEnabled !== false;
-    
+
     // Update UI based on smart mode and active input
     if (smartModeEnabled) {
       if (hasActiveInput) {
@@ -1012,13 +1012,13 @@ async function checkActiveInputStatus() {
         resolve(tabs);
       });
     });
-    
+
     if (!tabs || !tabs[0]) {
       console.log('No active tab found');
       hasActiveInput = false;
       return;
     }
-    
+
     // Ask content script if there's an active input
     const response = await new Promise(resolve => {
       chrome.tabs.sendMessage(tabs[0].id, {action: 'checkActiveInput'}, (response) => {
@@ -1030,18 +1030,18 @@ async function checkActiveInputStatus() {
         }
       });
     });
-    
+
     if (response) {
       hasActiveInput = response.hasActiveInput;
       activeInputInfo = response.inputInfo;
       debugLog('Active input status:', hasActiveInput);
-      
+
       // Update UI based on active input status
       updateSmartModeUI();
     } else {
       hasActiveInput = false;
       activeInputInfo = null;
-      
+
       // Update UI for no active input
       updateSmartModeUI();
     }
@@ -1057,35 +1057,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Force immediate rendering
   document.body.style.display = 'block';
   document.body.style.opacity = '1';
-  
+
   // Check API key in parallel with rendering
   checkApiKey();
   updateSetupCard();
-  
+
   // Get smart mode setting
   chrome.storage.sync.get(['smartModeEnabled'], (result) => {
     smartModeEnabled = result.smartModeEnabled !== false; // Default to true if not set
     console.log('Smart mode enabled:', smartModeEnabled);
-    
+
     // Check for active input in the current page
     checkActiveInputStatus();
   });
-  
+
   // Apply theme based on user preference or system preference
   initializeTheme();
-  
+
   // Listen for message updates from the background script about active input changes
   chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'updateSmartModeStatus') {
       console.log('Received smart mode status update:', message);
       hasActiveInput = message.hasActiveInput;
       activeInputInfo = message.inputInfo;
-      
+
       // Update UI based on new status
       updateSmartModeUI();
     }
   });
-  
+
   // Set up RECORD BUTTON
   const recordButton = document.getElementById('startRecording');
   recordButton.addEventListener('click', async () => {
@@ -1095,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await startRecording();
     }
   });
-  
+
   // Set up COPY BUTTON
   const copyButton = document.getElementById('copy-button');
   if (copyButton) {
@@ -1110,22 +1110,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
     });
-    
+
     // Add hover effect (more subtle without shadow)
     copyButton.addEventListener('mouseenter', () => {
       copyButton.style.transform = 'scale(1.15)';
       copyButton.style.opacity = '1';
     });
-    
+
     copyButton.addEventListener('mouseleave', () => {
       copyButton.style.transform = 'scale(1)';
       copyButton.style.opacity = '0.8';
     });
-    
+
     copyButton.addEventListener('mousedown', () => {
       copyButton.style.transform = 'scale(0.95)';
     });
-    
+
     copyButton.addEventListener('mouseup', () => {
       copyButton.style.transform = 'scale(1.15)';
     });
@@ -1142,7 +1142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       chrome.tabs.create({ url: GEMINI_KEY_URL });
     });
   }
-  
+
   // Add Smart Mode toggle to the UI
   const buttonsContainer = document.querySelector('.buttons');
   if (buttonsContainer) {
@@ -1159,41 +1159,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         </label>
       </div>
     `;
-    
+
     // Add button at the beginning of the container
     buttonsContainer.insertBefore(smartModeButton, buttonsContainer.firstChild);
-    
+
     // Add styles for the toggle
     const style = document.createElement('style');
     style.textContent = `
       .smart-mode-button {
-        background: linear-gradient(135deg, rgba(111, 66, 193, 0.6), rgba(70, 174, 247, 0.5)) !important;
+        background: linear-gradient(135deg, rgba(255, 92, 159, 0.6), rgba(84, 214, 187, 0.5)) !important;
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
         padding: 10px 15px !important;
       }
-      
+
       .toggle-container {
         display: flex;
         width: 100%;
         justify-content: space-between;
         align-items: center;
       }
-      
+
       .switch {
         position: relative;
         display: inline-block;
         width: 40px;
         height: 24px;
       }
-      
+
       .switch input {
         opacity: 0;
         width: 0;
         height: 0;
       }
-      
+
       .slider {
         position: absolute;
         cursor: pointer;
@@ -1204,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         background-color: rgba(255, 255, 255, 0.3);
         transition: .4s;
       }
-      
+
       .slider:before {
         position: absolute;
         content: "";
@@ -1215,37 +1215,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         background-color: white;
         transition: .4s;
       }
-      
+
       input:checked + .slider {
         background-color: rgba(70, 230, 130, 0.7);
       }
-      
+
       input:checked + .slider:before {
         transform: translateX(16px);
       }
-      
+
       .slider.round {
         border-radius: 34px;
       }
-      
+
       .slider.round:before {
         border-radius: 50%;
       }
     `;
     document.head.appendChild(style);
-    
+
     // Add event listener for smart mode toggle
     const checkbox = document.getElementById('smartModeCheckbox');
     if (checkbox) {
       checkbox.addEventListener('change', (e) => {
         smartModeEnabled = e.target.checked;
-        
+
         // Save setting to storage
         chrome.storage.sync.set({ smartModeEnabled });
-        
+
         // Update smart mode UI
         updateSmartModeUI();
-        
+
         // Notify content script about the change
         chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
           if (tabs[0]) {
@@ -1258,13 +1258,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
   }
-  
+
   // Set up SETTINGS BUTTON
   const settingsButton = document.getElementById('options');
   settingsButton.addEventListener('click', (e) => {
     e.preventDefault();
     console.log("Settings button clicked");
-    
+
     // Add popup styles if not already added
     if (!document.getElementById('settings-popup-styles')) {
       const popupStyles = document.createElement('style');
@@ -1287,12 +1287,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           padding: 16px;
           box-sizing: border-box;
         }
-        
+
         @keyframes settings-appear {
           0% { opacity: 0; }
           100% { opacity: 1; }
         }
-        
+
         .settings-content {
           position: relative;
           width: 100%;
@@ -1312,7 +1312,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           box-sizing: border-box;
           overflow: visible;
         }
-        
+
         /* Add particle background to match main UI */
         .settings-content::after {
           content: '';
@@ -1327,14 +1327,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           z-index: 0;
           pointer-events: none;
         }
-        
+
         /* Add beam effect to match main UI */
         .settings-content::before {
           content: '';
           position: absolute;
           width: 150%;
           height: 60px;
-          background: linear-gradient(90deg, rgba(111, 66, 193, 0), rgba(255, 255, 255, 0.05), rgba(111, 66, 193, 0));
+          background: linear-gradient(90deg, rgba(255, 92, 159, 0), rgba(255, 255, 255, 0.05), rgba(255, 92, 159, 0));
           transform: rotate(-45deg);
           top: -30px;
           left: -20%;
@@ -1344,12 +1344,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           border-radius: 18px;
           overflow: hidden;
         }
-        
+
         @keyframes content-appear {
           0% { transform: translateY(10px) scale(0.95); opacity: 0; }
           100% { transform: translateY(0) scale(1); opacity: 1; }
         }
-        
+
         .settings-content h3 {
           margin-top: 0;
           margin-bottom: 20px;
@@ -1363,7 +1363,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           align-items: center;
           justify-content: center;
         }
-        
+
         .settings-content h3::before {
           content: '';
           display: inline-block;
@@ -1373,13 +1373,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           background-size: contain;
           background-repeat: no-repeat;
           margin-right: 8px;
-          filter: drop-shadow(0 1px 3px rgba(111, 66, 193, 0.3));
+          filter: drop-shadow(0 1px 3px rgba(255, 92, 159, 0.3));
         }
-        
+
         .dark-theme .settings-content h3::before {
           background-image: url('icons/icon_white/favicon-32x32.png');
         }
-        
+
         .settings-button {
           display: flex;
           align-items: center;
@@ -1404,18 +1404,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           overflow: hidden;
           z-index: 2;
         }
-        
+
         .settings-button:hover {
           background: var(--hover-gradient);
           transform: translateY(-1px) scale(1.02);
-          box-shadow: 0 8px 20px rgba(111, 66, 193, 0.18);
+          box-shadow: 0 8px 20px rgba(255, 92, 159, 0.18);
         }
-        
+
         .settings-button:active {
           transform: translateY(1px) scale(0.98);
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
         }
-        
+
         .settings-button::before {
           content: '';
           position: absolute;
@@ -1426,11 +1426,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
           transition: all 0.6s ease;
         }
-        
+
         .settings-button:hover::before {
           left: 100%;
         }
-        
+
         .settings-close {
           position: absolute;
           top: 10px;
@@ -1452,16 +1452,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           -webkit-backdrop-filter: blur(4px);
           z-index: 3;
         }
-        
+
         .settings-close:hover {
           background: rgba(255, 255, 255, 0.35);
           transform: scale(1.1);
         }
-        
+
         .settings-close:active {
           transform: scale(0.95);
         }
-        
+
         /* API key input styling */
         #api-key-field {
           width: 100%;
@@ -1477,13 +1477,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           height: 42px;
           max-width: 100%;
         }
-        
+
         #api-key-field:focus {
-          border-color: rgba(111, 66, 193, 0.6);
-          box-shadow: inset 0 1px 3px rgba(111, 66, 193, 0.2), 0 0 0 2px rgba(111, 66, 193, 0.1);
+          border-color: rgba(255, 92, 159, 0.6);
+          box-shadow: inset 0 1px 3px rgba(255, 92, 159, 0.2), 0 0 0 2px rgba(255, 92, 159, 0.1);
           outline: none;
         }
-        
+
         .save-button {
           width: 100%;
           padding: 10px 12px;
@@ -1499,16 +1499,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           align-items: center;
           justify-content: center;
         }
-        
+
         .save-button:hover {
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(52, 168, 83, 0.2);
         }
-        
+
         .save-button:active {
           transform: translateY(1px) scale(0.98);
         }
-        
+
         /* API key success notification */
         .api-key-success {
           position: absolute;
@@ -1525,78 +1525,78 @@ document.addEventListener('DOMContentLoaded', async () => {
           transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
           z-index: 10;
         }
-        
+
         .api-key-success.show {
           transform: translateY(-70px);
           opacity: 1;
         }
-        
+
         /* Dark mode support */
         .dark-theme .settings-content {
           background: linear-gradient(225deg, rgba(20, 20, 30, 0.95), rgba(30, 30, 40, 0.9));
           border-color: rgba(70, 70, 90, 0.3);
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
-        
+
         .dark-theme .settings-content h3 {
           color: rgba(255, 255, 255, 0.9);
           text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
-        
+
         .dark-theme #api-key-field {
           background: rgba(40, 40, 50, 0.8);
           color: white;
           border-color: rgba(70, 70, 90, 0.5);
           box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
         }
-        
+
         .dark-theme #api-key-field:focus {
-          border-color: rgba(111, 66, 193, 0.6);
-          box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(111, 66, 193, 0.3);
+          border-color: rgba(255, 92, 159, 0.6);
+          box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(255, 92, 159, 0.3);
         }
-        
+
         .dark-theme .settings-close {
           background: rgba(0, 0, 0, 0.2);
           border-color: rgba(70, 70, 90, 0.3);
           color: rgba(255, 255, 255, 0.9);
         }
-        
+
         .dark-theme .settings-close:hover {
           background: rgba(255, 255, 255, 0.1);
         }
-        
+
         .dark-theme p {
           color: rgba(255, 255, 255, 0.85);
         }
-        
+
         /* Animation for beam in dark mode */
         .dark-theme .settings-content::before {
           background: linear-gradient(90deg, rgba(80, 50, 168, 0), rgba(100, 100, 255, 0.05), rgba(80, 50, 168, 0));
         }
-        
+
         /* Enhance the subtle drift animation for the particle pattern */
         @keyframes subtle-drift {
           0% { background-position: 0 0; }
           100% { background-position: 100px 100px; }
         }
-        
+
         .settings-content::after {
           animation: subtle-drift 120s linear infinite;
         }
-        
+
         /* Enhanced beam animation */
         @keyframes beam {
           0% { transform: rotate(-45deg) translateX(-100%); }
           100% { transform: rotate(-45deg) translateX(200%); }
         }
-        
+
         /* Theme toggle success message */
         .theme-success {
           position: fixed;
           bottom: 20px;
           left: 50%;
           transform: translateX(-50%) translateY(30px);
-          background: rgba(111, 66, 193, 0.85);
+          background: rgba(255, 92, 159, 0.85);
           color: white;
           padding: 10px 18px;
           border-radius: 30px;
@@ -1606,7 +1606,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
           z-index: 2000;
         }
-        
+
         .theme-success.show {
           transform: translateX(-50%) translateY(0);
           opacity: 1;
@@ -1614,14 +1614,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       document.head.appendChild(popupStyles);
     }
-    
+
     // Create and show settings popup
     const settingsPopup = document.createElement('div');
     settingsPopup.className = 'settings-popup';
-    
+
     // Determine current theme for accurate button labels
     const isDarkTheme = document.body.classList.contains('dark-theme');
-    
+
     // Use same popup HTML as the original handler
     settingsPopup.innerHTML = `
       <div class="settings-content">
@@ -1634,9 +1634,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         </button>
         <button id="toggleTheme" class="settings-button">
           <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; margin-right: 10px;">
-            ${isDarkTheme ? 
-              `<path fill="currentColor" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5s5-2.24 5-5s-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0c-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0c-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0c.39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>` 
-              : 
+            ${isDarkTheme ?
+              `<path fill="currentColor" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5s5-2.24 5-5s-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0c-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0c-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0c.39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>`
+              :
               `<path fill="currentColor" d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9s9-4.03 9-9c0-.46-.04-.92-.1-1.36c-.98 1.37-2.58 2.26-4.4 2.26c-2.98 0-5.4-2.42-5.4-5.4c0-1.81.89-3.42 2.26-4.4c-.44-.06-.9-.1-1.36-.1z"/>`
             }
           </svg>
@@ -1659,15 +1659,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
     document.body.appendChild(settingsPopup);
-    
+
     // Add event handlers for the popup buttons
     document.getElementById('closeSettings').addEventListener('click', () => {
       document.body.removeChild(settingsPopup);
     });
-    
+
     document.getElementById('configureApiKey').addEventListener('click', () => {
       document.body.removeChild(settingsPopup);
-      
+
       // Create and show the API key configuration popup
       const apiKeyPopup = document.createElement('div');
       apiKeyPopup.className = 'settings-popup';
@@ -1693,14 +1693,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       `;
       document.body.appendChild(apiKeyPopup);
-      
+
       // Fetch and populate current API key
       window.TalkTypeStorage.getApiKey().then((storedApiKey) => {
         if (storedApiKey) {
           document.getElementById('api-key-field').value = storedApiKey;
         }
       });
-      
+
       // Add event listener for save button
       document.getElementById('save-api-key').addEventListener('click', () => {
         const apiKey = document.getElementById('api-key-field').value.trim();
@@ -1709,7 +1709,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Show success message with animation
             const successMsg = document.querySelector('.api-key-success');
             successMsg.classList.add('show');
-            
+
             // Apply success styling to the button
             const saveButton = document.getElementById('save-api-key');
             saveButton.innerHTML = `
@@ -1718,10 +1718,10 @@ document.addEventListener('DOMContentLoaded', async () => {
               </svg>
               Saved!
             `;
-            
+
             // Update the API key check
             checkApiKey();
-            
+
             // Close the popup after a delay
             setTimeout(() => {
               document.body.removeChild(apiKeyPopup);
@@ -1732,10 +1732,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           const apiKeyField = document.getElementById('api-key-field');
           apiKeyField.style.borderColor = 'rgba(255, 0, 0, 0.5)';
           apiKeyField.style.boxShadow = 'inset 0 1px 3px rgba(255, 0, 0, 0.2)';
-          
+
           // Shake animation for empty field
           apiKeyField.style.animation = 'shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both';
-          
+
           // Add shake animation if not already added
           if (!document.getElementById('shake-animation')) {
             const shakeStyle = document.createElement('style');
@@ -1750,7 +1750,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
             document.head.appendChild(shakeStyle);
           }
-          
+
           // Reset the error state after animation
           setTimeout(() => {
             apiKeyField.style.borderColor = '';
@@ -1759,38 +1759,38 @@ document.addEventListener('DOMContentLoaded', async () => {
           }, 500);
         }
       });
-      
+
       // Add event listener for Enter key in input field
       document.getElementById('api-key-field').addEventListener('keyup', (e) => {
         if (e.key === 'Enter') {
           document.getElementById('save-api-key').click();
         }
       });
-      
+
       // Add event listener for close button
       document.getElementById('closeApiKey').addEventListener('click', () => {
         document.body.removeChild(apiKeyPopup);
       });
     });
-    
+
     document.getElementById('toggleTheme').addEventListener('click', () => {
       // Toggle theme
       const currentIsDark = document.body.classList.contains('dark-theme');
       const newIsDark = !currentIsDark;
-      
+
       // Save preference
       localStorage.setItem('userToggled', 'true');
       localStorage.setItem('prefersDarkMode', newIsDark);
-      
+
       // Apply theme
       applyTheme(newIsDark);
-      
+
       // Update theme indicator
       const themeIndicator = document.querySelector('.theme-indicator span strong');
       if (themeIndicator) {
         themeIndicator.textContent = newIsDark ? 'Dark Mode' : 'Light Mode';
       }
-      
+
       // Apply success styling to button
       const toggleButton = document.getElementById('toggleTheme');
       toggleButton.innerHTML = `
@@ -1802,7 +1802,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       toggleButton.style.background = 'linear-gradient(135deg, rgba(52, 168, 83, 0.85), rgba(66, 133, 244, 0.75))';
     });
   });
-  
+
   // Create permission fix button
   const permButton = document.createElement('button');
   permButton.id = 'fixPermissions';
@@ -1815,13 +1815,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   permButton.style.marginTop = '12px';
   permButton.style.backgroundColor = 'rgba(255, 122, 69, 0.85)';
   permButton.style.display = 'none'; // Hidden by default
-  
+
   // Add click event
   permButton.addEventListener('click', openPermissionFix);
-  
+
   // Add button to buttons div
   document.querySelector('.buttons').appendChild(permButton);
-  
+
   // Check microphone permission
   checkMicPermissionAndUpdateButton();
 
@@ -1834,7 +1834,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       if (navigator.permissions && navigator.permissions.query) {
         const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-        
+
         if (permissionStatus.state === 'granted') {
           permButton.style.display = 'none';
           // Save status to storage
@@ -1854,7 +1854,7 @@ async function checkMicPermissionAndUpdateButton() {
   try {
     // Try to get mic permission status from storage
     const { microphonePermission } = await chrome.storage.sync.get(['microphonePermission']);
-    
+
     if (microphonePermission === 'granted') {
       const permButton = document.getElementById('fixPermissions');
       if (permButton) {
@@ -1862,12 +1862,12 @@ async function checkMicPermissionAndUpdateButton() {
       }
       return;
     }
-    
+
     // If not found in storage, try to check permission state directly
     if (navigator.permissions && navigator.permissions.query) {
       const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
       const permButton = document.getElementById('fixPermissions');
-      
+
       if (permissionStatus.state === 'granted') {
         if (permButton) {
           permButton.style.display = 'none';
@@ -1881,15 +1881,15 @@ async function checkMicPermissionAndUpdateButton() {
         }
         updateSetupCard();
       }
-      
+
       // Listen for permission changes
       permissionStatus.onchange = () => {
         const permBtn = document.getElementById('fixPermissions');
         if (permBtn) {
-          permBtn.style.display = 
+          permBtn.style.display =
             permissionStatus.state === 'granted' ? 'none' : 'block';
         }
-        
+
         if (permissionStatus.state === 'granted') {
           chrome.storage.sync.set({ microphonePermission: 'granted' });
         }
@@ -1906,36 +1906,36 @@ async function checkMicPermissionAndUpdateButton() {
  */
 function initializeTheme() {
   console.log('Initializing theme...');
-  
+
   // Check if user has manually set a preference before
   const userToggled = localStorage.getItem('userToggled');
-  
+
   // Also check for theme preference in chrome.storage for persistence across devices
   chrome.storage.sync.get(['themePreference', 'userToggled'], (result) => {
     // If we have a stored preference in Chrome storage, use that first
     if (result.userToggled === 'true' && result.themePreference !== undefined) {
       console.log('Using Chrome storage theme preference:', result.themePreference);
       const isDarkMode = result.themePreference === 'dark';
-      
+
       // Apply theme
       applyTheme(isDarkMode);
-      
+
       // Also update localStorage to match
       localStorage.setItem('userToggled', 'true');
       localStorage.setItem('prefersDarkMode', isDarkMode);
-      
+
       return;
     }
-    
+
     // If Chrome storage doesn't have a preference, check localStorage
     if (userToggled === 'true') {
       // If user has toggled, use their preference from localStorage
       const prefersDarkMode = localStorage.getItem('prefersDarkMode') === 'true';
       console.log('Using localStorage theme preference:', prefersDarkMode ? 'dark' : 'light');
-      
+
       // Apply theme
       applyTheme(prefersDarkMode);
-      
+
       // Save to Chrome storage for persistence across devices
       chrome.storage.sync.set({
         themePreference: prefersDarkMode ? 'dark' : 'light',
@@ -1945,24 +1945,24 @@ function initializeTheme() {
       // Otherwise, check system preference
       const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       console.log('Using system theme preference:', prefersDarkMode ? 'dark' : 'light');
-      
+
       // Apply theme
       applyTheme(prefersDarkMode);
-      
+
       // Set initial values to localStorage
       localStorage.setItem('userToggled', 'false');
       localStorage.setItem('prefersDarkMode', prefersDarkMode);
-      
+
       // Also set in Chrome storage but mark as not user toggled
       chrome.storage.sync.set({
         themePreference: prefersDarkMode ? 'dark' : 'light',
         userToggled: 'false'
       });
-      
+
       // Add listener for system theme changes if not user toggled
       try {
         const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        
+
         // Use the proper event listener based on browser support
         if (darkModeMediaQuery.addEventListener) {
           darkModeMediaQuery.addEventListener('change', handleSystemThemeChange);
@@ -1986,10 +1986,10 @@ function handleSystemThemeChange(e) {
   chrome.storage.sync.get(['userToggled'], (result) => {
     if (result.userToggled !== 'true' && localStorage.getItem('userToggled') !== 'true') {
       console.log('System theme changed to:', e.matches ? 'dark' : 'light');
-      
+
       // Apply new theme
       applyTheme(e.matches);
-      
+
       // Update stored values
       localStorage.setItem('prefersDarkMode', e.matches);
       chrome.storage.sync.set({
@@ -2006,17 +2006,17 @@ function handleSystemThemeChange(e) {
 function applyTheme(isDark) {
   if (isDark) {
     document.body.classList.add('dark-theme');
-    
+
     // Update CSS variables for dark theme
     document.documentElement.style.setProperty('--glass-bg', 'rgba(30, 30, 40, 0.8)');
     document.documentElement.style.setProperty('--glass-border', 'rgba(70, 70, 90, 0.3)');
     document.documentElement.style.setProperty('--text-primary', 'rgba(255, 255, 255, 0.9)');
     document.documentElement.style.setProperty('--text-secondary', 'rgba(255, 255, 255, 0.7)');
-    document.documentElement.style.setProperty('--light-accent', 'rgba(111, 66, 193, 0.2)');
-    
+    document.documentElement.style.setProperty('--light-accent', 'rgba(255, 92, 159, 0.2)');
+
     // Update background gradient for dark theme
     document.body.style.background = 'linear-gradient(225deg, rgba(20, 20, 30, 0.95), rgba(30, 30, 40, 0.9))';
-    
+
     // Use white icon for dark theme
     try {
       const logoImg = document.querySelector('h1 img');
@@ -2031,17 +2031,17 @@ function applyTheme(isDark) {
     }
   } else {
     document.body.classList.remove('dark-theme');
-    
+
     // Restore default CSS variables for light theme
     document.documentElement.style.setProperty('--glass-bg', 'rgba(255, 255, 255, 0.65)');
     document.documentElement.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.7)');
     document.documentElement.style.setProperty('--text-primary', 'rgba(60, 64, 67, 0.95)');
     document.documentElement.style.setProperty('--text-secondary', 'rgba(60, 64, 67, 0.85)');
-    document.documentElement.style.setProperty('--light-accent', 'rgba(111, 66, 193, 0.1)');
-    
+    document.documentElement.style.setProperty('--light-accent', 'rgba(255, 92, 159, 0.1)');
+
     // Restore background gradient for light theme
     document.body.style.background = 'linear-gradient(225deg, rgba(255, 255, 255, 0.9), rgba(240, 245, 255, 0.95))';
-    
+
     // Use black icon for light theme
     try {
       const logoImg = document.querySelector('h1 img');
@@ -2055,6 +2055,6 @@ function applyTheme(isDark) {
       console.error('Error updating logo for light theme:', e);
     }
   }
-  
+
   console.log(`Theme applied: ${isDark ? 'Dark' : 'Light'} mode`);
 }

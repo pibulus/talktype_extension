@@ -8,16 +8,16 @@
     body {
       display: block !important;
       opacity: 1 !important;
-      width: 320px;
-      min-height: 320px !important; /* Reduced minimum height */
+      width: 340px;
+      min-height: 260px !important;
       height: fit-content !important;
-      max-height: 420px;
+      max-height: 460px;
       margin: 0;
       padding: 16px 18px 16px;
       box-sizing: border-box;
       animation: smooth-appear 0.25s cubic-bezier(0.23, 1, 0.32, 1) forwards !important;
     }
-    
+
     @keyframes smooth-appear {
       0% { opacity: 0.6 !important; transform: scale(0.97) !important; }
       100% { opacity: 1 !important; transform: scale(1) !important; }
@@ -25,22 +25,25 @@
   </style>
   <style>
     :root {
-      --brand-purple: #6F42C1;
-      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(155, 107, 232, 0.75));
-      --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.9), rgba(155, 107, 232, 0.85));
-      --progress-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.9), rgba(247, 70, 180, 0.8), rgba(255, 152, 0, 0.85));
-      --glass-bg: rgba(255, 255, 255, 0.45);
-      --glass-border: rgba(255, 255, 255, 0.8);
-      --glass-shadow: 0 8px 32px rgba(111, 66, 193, 0.06);
+      --brand-ink: #202432;
+      --brand-pink: #ff5c9f;
+      --brand-peach: #f6a43a;
+      --brand-mint: #54d6bb;
+      --primary-gradient: linear-gradient(135deg, #ff5c9f 0%, #ff8f70 55%, #f6b43d 100%);
+      --hover-gradient: linear-gradient(135deg, #ff4f96 0%, #ff8268 55%, #efa930 100%);
+      --progress-gradient: linear-gradient(135deg, #ff5c9f 0%, #f6a43a 52%, #54d6bb 100%);
+      --glass-bg: rgba(255, 255, 255, 0.68);
+      --glass-border: rgba(255, 182, 212, 0.74);
+      --glass-shadow: 0 12px 30px rgba(255, 92, 159, 0.13);
       --text-primary: rgba(50, 50, 60, 0.95);
       --text-secondary: rgba(50, 50, 60, 0.75);
-      --accent-color: rgb(111, 66, 193);
-      --light-accent: rgba(111, 66, 193, 0.1);
+      --accent-color: #ff5c9f;
+      --light-accent: rgba(255, 92, 159, 0.12);
     }
-    
+
     html, body {
-      width: 320px;
-      min-height: 320px; /* Reduced minimum height */
+      width: 340px;
+      min-height: 260px;
       height: auto; /* Let it adjust to content */
       max-height: 600px; /* Increased maximum height to accommodate long transcriptions */
       margin: 0;
@@ -49,25 +52,26 @@
       overflow-x: hidden; /* Prevent horizontal scrolling */
       overflow-y: auto; /* Allow vertical scrolling when content exceeds max height */
     }
-    
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       padding: 14px 18px 14px; /* Reduced padding */
-      background: linear-gradient(145deg, #f5f0ff 0%, #fdf0ff 35%, #f0f4ff 70%, #f8f0ff 100%);
-      border-radius: 20px;
-      box-shadow: 0 2px 20px rgba(111, 66, 193, 0.08);
+      background: radial-gradient(circle at 50% 0%, rgba(255, 214, 229, 0.88), transparent 36%),
+        linear-gradient(145deg, #fff8eb 0%, #fff1f7 44%, #fff9ec 100%);
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(255, 92, 159, 0.14);
       position: relative;
-      border: 1.5px solid rgba(111, 66, 193, 0.12);
+      border: 1.5px solid rgba(255, 168, 205, 0.55);
       color: #333;
       display: block !important; /* Force display */
       opacity: 1 !important; /* Force opacity */
       transform: none !important; /* Prevent transform animations */
       transition: none !important; /* Disable transitions */
-      min-height: 320px !important; /* Reduced minimum height */
+      min-height: 260px !important;
       height: fit-content !important; /* Only take space needed */
     }
-    
-    /* Particle background */
+
+    /* Soft paper texture */
     body::after {
       content: '';
       position: absolute;
@@ -75,25 +79,27 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23bfcaff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
-      opacity: 0.3;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.22) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+      background-size: 22px 22px;
+      opacity: 0.18;
       z-index: 0;
-      animation: subtle-drift 120s linear infinite;
+      animation: none;
       pointer-events: none;
     }
-    
+
     @keyframes subtle-drift {
       0% { background-position: 0 0; }
       100% { background-position: 100px 100px; }
     }
-    
+
     /* Animated gradient background */
     @keyframes gradientBG {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-    
+
     /* Light glass effect */
     .glass {
       background: var(--glass-bg);
@@ -108,18 +114,18 @@
       transition: all 0.2s ease;
       margin-bottom: 14px;
     }
-    
-    /* Subtle beam effect */
+
+    /* Subtle sheen */
     body::before {
       content: '';
       position: absolute;
       width: 150%;
       height: 80px;
-      background: linear-gradient(90deg, transparent, rgba(111, 66, 193, 0.04), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 92, 159, 0.07), transparent);
       transform: rotate(-45deg);
       top: -40px;
       left: -20%;
-      animation: beam 12s linear infinite;
+      animation: beam 14s linear infinite;
       z-index: 0;
       opacity: 0.6;
     }
@@ -128,7 +134,7 @@
       0% { transform: rotate(-45deg) translateX(-100%); }
       100% { transform: rotate(-45deg) translateX(200%); }
     }
-    
+
     .header-container {
       position: relative;
       display: flex;
@@ -138,35 +144,55 @@
       z-index: 1;
       padding: 0 4px;
     }
-    
+
     .header-divider {
       height: 2px;
-      background: linear-gradient(90deg, 
-        rgba(111, 66, 193, 0.15), 
-        rgba(111, 66, 193, 0.4) 20%, 
-        rgba(247, 70, 180, 0.4) 50%, 
-        rgba(111, 66, 193, 0.4) 80%, 
-        rgba(111, 66, 193, 0.15) 100%);
+      background: linear-gradient(90deg,
+        rgba(255, 92, 159, 0.15),
+        rgba(255, 92, 159, 0.4) 20%,
+        rgba(247, 70, 180, 0.4) 50%,
+        rgba(255, 92, 159, 0.4) 80%,
+        rgba(255, 92, 159, 0.15) 100%);
       margin-bottom: 10px; /* Reduced margin */
       border-radius: 2px;
-      box-shadow: 0 1px 4px rgba(111, 66, 193, 0.08);
+      box-shadow: 0 1px 4px rgba(255, 92, 159, 0.08);
     }
-    
+
     h1 {
       font-size: 20px;
       margin: 0;
       padding: 0;
       text-align: left;
       color: var(--text-primary);
-      font-weight: 600;
+      font-weight: 800;
       position: relative;
       z-index: 1;
       display: flex;
       align-items: center;
       animation: header-bounce 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-      letter-spacing: 0.3px;
+      letter-spacing: 0;
     }
-    
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      margin-right: 9px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      box-shadow:
+        0 8px 20px rgba(255, 92, 159, 0.24),
+        0 0 0 4px rgba(255, 255, 255, 0.72);
+    }
+
+    .brand-mark img {
+      width: 27px;
+      height: 27px;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.14));
+    }
+
     @keyframes header-bounce {
       0% { opacity: 0; transform: translateY(-15px); }
       50% { transform: translateY(5px); }
@@ -175,39 +201,39 @@
       95% { transform: translateY(-1px); }
       100% { opacity: 1; transform: translateY(0); }
     }
-    
+
     h1 img:hover {
       transform: scale(1.08) rotate(3deg);
     }
-    
+
     .status-pill {
       display: inline-flex;
       padding: 4px 10px;
       border-radius: 30px;
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.72);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 177, 209, 0.6);
+      box-shadow: 0 5px 12px rgba(255, 92, 159, 0.12);
       transition: all 0.2s ease;
       color: var(--text-primary);
       position: relative;
       z-index: 1;
       animation: status-appear 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
     }
-    
+
     @keyframes status-appear {
       0% { opacity: 0; transform: translateY(-8px); }
       40% { opacity: 0; }
       100% { opacity: 1; transform: translateY(0); }
     }
-    
+
     .status-indicator {
       display: flex;
       align-items: center;
       font-size: 12px;
     }
-    
+
     .pulse-dot {
       width: 6px;
       height: 6px;
@@ -217,7 +243,7 @@
       position: relative;
       box-shadow: 0 0 4px currentColor;
     }
-    
+
     .pulse-dot::after {
       content: '';
       position: absolute;
@@ -231,7 +257,7 @@
       opacity: 0.5;
       filter: blur(1px);
     }
-    
+
     .pulse-dot::before {
       content: '';
       position: absolute;
@@ -245,20 +271,20 @@
       opacity: 0.2;
       filter: blur(2px);
     }
-    
+
     /* Status-specific colors */
     .status-ready {
-      color: rgb(111, 66, 193); /* Purple - matches theme */
+      color: var(--brand-mint);
     }
-    
+
     .status-recording, .status-processing {
-      color: rgb(255, 64, 129); /* Pink */
+      color: var(--brand-pink);
     }
-    
+
     .status-complete {
-      color: rgb(70, 174, 247); /* Light blue - matches theme accent */
+      color: var(--brand-mint);
     }
-    
+
     @keyframes pulse-status {
       0% {
         transform: scale(1);
@@ -273,7 +299,7 @@
         opacity: 0;
       }
     }
-    
+
     @keyframes pulse-glow {
       0% {
         transform: scale(1);
@@ -291,13 +317,13 @@
         filter: blur(2px);
       }
     }
-    
+
     .status-text {
       font-weight: 600;
       font-size: 13px;
       letter-spacing: 0.2px;
     }
-    
+
     .buttons {
       display: flex;
       flex-direction: column;
@@ -307,28 +333,41 @@
       margin-bottom: 10px; /* Bottom margin */
       margin-top: 0; /* No top margin needed */
     }
-    
+
     button {
       background: var(--primary-gradient);
       color: white;
-      border: 1.5px solid rgba(111, 66, 193, 0.2);
-      padding: 10px 15px;
-      border-radius: 16px;
+      border: 1.5px solid rgba(255, 92, 159, 0.2);
+      min-height: 48px;
+      padding: 12px 15px;
+      border-radius: 14px;
       cursor: pointer;
-      font-weight: 500;
+      font-weight: 800;
       transition: all 0.2s ease;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
       font-size: 14px;
       letter-spacing: 0.3px;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      text-shadow: none;
       position: relative;
       overflow: hidden;
       opacity: 1; /* Start fully visible */
       transform: none; /* No initial transform */
     }
-    
+
+    button.secondary-action {
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--text-primary);
+      border-color: rgba(255, 176, 210, 0.62);
+      box-shadow: 0 5px 14px rgba(255, 92, 159, 0.12);
+    }
+
+    button.secondary-action:hover {
+      background: rgba(255, 255, 255, 0.92);
+      color: #d73374;
+    }
+
     button::before {
       content: '';
       position: absolute;
@@ -339,35 +378,35 @@
       background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
       transition: all 0.6s ease;
     }
-    
+
     button:hover {
       background: var(--hover-gradient);
-      border-color: rgba(111, 66, 193, 0.35);
+      border-color: rgba(255, 92, 159, 0.35);
       transform: translateY(-1px) scale(1.02);
-      box-shadow: 0 8px 20px rgba(111, 66, 193, 0.18);
+      box-shadow: 0 8px 20px rgba(255, 92, 159, 0.18);
     }
-    
+
     button:hover::before {
       left: 100%;
     }
-    
+
     button:active {
       transform: translateY(1px) scale(0.98);
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
     }
-    
+
     .disabled {
       background: rgba(100, 100, 100, 0.5);
       cursor: not-allowed;
       box-shadow: none;
     }
-    
+
     .disabled:hover {
       background: rgba(100, 100, 100, 0.5);
       transform: none;
       box-shadow: none;
     }
-    
+
     .error {
       color: #ff88a9;
       background: rgba(255, 0, 80, 0.15);
@@ -385,8 +424,8 @@
       z-index: 1;
       padding: 14px;
       margin-bottom: 12px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.62), rgba(245, 240, 255, 0.88));
-      border-color: rgba(111, 66, 193, 0.18);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 238, 246, 0.9));
+      border-color: rgba(255, 176, 210, 0.62);
     }
 
     .setup-kicker {
@@ -394,7 +433,7 @@
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: rgba(111, 66, 193, 0.8);
+      color: #d73374;
       margin-bottom: 6px;
     }
 
@@ -432,11 +471,11 @@
     }
 
     .setup-button.secondary {
-      background: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.78);
       color: var(--text-primary);
-      border-color: rgba(111, 66, 193, 0.12);
+      border-color: rgba(255, 176, 210, 0.62);
       text-shadow: none;
-      box-shadow: 0 4px 10px rgba(111, 66, 193, 0.08);
+      box-shadow: 0 4px 10px rgba(255, 92, 159, 0.08);
     }
 
     .setup-button.secondary:hover {
@@ -449,7 +488,7 @@
       line-height: 1.45;
       color: var(--text-secondary);
     }
-    
+
     /* Container for recording animation - collapses when not active */
     #recording-container {
       min-height: 0;
@@ -466,7 +505,7 @@
       max-height: 100px;
       margin-bottom: 10px;
     }
-    
+
     .recording-animation {
       visibility: hidden; /* Use visibility instead of display for smooth transitions */
       opacity: 0;
@@ -479,12 +518,12 @@
       z-index: 1;
       transition: opacity 0.3s ease;
     }
-    
+
     .recording-animation.active {
       visibility: visible;
       opacity: 1;
     }
-    
+
     .recording-animation::before {
       content: '';
       position: absolute;
@@ -492,11 +531,11 @@
       height: 50px;
       top: 5px;
       left: 5px;
-      background: linear-gradient(135deg, #ff79cd, #b168df);
+      background: var(--primary-gradient);
       border-radius: 50%;
       animation: pulse-record 2s infinite;
     }
-    
+
     @keyframes pulse-record {
       0% {
         box-shadow: 0 0 0 0 rgba(187, 85, 255, 0.7);
@@ -511,7 +550,7 @@
         transform: scale(0.95);
       }
     }
-    
+
     .mic-icon {
       width: 22px;
       height: 22px;
@@ -521,7 +560,7 @@
       z-index: 1;
       color: var(--accent-color);
     }
-    
+
     /* For the permission dialog */
     #permissionDialog {
       display: none;
@@ -540,11 +579,11 @@
       transition: opacity 0.15s ease;
       border-radius: 20px; /* Match body border radius */
     }
-    
+
     #permissionDialog.show {
       opacity: 1;
     }
-    
+
     .dialog-content {
       padding: 28px 25px;
       max-width: 85%;
@@ -554,22 +593,22 @@
       opacity: 0;
       transition: all 0.2s ease-out;
     }
-    
+
     #permissionDialog.show .dialog-content {
       transform: scale(1);
       opacity: 1;
     }
-    
+
     .dialog-content p {
       margin-bottom: 24px;
       line-height: 1.5;
     }
-    
+
     #permission-status {
       margin-bottom: 24px; /* More space before button */
       font-size: 15px;
     }
-    
+
     .close-dialog {
       position: absolute;
       top: 10px;
@@ -580,14 +619,14 @@
       font-size: 20px;
       cursor: pointer;
     }
-    
+
     /* Transcription container */
     .glass-container {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.72);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border-radius: 18px; /* Curvier corners */
-      border: 1.5px solid rgba(111, 66, 193, 0.15);
+      border-radius: 14px;
+      border: 1.5px solid rgba(255, 176, 210, 0.62);
       padding: 14px; /* Slightly more padding */
       margin-top: 8px; /* Reduced margin */
       min-height: 70px; /* Smaller min-height */
@@ -596,12 +635,12 @@
       color: var(--text-primary);
       font-size: 14px;
       transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+      box-shadow: 0 10px 24px rgba(255, 92, 159, 0.12);
       position: relative;
       height: auto; /* Allow height to adjust to content */
       overflow-y: hidden; /* Start with no scroll, will show when needed */
     }
-    
+
     /* Add subtle background gradient to the container */
     .glass-container::before {
       content: '';
@@ -612,13 +651,13 @@
       bottom: 0;
       z-index: -1;
       border-radius: 16px;
-      background: linear-gradient(135deg, 
-        rgba(111, 66, 193, 0.15), 
-        rgba(247, 70, 180, 0.12) 50%, 
-        rgba(70, 174, 247, 0.15) 100%);
+      background: linear-gradient(135deg,
+        rgba(255, 92, 159, 0.1),
+        rgba(246, 164, 58, 0.1) 52%,
+        rgba(84, 214, 187, 0.12) 100%);
       opacity: 1;
     }
-    
+
     /* Add subtle inner shadow */
     .glass-container::after {
       content: '';
@@ -631,11 +670,11 @@
       border-radius: 16px;
       pointer-events: none;
     }
-    
+
     .glass-container:empty {
       display: none;
     }
-    
+
     #transcription-text {
       animation: fadeIn 0.5s;
       line-height: 1.6;
@@ -646,31 +685,31 @@
       overflow-y: auto;
       padding-right: 30px; /* More room for copy button */
       scrollbar-width: thin; /* Firefox */
-      scrollbar-color: rgba(111, 66, 193, 0.3) rgba(255, 255, 255, 0.1); /* Firefox */
+      scrollbar-color: rgba(255, 92, 159, 0.35) rgba(255, 255, 255, 0.18);
       white-space: pre-wrap; /* Ensure line breaks and spacing are preserved */
       overflow-wrap: break-word; /* Break words that would overflow */
       word-wrap: break-word; /* Legacy support */
     }
-    
+
     /* Custom scrollbar for webkit browsers */
     #transcription-text::-webkit-scrollbar {
       width: 6px;
     }
-    
+
     #transcription-text::-webkit-scrollbar-track {
       background: rgba(255, 255, 255, 0.1);
       border-radius: 10px;
     }
-    
+
     #transcription-text::-webkit-scrollbar-thumb {
-      background: rgba(111, 66, 193, 0.3);
+      background: rgba(255, 92, 159, 0.35);
       border-radius: 10px;
     }
-    
+
     #transcription-text::-webkit-scrollbar-thumb:hover {
-      background: rgba(111, 66, 193, 0.5);
+      background: rgba(255, 92, 159, 0.55);
     }
-    
+
     /* Copy button container and styles */
     .copy-button-container {
       position: absolute;
@@ -679,7 +718,7 @@
       z-index: 2;
       pointer-events: none; /* Make container transparent to clicks */
     }
-    
+
     .copy-button {
       width: 24px;
       height: 24px;
@@ -696,28 +735,50 @@
       padding: 0;
       pointer-events: auto; /* Enable clicks only on the button */
     }
-    
+
     .copy-button:hover {
       transform: scale(1.15);
       opacity: 1;
-      box-shadow: 0 3px 8px rgba(111, 66, 193, 0.25);
+      box-shadow: 0 3px 8px rgba(255, 92, 159, 0.25);
     }
-    
+
     .copy-button:active {
       transform: scale(0.95);
     }
-    
+
     .copy-button svg {
       width: 14px;
       height: 14px;
       color: white;
     }
-    
+
+    .mini-button {
+      width: 44px;
+      height: 44px;
+      min-height: 44px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 18px rgba(255, 92, 159, 0.2);
+      cursor: pointer;
+    }
+
+    .mini-button svg {
+      width: 18px;
+      height: 18px;
+      color: white;
+      margin: 0;
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(5px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    
+
     /* Icon styles */
     .icon {
       display: inline-block;
@@ -727,7 +788,7 @@
       fill: white;
       margin-right: 6px;
     }
-    
+
     /* API key success notification */
     .api-key-success {
       position: absolute;
@@ -744,7 +805,7 @@
       transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
       z-index: 10;
     }
-    
+
     .api-key-success.show {
       transform: translateY(-70px);
       opacity: 1;
@@ -762,8 +823,10 @@
 <body>
   <div class="header-container">
     <h1>
-      <img src="icons/icon_black/favicon-32x32.png" alt="TalkType" width="24" height="24" style="margin-right: 8px; filter: drop-shadow(0 1px 3px rgba(111, 66, 193, 0.3)); transition: transform 0.3s ease;">
-      TalkType
+      <span class="brand-mark">
+        <img src="icons/icon_black/favicon-32x32.png" alt="" aria-hidden="true">
+      </span>
+      <span>TalkType</span>
     </h1>
     <div id="status" class="status-pill" role="status">
       <div class="status-indicator status-ready">
@@ -772,9 +835,9 @@
       </div>
     </div>
   </div>
-  
+
   <div class="header-divider"></div>
-  
+
   <div id="apiKeyError" class="error" style="display: none;">
     Please set your API key in the options
   </div>
@@ -799,39 +862,39 @@
       TalkType uses your own Gemini key stored locally in Chrome. No app account, no server middleman.
     </p>
   </div>
-  
+
   <div id="recording-container">
     <div id="recording-animation" class="recording-animation"></div>
   </div>
-  
+
   <div class="buttons">
-    <button id="startRecording">
+    <button id="startRecording" class="primary-action">
       <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
         <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
       </svg>
-      Record & Transcribe
+      Start Talking
     </button>
-    <button id="options">
+    <button id="options" class="secondary-action">
       <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path>
       </svg>
       Settings
     </button>
   </div>
-  
+
   <div id="transcription-container" class="glass-container" style="display: none; position: relative;">
     <div id="transcription-text"></div>
     <!-- Copy button embedded in the transcription container -->
-    <div id="copy-button-wrapper" style="display: none; position: absolute; top: 10px; right: 10px; z-index: 100;">
-      <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, rgba(111, 66, 193, 0.5), rgba(70, 174, 247, 0.4)); border: 1px solid rgba(255, 255, 255, 0.4); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: none; cursor: pointer; transition: all 0.2s ease;">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px; color: white;">
+    <div id="copy-button-wrapper" style="display: none; position: absolute; top: 8px; right: 8px; z-index: 100;">
+      <button id="copy-button" class="mini-button" title="Copy to clipboard">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
         </svg>
       </button>
     </div>
   </div>
-  
+
   <!-- Permission Dialog (positioned with absolute to not affect layout) -->
   <div id="permissionDialog" style="position: absolute; top: 0; left: 0;">
     <div class="dialog-content">
@@ -842,7 +905,7 @@
       <button class="close-dialog" id="closeDialog">&times;</button>
     </div>
   </div>
-  
+
   <script src="permission-dialog.js"></script>
   <script src="storage-service.js"></script>
   <script src="api-service.js"></script>

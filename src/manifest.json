@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TalkType",
-  "version": "1.5",
+  "version": "1.6",
   "description": "Voice-to-text for any text input with personality-driven transcription styles",
   "permissions": ["storage"],
   "host_permissions": ["https://generativelanguage.googleapis.com/*"],

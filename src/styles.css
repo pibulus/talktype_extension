@@ -8,8 +8,8 @@
 .audio-to-text-mic-button {
   position: absolute;
   z-index: 5;
-  background: rgba(111, 66, 193, 0.15);
-  border: 1.5px solid rgba(111, 66, 193, 0.3);
+  background: rgba(255, 92, 159, 0.15);
+  border: 1.5px solid rgba(255, 92, 159, 0.3);
   border-radius: 50%;
   cursor: pointer;
   width: 32px;
@@ -22,7 +22,7 @@
               background 0.2s ease,
               box-shadow 0.3s ease,
               border-color 0.2s ease;
-  box-shadow: 0 2px 8px rgba(111, 66, 193, 0.3);
+  box-shadow: 0 2px 8px rgba(255, 92, 159, 0.3);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   outline: none !important;
@@ -30,17 +30,17 @@
 
 .audio-to-text-mic-button:hover {
   transform: scale(1.12);
-  background: rgba(111, 66, 193, 0.22);
-  border-color: rgba(111, 66, 193, 0.5);
+  background: rgba(255, 92, 159, 0.22);
+  border-color: rgba(255, 92, 159, 0.5);
   box-shadow:
-    0 4px 12px rgba(111, 66, 193, 0.35),
-    0 0 0 3px rgba(111, 66, 193, 0.08);
+    0 4px 12px rgba(255, 92, 159, 0.35),
+    0 0 0 3px rgba(255, 92, 159, 0.08);
   animation: subtle-glow 2s infinite;
 }
 
 .audio-to-text-mic-button:active {
   transform: scale(0.92);
-  box-shadow: 0 1px 4px rgba(111, 66, 193, 0.3);
+  box-shadow: 0 1px 4px rgba(255, 92, 159, 0.3);
 }
 
 .audio-to-text-mic-button img {
@@ -72,27 +72,27 @@
 @keyframes subtle-glow {
   0%, 100% {
     box-shadow:
-      0 2px 8px rgba(111, 66, 193, 0.3),
-      0 0 0 3px rgba(111, 66, 193, 0.08);
+      0 2px 8px rgba(255, 92, 159, 0.3),
+      0 0 0 3px rgba(255, 92, 159, 0.08);
   }
   50% {
     box-shadow:
-      0 3px 12px rgba(111, 66, 193, 0.5),
-      0 0 0 4px rgba(111, 66, 193, 0.12);
+      0 3px 12px rgba(255, 92, 159, 0.5),
+      0 0 0 4px rgba(255, 92, 159, 0.12);
   }
 }
 
 @keyframes pulse-mic {
   0% {
-    box-shadow: 0 0 0 0 rgba(111, 66, 193, 0.6);
+    box-shadow: 0 0 0 0 rgba(255, 92, 159, 0.6);
     opacity: 1;
   }
   50% {
-    box-shadow: 0 0 10px 4px rgba(111, 66, 193, 0.3);
+    box-shadow: 0 0 10px 4px rgba(255, 92, 159, 0.3);
     opacity: 0.9;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(111, 66, 193, 0);
+    box-shadow: 0 0 0 0 rgba(255, 92, 159, 0);
     opacity: 1;
   }
 }
@@ -107,11 +107,11 @@
 
 @keyframes gentle-pulse {
   0%, 100% {
-    box-shadow: 0 8px 25px rgba(111, 66, 193, 0.3);
+    box-shadow: 0 8px 25px rgba(255, 92, 159, 0.3);
     border-color: rgba(255, 255, 255, 0.3);
   }
   50% {
-    box-shadow: 0 12px 40px rgba(111, 66, 193, 0.5);
+    box-shadow: 0 12px 40px rgba(255, 92, 159, 0.5);
     border-color: rgba(255, 255, 255, 0.5);
   }
 }
@@ -166,9 +166,9 @@
   margin-top: -8px;
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(111, 66, 193, 0.2);
+  border: 2px solid rgba(255, 92, 159, 0.2);
   border-radius: 50%;
-  border-top-color: #6f42c1;
+  border-top-color: #ff5c9f;
   animation: spin 1s linear infinite;
 }
 
@@ -184,13 +184,13 @@
 }
 
 .talktype-gradient-notification {
-  background: linear-gradient(90deg, #7B4FCF, #9B6BE8, #6B8EE8, #56CCF2);
+  background: linear-gradient(90deg, #ff5c9f, #ff8f70, #f6a43a, #54d6bb);
   background-size: 300% 100%;
   animation: gradientBg 3s ease infinite;
 }
 
 .talktype-recording-notification {
-  background: linear-gradient(135deg, rgba(111, 66, 193, 0.9), rgba(155, 107, 232, 0.85));
+  background: linear-gradient(135deg, rgba(255, 92, 159, 0.9), rgba(155, 107, 232, 0.85));
   animation: gentle-pulse 2s infinite;
 }
 

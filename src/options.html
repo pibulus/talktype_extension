@@ -5,59 +5,61 @@
   <title>TalkType - Options</title>
   <style>
     :root {
-      --brand-purple: #6F42C1;
-      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(155, 107, 232, 0.75));
-      --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.9), rgba(155, 107, 232, 0.85));
-      --glass-bg: rgba(255, 255, 255, 0.2);
-      --glass-border: rgba(255, 255, 255, 0.35);
-      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      --text-primary: rgba(255, 255, 255, 0.95);
-      --text-secondary: rgba(255, 255, 255, 0.85);
-      --accent: rgba(111, 66, 193, 1);
+      --brand-ink: #202432;
+      --brand-pink: #ff5c9f;
+      --brand-peach: #f6a43a;
+      --brand-mint: #54d6bb;
+      --primary-gradient: linear-gradient(135deg, #ff5c9f 0%, #ff8f70 55%, #f6b43d 100%);
+      --hover-gradient: linear-gradient(135deg, #ff4f96 0%, #ff8268 55%, #efa930 100%);
+      --glass-bg: rgba(255, 255, 255, 0.74);
+      --glass-border: rgba(255, 176, 210, 0.62);
+      --glass-shadow: 0 14px 38px rgba(255, 92, 159, 0.13);
+      --text-primary: rgba(32, 36, 50, 0.96);
+      --text-secondary: rgba(56, 61, 77, 0.76);
+      --accent: #ff5c9f;
     }
-    
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       margin: 0;
       padding: 0;
       background-attachment: fixed;
-      background: linear-gradient(225deg, #7B4FCF, #9B6BE8, #6B8EE8, #56CCF2);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
+      background: radial-gradient(circle at 50% 0%, rgba(255, 213, 229, 0.9), transparent 34%),
+        linear-gradient(145deg, #fff8eb 0%, #fff1f7 48%, #fff9ec 100%);
       color: var(--text-primary);
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
     }
-    
+
     @keyframes gradientBG {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-    
+
     .container {
       max-width: 600px;
       width: 100%;
       padding: 0 20px;
       box-sizing: border-box;
     }
-    
+
     h1 {
       font-size: 28px;
       font-weight: 600;
       text-align: center;
       margin: 40px 0 30px;
-      color: white;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      color: var(--brand-ink);
+      text-shadow: none;
     }
-    
+
     .card {
       background: var(--glass-bg);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-radius: 16px;
+      border-radius: 14px;
       border: 1.5px solid var(--glass-border);
       box-shadow:
         var(--glass-shadow),
@@ -72,66 +74,69 @@
       font-weight: 600;
       margin-bottom: 20px;
       letter-spacing: 0.3px;
-      color: white;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      color: var(--brand-ink);
+      text-shadow: none;
       display: flex;
       align-items: center;
     }
-    
+
     .card-header svg {
       margin-right: 10px;
     }
-    
+
     .form-group {
       margin-bottom: 20px;
     }
-    
+
     label {
       display: block;
       margin-bottom: 8px;
       font-weight: 500;
-      color: white;
+      color: var(--brand-ink);
     }
-    
-    input[type="text"] {
+
+    input[type="text"],
+    input[type="password"] {
       width: 100%;
       padding: 12px;
       border-radius: 8px;
       border: 1px solid var(--glass-border);
-      background: rgba(255, 255, 255, 0.07);
-      color: white;
+      background: rgba(255, 255, 255, 0.74);
+      color: var(--brand-ink);
       font-size: 15px;
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
       box-sizing: border-box;
       transition: all 0.2s ease;
     }
-    
-    input[type="text"]:focus {
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
       outline: none;
-      border-color: rgba(255, 255, 255, 0.6);
-      background: rgba(255, 255, 255, 0.15);
-      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 92, 159, 0.62);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 0 0 3px rgba(255, 92, 159, 0.12);
     }
-    
+
     button {
       background: var(--primary-gradient);
       color: white;
       padding: 12px 20px;
-      border-radius: 10px;
+      min-height: 44px;
+      border-radius: 12px;
       cursor: pointer;
-      font-weight: 500;
+      font-weight: 700;
       transition: all 0.2s ease;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
       font-size: 15px;
       letter-spacing: 0.5px;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      text-shadow: none;
       position: relative;
       overflow: hidden;
     }
-    
+
     button::before {
       content: '';
       position: absolute;
@@ -142,22 +147,22 @@
       background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
       transition: all 0.6s ease;
     }
-    
+
     button:hover {
       background: var(--hover-gradient);
       transform: translateY(-1px);
       box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
     }
-    
+
     button:hover::before {
       left: 100%;
     }
-    
+
     button:active {
       transform: translateY(1px);
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
     }
-    
+
     .status {
       padding: 12px;
       border-radius: 8px;
@@ -167,19 +172,19 @@
       border: 1px solid var(--glass-border);
       display: none;
     }
-    
+
     .success {
       background-color: rgba(76, 175, 80, 0.2);
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--brand-ink);
       border-color: rgba(76, 175, 80, 0.3);
     }
-    
+
     .error {
       background-color: rgba(244, 67, 54, 0.2);
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--brand-ink);
       border-color: rgba(244, 67, 54, 0.3);
     }
-    
+
     .info {
       background: var(--glass-bg);
       backdrop-filter: blur(12px);
@@ -192,16 +197,16 @@
       font-size: 15px;
       line-height: 1.5;
     }
-    
+
     .info ol {
       margin-left: 20px;
       padding-left: 0;
     }
-    
+
     .info li {
       margin-bottom: 8px;
     }
-    
+
     .permission-status {
       margin-top: 15px;
       padding: 15px;
@@ -210,25 +215,25 @@
       -webkit-backdrop-filter: blur(8px);
       border: 1px solid var(--glass-border);
     }
-    
+
     .granted {
       background-color: rgba(76, 175, 80, 0.2);
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--brand-ink);
       border-color: rgba(76, 175, 80, 0.3);
     }
-    
+
     .denied {
       background-color: rgba(244, 67, 54, 0.2);
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--brand-ink);
       border-color: rgba(244, 67, 54, 0.3);
     }
-    
+
     .unknown {
       background-color: rgba(255, 152, 0, 0.2);
       color: rgba(255, 255, 255, 0.9);
       border-color: rgba(255, 152, 0, 0.3);
     }
-    
+
     .note {
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
@@ -239,8 +244,9 @@
       font-size: 14px;
       line-height: 1.5;
       color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.56);
     }
-    
+
     .footer {
       text-align: center;
       margin: 30px 0;
@@ -248,14 +254,14 @@
       color: var(--text-secondary);
       opacity: 0.8;
     }
-    
+
     /* Icon styles */
     .icon {
       display: inline-block;
       vertical-align: middle;
       width: 24px;
       height: 24px;
-      fill: white;
+      fill: currentColor;
       margin-right: 6px;
     }
 
@@ -274,21 +280,21 @@
       height: 0;
       border-left: 5px solid transparent;
       border-right: 5px solid transparent;
-      border-top: 6px solid rgba(255, 255, 255, 0.7);
+      border-top: 6px solid rgba(32, 36, 50, 0.55);
       pointer-events: none;
     }
 
     select option {
-      background: #3a2a5a;
-      color: white;
+      background: #fff8eb;
+      color: var(--brand-ink);
       padding: 8px;
     }
 
     #stylePreview {
-      border-left: 3px solid rgba(255, 255, 255, 0.3);
+      border-left: 3px solid rgba(255, 92, 159, 0.35);
       padding-left: 16px;
       font-style: italic;
-      color: rgba(255, 255, 255, 0.75);
+      color: var(--text-secondary);
       transition: all 0.3s ease;
     }
 
@@ -308,7 +314,28 @@
 
     .info {
       border: 1.5px solid var(--glass-border);
-      border-radius: 16px;
+      border-radius: 14px;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      margin-right: 10px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      box-shadow:
+        0 8px 20px rgba(255, 92, 159, 0.24),
+        0 0 0 4px rgba(255, 255, 255, 0.72);
+      vertical-align: middle;
+    }
+
+    .brand-badge img {
+      width: 30px;
+      height: 30px;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.14));
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -323,12 +350,9 @@
 <body>
   <div class="container">
     <h1>
-      <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28">
-        <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-        <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-        <line x1="12" x2="12" y1="19" y2="23" stroke="currentColor" stroke-width="2"></line>
-        <line x1="8" x2="16" y1="23" y2="23" stroke="currentColor" stroke-width="2"></line>
-      </svg>
+      <span class="brand-badge">
+        <img src="icons/icon_black/favicon-32x32.png" alt="" aria-hidden="true">
+      </span>
       TalkType Settings
     </h1>
 
@@ -354,7 +378,7 @@
         </button>
       </div>
     </div>
-    
+
     <div class="card">
       <div class="card-header">
         <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -362,7 +386,7 @@
         </svg>
         API Configuration
       </div>
-      
+
       <div class="form-group">
         <label for="apiKey">Gemini API Key</label>
         <input type="password" id="apiKey" placeholder="Paste your Gemini API key here" spellcheck="false" autocomplete="off">
@@ -390,7 +414,7 @@
       <div class="form-group">
         <label for="transcriptionStyle">How should your voice sound as text?</label>
         <div class="select-wrapper">
-          <select id="transcriptionStyle" style="width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1.5px solid var(--glass-border); background: rgba(255, 255, 255, 0.07); color: white; font-size: 15px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-sizing: border-box; cursor: pointer; appearance: none; -webkit-appearance: none;">
+          <select id="transcriptionStyle" style="width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1.5px solid var(--glass-border); background: rgba(255, 255, 255, 0.74); color: var(--brand-ink); font-size: 15px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-sizing: border-box; cursor: pointer; appearance: none; -webkit-appearance: none;">
             <option value="standard">Clean & Accurate</option>
             <option value="surlyPirate">Surly Pirate</option>
             <option value="leetSpeak">L33t Sp34k</option>
@@ -408,7 +432,7 @@
       <button id="saveStyle" class="primary">Save Style</button>
       <div id="styleStatus" class="status"></div>
     </div>
-    
+
     <div class="card">
       <div class="card-header">
         <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -419,13 +443,13 @@
         </svg>
         Microphone Access
       </div>
-      
+
       <p>TalkType needs microphone access to convert your speech to text.</p>
-      
+
       <div id="permissionStatus" class="permission-status unknown">
         Checking permission status...
       </div>
-      
+
       <div class="btn-group">
         <button id="requestPermission">
           <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -434,7 +458,7 @@
           </svg>
           Test Microphone
         </button>
-        
+
         <button id="openChromeSettings">
           <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
@@ -443,7 +467,7 @@
         </button>
       </div>
     </div>
-    
+
     <div class="info">
       <div class="card-header" style="margin-bottom: 10px;">
         <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -451,7 +475,7 @@
         </svg>
         How to Use TalkType
       </div>
-      
+
       <ol>
         <li>Enter your API key above and click <strong>Save Settings</strong></li>
         <li>Grant microphone access by clicking <strong>Test Microphone</strong></li>
@@ -460,12 +484,12 @@
         <li>Record, speak, and TalkType will place the text at your cursor</li>
       </ol>
     </div>
-    
+
     <div class="footer">
       TalkType &copy; 2026
     </div>
   </div>
-  
+
   <script src="storage-service.js"></script>
   <script src="options.js"></script>
 </body>

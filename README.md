@@ -100,7 +100,7 @@ No build step. No bundler. Vanilla JS all the way through.
 
 ## Version
 
-1.5
+1.6
 
 ## License
 

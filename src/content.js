@@ -43,30 +43,30 @@ function initializeExtensionCore() {
     showStatusNotification('TalkType initialization error: Required scripts missing', 'error');
     return;
   }
-  
+
   // Check that chrome API is available
   if (!chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
     console.error('TalkType: chrome.runtime.sendMessage not available!');
     showStatusNotification('TalkType initialization error: Chrome API unavailable', 'error');
     return;
   }
-  
+
   // Get API key from local storage and preferences from sync storage.
   window.TalkTypeStorage.getWithApiKey(['apiKey', 'smartModeEnabled', 'transcriptionStyle']).then(function(result) {
     debugLog('TalkType: Got API key from storage:', result.apiKey ? 'Valid key' : 'Empty key');
     apiKey = result.apiKey || '';
-    
+
     // Get smart mode setting if available
     if (result.smartModeEnabled !== undefined) {
       smartModeEnabled = result.smartModeEnabled;
       debugLog('TalkType: Smart Mode setting loaded:', smartModeEnabled);
     }
-    
+
     // Initialize services - even with empty API key to allow detection of inputs
     try {
       debugLog('TalkType: Creating AudioRecordingService instance');
       audioService = new window.AudioRecordingService();
-      
+
       debugLog('TalkType: Creating GeminiApiService instance with API key');
       apiService = new window.GeminiApiService(apiKey);
       if (result.transcriptionStyle) {
@@ -80,21 +80,21 @@ function initializeExtensionCore() {
         showStatusNotification('Error initializing TalkType services', 'error');
         return;
       }
-      
+
       // Initialize input detection - do this regardless of API key status
       debugLog('TalkType: Initializing input detection');
       initializeInputDetection();
-      
+
       // Initialize focus tracking for smart mode
       debugLog('TalkType: Initializing focus tracking for smart mode');
       initializeFocusTracking();
-      
+
       // Add observer to detect dynamically added inputs
       debugLog('TalkType: Setting up DOM mutation observer');
       observeDynamicInputs();
-      
+
       debugLog('TalkType: Extension initialized successfully');
-      
+
       // Check for browser mic support as an early diagnostic
       if (audioService.isRecordingSupported()) {
         debugLog('TalkType: Browser supports recording');
@@ -102,7 +102,7 @@ function initializeExtensionCore() {
         console.warn('TalkType: Browser may not support recording!');
         showStatusNotification('Your browser may not support recording. Chrome is recommended.', 'info');
       }
-      
+
       // If no API key, show prompt but still allow initialization
       if (!apiKey) {
         console.warn('TalkType: No API key found in storage.');
@@ -123,21 +123,21 @@ function initializeExtensionCore() {
 // Function to initialize focus tracking for smart mode
 function initializeFocusTracking() {
   debugLog('TalkType: Initializing focus tracking for contextual transcription');
-  
+
   // Track focus events on the entire document
   document.addEventListener('focusin', (event) => {
     // Check if the focused element is a text input
     if (isValidTextInputElement(event.target)) {
       debugLog('TalkType: Text input focused');
       activeInput = event.target;
-      
+
       // For debugging
       debugLog('TalkType: Active input set with properties:', {
         tagName: activeInput.tagName,
         id: activeInput.id || '(no id)',
         class: activeInput.className || '(no class)'
       });
-      
+
       // Notify popup about active input change if smart mode is enabled
       if (smartModeEnabled) {
         chrome.runtime.sendMessage({
@@ -152,7 +152,7 @@ function initializeFocusTracking() {
       }
     }
   });
-  
+
   // Track when inputs lose focus
   document.addEventListener('focusout', (event) => {
     // Only clear if this is the active input losing focus
@@ -197,22 +197,22 @@ function initializeFocusTracking() {
 // Function to initialize input detection
 function initializeInputDetection() {
   debugLog('TalkType: Initializing input detection for mic buttons...');
-  
+
   // Focus on standard inputs first - these are most reliable
   const standardInputs = document.querySelectorAll('input[type="text"], input[type="search"], input:not([type]), textarea');
   debugLog(`TalkType: Found ${standardInputs.length} standard input elements`);
-  
+
   // Process standard inputs first - these are the most reliable
   standardInputs.forEach(input => {
     if (!input.dataset.hasMicButton) {
       addMicrophoneToInput(input);
     }
   });
-  
+
   // Then handle specific known text editor types with careful selection
   const knownEditors = document.querySelectorAll(`
     /* Gmail compose area - enhanced for better detection */
-    .Am.Al.editable, 
+    .Am.Al.editable,
     [g_editable="true"],
     div[aria-label="Message Body"],
     div[aria-label="Message Text"],
@@ -220,19 +220,19 @@ function initializeInputDetection() {
     div[role="textbox"][contenteditable="true"][aria-label*="Compose"],
     div[role="textbox"][contenteditable="true"][aria-label*="compose"],
     div[aria-multiline="true"][contenteditable="true"],
-    
+
     /* Facebook comment box - broader selection for better detection */
     [contenteditable="true"][data-lexical-editor="true"],
     [contenteditable="true"][spellcheck="true"][role="textbox"],
     form[role="presentation"] [contenteditable="true"],
     .notranslate[role="textbox"][spellcheck="true"],
     div[contenteditable="true"][role="textbox"][spellcheck="true"],
-    
+
     /* Reddit comment areas */
     .public-DraftEditor-content[contenteditable="true"],
     .DraftEditor-root [contenteditable="true"],
     .RichTextJSON-root [contenteditable="true"],
-    
+
     /* Messaging platforms */
     [contenteditable="true"][data-slate-editor="true"],
     div[role="textbox"][contenteditable="true"],
@@ -240,29 +240,29 @@ function initializeInputDetection() {
     div[role="textbox"][aria-label*="comment"],
     div[role="textbox"][aria-label*="post"],
     div[role="textbox"][aria-label*="reply"],
-    
+
     /* Major known rich text editors */
-    .ql-editor[contenteditable="true"], 
-    .ProseMirror[contenteditable="true"], 
+    .ql-editor[contenteditable="true"],
+    .ProseMirror[contenteditable="true"],
     .public-DraftEditor-content,
     .CodeMirror-code,
     .monaco-editor .view-lines
   `);
-  
+
   console.log(`TalkType: Found ${knownEditors.length} known rich text editors`);
-  
+
   // Process specific known editors
   knownEditors.forEach(editor => {
     if (!editor.dataset.hasMicButton) {
       addMicrophoneToInput(editor);
     }
   });
-  
+
   // Finally, look for elements with specific attributes that strongly suggest they are text inputs
   const clearTextInputs = document.querySelectorAll(`
     /* Elements with explicit textbox role */
     [role="textbox"]:not([aria-readonly="true"]):not([aria-disabled="true"]),
-    
+
     /* Elements with clear text input attributes - expanded for better coverage */
     [contenteditable="true"][aria-label*="comment"],
     [contenteditable="true"][aria-label*="Comment"],
@@ -276,31 +276,31 @@ function initializeInputDetection() {
     [contenteditable="true"][aria-label*="Post"],
     [contenteditable="true"][aria-label*="reply"],
     [contenteditable="true"][aria-label*="Reply"],
-    
+
     /* Elements with placeholder text for input */
     [contenteditable="true"][placeholder],
     [contenteditable="true"][data-placeholder],
-    
+
     /* Facebook-specific selectors */
     div[contenteditable="true"][data-lexical-editor="true"],
     div[role="textbox"][aria-label*="Write a comment"],
     div[role="textbox"][aria-label*="What's on your mind"],
     div[contenteditable="true"][spellcheck="true"],
-    
+
     /* Gmail-specific selectors */
     div[contenteditable="true"][aria-label*="compose"],
     div[contenteditable="true"][role="textbox"][spellcheck="true"]
   `);
-  
+
   console.log(`TalkType: Found ${clearTextInputs.length} additional text inputs with specific attributes`);
-  
+
   // Process these as well
   clearTextInputs.forEach(element => {
     if (!element.dataset.hasMicButton && isValidTextInputElement(element)) {
       addMicrophoneToInput(element);
     }
   });
-  
+
   // Special case for Messenger and other chat inputs which often have special classes
   const chatInputs = document.querySelectorAll(`
     [aria-label*="Type a message"],
@@ -309,15 +309,15 @@ function initializeInputDetection() {
     [placeholder*="chat"],
     [data-testid*="message-composer"]
   `);
-  
+
   debugLog(`TalkType: Found ${chatInputs.length} chat input elements`);
-  
+
   chatInputs.forEach(input => {
     if (!input.dataset.hasMicButton && isValidTextInputElement(input)) {
       addMicrophoneToInput(input);
     }
   });
-  
+
   // Clean up log messages
   console.log('TalkType: Input detection completed');
 }
@@ -330,7 +330,7 @@ function createProgressNotification(message) {
       document.body.removeChild(notification);
     }
   });
-  
+
   // Create progress notification styles if they don't exist
   if (!document.getElementById('progress-notification-styles')) {
     const styleEl = document.createElement('style');
@@ -345,8 +345,8 @@ function createProgressNotification(message) {
         font-size: 14px;
         font-weight: 500;
         color: white;
-        background: linear-gradient(135deg, #6f42c1, #7a5dcb);
-        box-shadow: 0 5px 20px rgba(111, 66, 193, 0.3);
+        background: linear-gradient(135deg, #ff5c9f, #7a5dcb);
+        box-shadow: 0 5px 20px rgba(255, 92, 159, 0.3);
         z-index: 999999;
         display: flex;
         flex-direction: column;
@@ -356,7 +356,7 @@ function createProgressNotification(message) {
         -webkit-backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.2);
       }
-      
+
       .progress-bar-container {
         margin-top: 10px;
         width: 100%;
@@ -365,7 +365,7 @@ function createProgressNotification(message) {
         border-radius: 6px;
         overflow: hidden;
       }
-      
+
       .progress-bar {
         height: 100%;
         width: 0%;
@@ -374,7 +374,7 @@ function createProgressNotification(message) {
         transition: width 0.5s cubic-bezier(0.44, 0.89, 0.56, 0.94);
         box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
       }
-      
+
       .progress-status {
         display: flex;
         justify-content: space-between;
@@ -383,42 +383,42 @@ function createProgressNotification(message) {
         font-size: 12px;
         color: rgba(255, 255, 255, 0.8);
       }
-      
+
       .progress-message {
         display: flex;
         align-items: center;
       }
-      
+
       .progress-icon {
         margin-right: 10px;
         animation: pulse 1.5s infinite;
       }
-      
+
       @keyframes pulse {
         0% { opacity: 0.6; }
         50% { opacity: 1; }
         100% { opacity: 0.6; }
       }
-      
+
       .progress-percentage {
         font-weight: 600;
       }
-      
+
       .progress-complete {
         background: linear-gradient(135deg, #52c41a, #85e255);
       }
-      
+
       .progress-complete .progress-bar {
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 1));
       }
     `;
     document.head.appendChild(styleEl);
   }
-  
+
   // Create notification element
   const notification = document.createElement('div');
   notification.className = 'audio-to-text-progress-notification';
-  
+
   // Create content
   notification.innerHTML = `
     <div class="progress-message">
@@ -433,39 +433,39 @@ function createProgressNotification(message) {
       <span class="progress-percentage">0%</span>
     </div>
   `;
-  
+
   // Add to DOM
   document.body.appendChild(notification);
-  
+
   // Start initial animation
   updateProgressNotification(notification, 0);
   animateIndeterminateProgress(notification);
-  
+
   return notification;
 }
 
 // Function to update progress notification
 function updateProgressNotification(notification, percentage) {
   if (!notification || !document.body.contains(notification)) return;
-  
+
   // Get progress elements
   const progressBar = notification.querySelector('.progress-bar');
   const progressPercentage = notification.querySelector('.progress-percentage');
   const progressStatus = notification.querySelector('.progress-status-text');
-  
+
   // Ensure percentage is valid
   const validPercentage = Math.max(0, Math.min(100, percentage));
-  
+
   // Update progress bar width
   if (progressBar) {
     progressBar.style.width = `${validPercentage}%`;
   }
-  
+
   // Update percentage text
   if (progressPercentage) {
     progressPercentage.textContent = `${Math.round(validPercentage)}%`;
   }
-  
+
   // Update status text based on percentage
   if (progressStatus) {
     if (validPercentage < 20) {
@@ -479,7 +479,7 @@ function updateProgressNotification(notification, percentage) {
     } else {
       progressStatus.textContent = 'Complete!';
       notification.classList.add('progress-complete');
-      
+
       // Change icon to checkmark
       const progressIcon = notification.querySelector('.progress-icon');
       if (progressIcon) {
@@ -487,7 +487,7 @@ function updateProgressNotification(notification, percentage) {
       }
     }
   }
-  
+
   // If we have an actual percentage, stop indeterminate animation
   if (percentage > 0) {
     stopIndeterminateProgress(notification);
@@ -497,12 +497,12 @@ function updateProgressNotification(notification, percentage) {
 // For initial indeterminate progress animation
 function animateIndeterminateProgress(notification) {
   if (!notification) return;
-  
+
   notification._indeterminateInterval = setInterval(() => {
     const progressBar = notification.querySelector('.progress-bar');
     if (progressBar) {
       const currentWidth = parseFloat(progressBar.style.width || '0');
-      
+
       // Create a "bouncing" effect between 10% and 30%
       if (currentWidth >= 30) {
         progressBar.style.width = '10%';
@@ -524,75 +524,75 @@ function stopIndeterminateProgress(notification) {
 // Function to observe for dynamically added inputs
 function observeDynamicInputs() {
   console.log('TalkType: Setting up MutationObserver...');
-  
+
   // Create a focused scan function that only looks for actual text inputs
   const scanAndAttachMic = (root) => {
     // Limit console output to reduce spam
     const startTime = performance.now();
-    
+
     // Focus on standard inputs first - these are most reliable
     const standardInputs = root.querySelectorAll('input[type="text"], input[type="search"], input:not([type]), textarea');
-    
+
     // Process standard inputs first - these are the most reliable
     standardInputs.forEach(input => {
       if (!input.dataset.hasMicButton) {
         addMicrophoneToInput(input);
       }
     });
-    
+
     // Then handle specific known text editor types with careful selection
     const knownEditors = root.querySelectorAll(`
       /* Gmail compose area */
-      .Am.Al.editable, 
+      .Am.Al.editable,
       [g_editable="true"],
       div[aria-label="Message Body"],
       div[aria-label="Message Text"],
-      
+
       /* Facebook comment box - real text areas only */
       [contenteditable="true"][data-lexical-editor="true"],
       [contenteditable="true"][spellcheck="true"][role="textbox"],
-      
+
       /* Messaging platforms */
       [contenteditable="true"][data-slate-editor="true"],
       div[role="textbox"][contenteditable="true"],
       div[role="textbox"][aria-label*="message"],
-      
+
       /* Major known rich text editors */
-      .ql-editor[contenteditable="true"], 
-      .ProseMirror[contenteditable="true"], 
+      .ql-editor[contenteditable="true"],
+      .ProseMirror[contenteditable="true"],
       .public-DraftEditor-content
     `);
-    
+
     // Process specific known editors
     knownEditors.forEach(editor => {
       if (!editor.dataset.hasMicButton) {
         addMicrophoneToInput(editor);
       }
     });
-    
+
     // Finally, look for elements with specific attributes that strongly suggest they are text inputs
     const clearTextInputs = root.querySelectorAll(`
       /* Elements with explicit textbox role */
       [role="textbox"]:not([aria-readonly="true"]):not([aria-disabled="true"]),
-      
+
       /* Elements with clear text input attributes */
       [contenteditable="true"][aria-label*="comment"],
       [contenteditable="true"][aria-label*="message"],
       [contenteditable="true"][aria-label*="write"],
       [contenteditable="true"][aria-label*="text"],
-      
+
       /* Elements with placeholder text for input */
       [contenteditable="true"][placeholder],
       [contenteditable="true"][data-placeholder]
     `);
-    
+
     // Process these as well
     clearTextInputs.forEach(element => {
       if (!element.dataset.hasMicButton && isValidTextInputElement(element)) {
         addMicrophoneToInput(element);
       }
     });
-    
+
     // Special case for Messenger and other chat inputs which often have special classes
     const chatInputs = root.querySelectorAll(`
       [aria-label*="Type a message"],
@@ -601,24 +601,24 @@ function observeDynamicInputs() {
       [placeholder*="chat"],
       [data-testid*="message-composer"]
     `);
-    
+
     chatInputs.forEach(input => {
       if (!input.dataset.hasMicButton && isValidTextInputElement(input)) {
         addMicrophoneToInput(input);
       }
     });
-    
+
     // Only log if it took more than 50ms to avoid spam
     const duration = performance.now() - startTime;
     if (duration > 50) {
       console.log(`TalkType: Scan completed in ${Math.round(duration)}ms`);
     }
   };
-  
+
   // Track last scan time to throttle scans
   let lastScanTime = 0;
   const THROTTLE_INTERVAL = 1000; // Don't scan more than once per second
-  
+
   // Create an observer that watches for DOM changes
   const observer = new MutationObserver((mutations) => {
     // Check if we should throttle the scan
@@ -626,22 +626,22 @@ function observeDynamicInputs() {
     if (now - lastScanTime < THROTTLE_INTERVAL) {
       return; // Skip this scan due to throttling
     }
-    
+
     let shouldScan = false;
-    
+
     // Check if any mutations are relevant
     for (let i = 0; i < mutations.length; i++) {
       const mutation = mutations[i];
-      
+
       // If nodes were added
       if (mutation.addedNodes.length) {
         // Check if the added nodes could contain text inputs
         for (let j = 0; j < mutation.addedNodes.length; j++) {
           const node = mutation.addedNodes[j];
-          
+
           // Skip text nodes, comments, etc.
           if (node.nodeType !== Node.ELEMENT_NODE) continue;
-          
+
           // Check if the node is an input or contains inputs
           if (node.nodeName === 'INPUT' || node.nodeName === 'TEXTAREA' ||
               (node.hasAttribute && node.hasAttribute('contenteditable')) ||
@@ -652,17 +652,17 @@ function observeDynamicInputs() {
             break;
           }
         }
-        
+
         if (shouldScan) break;
       }
-      
+
       // If attributes changed, check if it's a relevant attribute
       if (!shouldScan && mutation.type === 'attributes') {
         const target = mutation.target;
         if (target && target.nodeType === Node.ELEMENT_NODE) {
-          if (mutation.attributeName === 'contenteditable' || 
-              mutation.attributeName === 'type' || 
-              mutation.attributeName === 'role' || 
+          if (mutation.attributeName === 'contenteditable' ||
+              mutation.attributeName === 'type' ||
+              mutation.attributeName === 'role' ||
               mutation.attributeName === 'aria-label') {
             shouldScan = true;
             break;
@@ -670,7 +670,7 @@ function observeDynamicInputs() {
         }
       }
     }
-    
+
     // If relevant changes were detected, scan the document
     if (shouldScan) {
       // Use a small delay to let the DOM settle
@@ -680,7 +680,7 @@ function observeDynamicInputs() {
       }, 100);
     }
   });
-  
+
   // Start observing with focused mutation types
   observer.observe(document.body, {
     childList: true,
@@ -689,7 +689,7 @@ function observeDynamicInputs() {
     attributeFilter: ['contenteditable', 'type', 'role', 'aria-label', 'placeholder'],
     characterData: false
   });
-  
+
   // Initial scan of the page
   scanAndAttachMic(document.body);
 }
@@ -698,126 +698,122 @@ function observeDynamicInputs() {
 function addMicrophoneToInput(inputElement) {
   // Reduce console logging to avoid spam
   // console.log('TalkType: Adding microphone to input element:', inputElement);
-  
+
   // CRITICAL: Perform strict validation to ensure this is really a text input element
   if (!isValidTextInputElement(inputElement)) {
     debugLog('TalkType: Element is not a valid text input, skipping');
     return;
   }
-  
+
   // Check if this input already has a microphone button
   if (inputElement.dataset.hasMicButton) {
     debugLog('TalkType: Input already has mic button, skipping');
     return;
   }
-  
+
   // Mark this input as having a mic button
   inputElement.dataset.hasMicButton = 'true';
-  
+
   // Create a hardcoded microphone emoji as fallback
   const micEmoji = "🎤";
-  
+
   // Try to get the SVG icon URL
   let micIconUrl = chrome.runtime.getURL('icons/mic.svg');
   debugLog('TalkType: Microphone icon URL:', micIconUrl);
-  
+
   // Whether we have a valid icon URL
   const hasValidIcon = micIconUrl && !micIconUrl.includes('undefined') && !micIconUrl.includes('chrome-extension://null');
-  
+
   // Check if system is using dark mode
   const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  
+
   // Create microphone button with TalkType branding
   const micButton = document.createElement('button');
   micButton.className = 'audio-to-text-mic-button';
   micButton.title = 'TalkType: Click to dictate';
   micButton.style.position = 'absolute';
   micButton.style.zIndex = '5'; // Lower z-index to work better with page content
-  
+
   // Set background based on dark mode
   if (isDarkMode) {
-    micButton.style.background = 'rgba(111, 66, 193, 0.2)'; // Slightly more visible in dark mode
-    micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+    micButton.style.background = 'rgba(255, 92, 159, 0.2)'; // Slightly more visible in dark mode
+    micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
     micButton.dataset.darkMode = 'true'; // Mark as dark mode for later reference
   } else {
-    micButton.style.background = 'rgba(111, 66, 193, 0.15)';
-    micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+    micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+    micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
   }
-  
+
   micButton.style.borderRadius = '50%';
   micButton.style.cursor = 'pointer';
-  micButton.style.width = '28px'; // Slightly larger
-  micButton.style.height = '28px'; // Slightly larger
-  micButton.style.padding = '2px';
+  micButton.style.width = '32px';
+  micButton.style.height = '32px';
+  micButton.style.padding = '3px';
   micButton.style.opacity = '1'; // Fully visible
   micButton.style.transform = 'scale(1)';
   micButton.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s ease, background 0.2s ease, box-shadow 0.2s ease';
-  micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.3)'; // More subtle shadow
+  micButton.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)'; // More subtle shadow
   micButton.style.backdropFilter = 'blur(2px)';
   micButton.style.webkitBackdropFilter = 'blur(2px)';
   micButton.style.display = 'block'; // Always visible
-  
+
   // No animation by default - only on hover and recording
   micButton.style.animation = 'none';
-  
+
   // Store a reference to the input element this button belongs to
   micButton.talkTypeInputElement = inputElement;
-  
+
   // Add this animation if it doesn't exist yet
   if (!document.getElementById('talk-type-animations')) {
     const styleEl = document.createElement('style');
     styleEl.id = 'talk-type-animations';
     styleEl.textContent = `
       @keyframes gentle-pulse {
-        0% { transform: scale(1); box-shadow: 0 2px 6px rgba(111, 66, 193, 0.4); }
-        50% { transform: scale(1.05); box-shadow: 0 2px 10px rgba(111, 66, 193, 0.6); }
-        100% { transform: scale(1); box-shadow: 0 2px 6px rgba(111, 66, 193, 0.4); }
+        0% { transform: scale(1); box-shadow: 0 2px 6px rgba(255, 92, 159, 0.4); }
+        50% { transform: scale(1.05); box-shadow: 0 2px 10px rgba(255, 92, 159, 0.6); }
+        100% { transform: scale(1); box-shadow: 0 2px 6px rgba(255, 92, 159, 0.4); }
       }
-      
+
       @keyframes subtle-glow {
-        0% { box-shadow: 0 0 3px rgba(111, 66, 193, 0.3); }
-        50% { box-shadow: 0 0 5px rgba(111, 66, 193, 0.4); }
-        100% { box-shadow: 0 0 3px rgba(111, 66, 193, 0.3); }
+        0% { box-shadow: 0 0 3px rgba(255, 92, 159, 0.3); }
+        50% { box-shadow: 0 0 5px rgba(255, 92, 159, 0.4); }
+        100% { box-shadow: 0 0 3px rgba(255, 92, 159, 0.3); }
       }
     `;
     document.head.appendChild(styleEl);
   }
-  
+
   debugLog('TalkType: Created mic button for input');
-  
+
   // Create the icon (either image or text)
   if (hasValidIcon) {
     // Create SVG icon image
     const micIcon = document.createElement('img');
     micIcon.src = micIconUrl;
-    
-    // Apply dark mode filter for light icon on dark backgrounds
-    if (isDarkMode) {
-      micIcon.style.filter = 'brightness(0) invert(1)'; // Makes the icon white
-    }
-    
+
+    micIcon.style.filter = 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18))';
+
     micIcon.style.width = '100%';
     micIcon.style.height = '100%';
     micIcon.style.transition = 'transform 0.2s ease';
-    
+
     // Handle image loading error
     micIcon.onerror = () => {
       console.error('TalkType: Failed to load microphone icon, using emoji fallback');
       micIcon.style.display = 'none';
       createEmojiIcon();
     };
-    
-    // Log successful load
+
     micIcon.onload = () => {
-      console.log('TalkType: Successfully loaded microphone icon!');
+      debugLog('TalkType: Successfully loaded microphone icon');
     };
-    
+
     micButton.appendChild(micIcon);
   } else {
     // Use emoji fallback immediately
     createEmojiIcon();
   }
-  
+
   // Function to create emoji fallback
   function createEmojiIcon() {
     const textIcon = document.createElement('div');
@@ -825,10 +821,10 @@ function addMicrophoneToInput(inputElement) {
     textIcon.style.fontSize = '14px';
     textIcon.style.textAlign = 'center';
     textIcon.style.lineHeight = '20px';
-    textIcon.style.color = '#6F42C1'; // Use purple TalkType brand color
+    textIcon.style.color = '#ff5c9f'; // Use purple TalkType brand color
     micButton.appendChild(textIcon);
   }
-  
+
   // Add recording indicator
   const recordingIndicator = document.createElement('span');
   recordingIndicator.className = 'audio-to-text-recording-indicator';
@@ -843,7 +839,7 @@ function addMicrophoneToInput(inputElement) {
   recordingIndicator.style.boxShadow = '0 0 3px rgba(255, 92, 138, 0.5)'; // Softer glow
   // Don't set animation directly to avoid CSP issues
   recordingIndicator.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-  
+
   // Add animations safely via extension's CSS instead of inline JavaScript
   // This avoids Content Security Policy violations
   if (!document.getElementById('audio-to-text-animations')) {
@@ -852,65 +848,65 @@ function addMicrophoneToInput(inputElement) {
     link.id = 'audio-to-text-animations';
     link.rel = 'stylesheet';
     link.href = chrome.runtime.getURL('styles.css');
-    
+
     // Append to document
     (document.head || document.documentElement).appendChild(link);
-    
+
     // Set class names for animations instead of inline styles
     recordingIndicator.classList.add('pulse-animation');
   }
-  
+
   micButton.appendChild(recordingIndicator);
-  
+
   // Add more subtle TalkType branded hover effects
   micButton.addEventListener('mouseenter', () => {
     micButton.style.opacity = '1';
     micButton.style.transform = 'scale(1.1)';
     micButton.style.animation = 'subtle-glow 2s infinite';
-    
+
     if (isDarkMode) {
-      micButton.style.background = 'rgba(111, 66, 193, 0.25)';
-      micButton.style.border = '1px solid rgba(111, 66, 193, 0.5)';
+      micButton.style.background = 'rgba(255, 92, 159, 0.25)';
+      micButton.style.border = '1px solid rgba(255, 92, 159, 0.5)';
       // No glow effect for dark mode - it's too harsh
     } else {
-      micButton.style.background = 'rgba(111, 66, 193, 0.2)';
-      micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+      micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+      micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
       // Subtle glow for light mode only
-      micButton.style.boxShadow = '0 1px 4px rgba(111, 66, 193, 0.3)';
+      micButton.style.boxShadow = '0 1px 4px rgba(255, 92, 159, 0.3)';
     }
   });
-  
+
   micButton.addEventListener('mouseleave', () => {
     // Only change styling if not recording
     if (!isRecording || activeInput !== inputElement) {
       micButton.style.opacity = '1';
       micButton.style.transform = 'scale(1)';
       micButton.style.animation = 'none';
-      
+
       if (isDarkMode) {
-        micButton.style.background = 'rgba(111, 66, 193, 0.2)';
-        micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+        micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+        micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
       } else {
-        micButton.style.background = 'rgba(111, 66, 193, 0.15)';
-        micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+        micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+        micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
       }
-      
-      micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.3)';
+
+      micButton.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)';
       // We keep the button visible at all times
     }
   });
-  
+
   micButton.addEventListener('mousedown', (event) => {
     event.preventDefault();
     micButton.style.transform = 'scale(0.95)';
     micButton.style.boxShadow = '0 0 2px rgba(0,0,0,0.1)';
   });
-  
+
   micButton.addEventListener('mouseup', () => {
     micButton.style.transform = 'scale(1.1)';
     micButton.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
   });
-  
+
   // Add click event to microphone button - simplified but robust
   micButton.onclick = async function(event) {
     // Prevent any default behavior and event bubbling
@@ -920,7 +916,7 @@ function addMicrophoneToInput(inputElement) {
     if (!event.isTrusted) {
       return;
     }
-    
+
     const focusedElement = document.activeElement;
     const inputHasFocus =
       focusedElement === inputElement ||
@@ -933,20 +929,20 @@ function addMicrophoneToInput(inputElement) {
     }
 
     debugLog('TalkType: Mic button clicked, isRecording:', isRecording);
-    
+
     // Visual feedback - always show something when clicked
     micButton.style.transform = 'scale(1.1)';
-    
+
     try {
       // SIMPLIFIED LOGIC: Just toggle based on recording state
       if (isRecording) {
         // We're recording, so stop it and process
         debugLog('TalkType: Stopping recording...');
         showStatusNotification('Processing recording...', 'info');
-        
+
         // Update button appearance to processing state - more subtle
         micButton.style.animation = 'subtle-glow 2s infinite';
-        
+
         if (micButton.dataset.darkMode === 'true') {
           micButton.style.background = 'rgba(52, 168, 83, 0.25)'; // Green processing color for dark mode
           micButton.style.border = '1px solid rgba(52, 168, 83, 0.4)';
@@ -954,29 +950,29 @@ function addMicrophoneToInput(inputElement) {
           micButton.style.background = 'rgba(52, 168, 83, 0.2)'; // Green processing color for light mode
           micButton.style.border = '1px solid rgba(52, 168, 83, 0.35)';
         }
-        
+
         micButton.style.boxShadow = '0 1px 4px rgba(52, 168, 83, 0.3)';
-        
+
         // Get the recording indicator
         const recordingIndicator = micButton.querySelector('.audio-to-text-recording-indicator');
         if (recordingIndicator) {
           recordingIndicator.style.display = 'none'; // Hide the recording indicator
         }
-        
+
         // Stop recording and process the audio
         await stopRecording(); // Make sure we await this
-      } 
+      }
       else {
         // Not recording, start a new recording
         debugLog('TalkType: Starting new recording...');
         showStatusNotification('Recording... Click to stop', 'recording');
-        
+
         // Set active input element as a global target
         activeInput = inputElement;
-        
+
         // Update visual state - more subtle when recording
         micButton.style.animation = 'subtle-glow 1.5s infinite';
-        
+
         if (isDarkMode) {
           micButton.style.background = 'rgba(255, 92, 138, 0.25)'; // Softer pink for dark mode
           micButton.style.border = '1px solid rgba(255, 92, 138, 0.4)';
@@ -984,20 +980,20 @@ function addMicrophoneToInput(inputElement) {
           micButton.style.background = 'rgba(255, 92, 138, 0.2)'; // Softer pink for light mode
           micButton.style.border = '1px solid rgba(255, 92, 138, 0.35)';
         }
-        
+
         micButton.style.boxShadow = '0 1px 4px rgba(255, 92, 138, 0.3)';
-        
+
         // Get the recording indicator and show it
         const recordingIndicator = micButton.querySelector('.audio-to-text-recording-indicator');
         if (recordingIndicator) {
           recordingIndicator.style.display = 'block'; // Show the recording indicator
           recordingIndicator.classList.add('pulse-animation');
         }
-        
+
         // Start the recording process
         await startSimpleRecording();
       }
-      
+
       // Simplified function for starting recording - more direct
       async function startSimpleRecording() {
         try {
@@ -1005,7 +1001,7 @@ function addMicrophoneToInput(inputElement) {
           if (!audioService || !apiService) {
             debugLog('TalkType: Services not initialized, initializing now...');
             showStatusNotification('Initializing TalkType...', 'processing');
-            
+
             // Initialize directly with storage API key
             await new Promise((resolve) => {
               window.TalkTypeStorage.getWithApiKey(['apiKey', 'transcriptionStyle']).then(function(result) {
@@ -1030,7 +1026,7 @@ function addMicrophoneToInput(inputElement) {
                 resolve();
               });
             });
-            
+
             // Verify services were created
             if (!audioService || !apiService) {
               console.error('TalkType: Failed to initialize services!');
@@ -1038,7 +1034,7 @@ function addMicrophoneToInput(inputElement) {
               return;
             }
           }
-          
+
           // Simple animation using class-based approach
           const micIcon = micButton.querySelector('img');
           if (micIcon) {
@@ -1047,25 +1043,25 @@ function addMicrophoneToInput(inputElement) {
               micIcon.classList.remove('wiggle-animation');
             }, 500);
           }
-          
+
           // Now start the actual recording
           debugLog('TalkType: Calling startRecording directly...');
           await startRecording(inputElement, recordingIndicator);
-          
+
           debugLog('TalkType: Recording started successfully');
         } catch (error) {
           console.error('TalkType: Error starting recording:', error);
           showStatusNotification('Error starting recording: ' + error.message, 'error');
-          
+
           // Reset button appearance
           if (micButton.dataset.darkMode === 'true') {
-            micButton.style.background = 'rgba(111, 66, 193, 0.2)';
-            micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+            micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+            micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
           } else {
-            micButton.style.background = 'rgba(111, 66, 193, 0.15)';
-            micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+            micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+            micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
           }
-          
+
           // Hide the recording indicator
           const recordingIndicator = micButton.querySelector('.audio-to-text-recording-indicator');
           if (recordingIndicator) {
@@ -1076,35 +1072,35 @@ function addMicrophoneToInput(inputElement) {
     } catch (error) {
       console.error('TalkType: Error handling click:', error);
       showStatusNotification('Error: ' + error.message, 'error');
-      
+
       // Reset button appearance
       setTimeout(() => {
         micButton.style.transform = 'scale(1)';
         micButton.style.animation = 'none';
-        
+
         if (micButton.dataset.darkMode === 'true') {
-          micButton.style.background = 'rgba(111, 66, 193, 0.2)';
-          micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+          micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+          micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
         } else {
-          micButton.style.background = 'rgba(111, 66, 193, 0.15)';
-          micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+          micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+          micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
         }
-        
-        micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.3)';
+
+        micButton.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)';
       }, 500);
     }
   };
-  
+
   // Always show mic button, but update position on focus
   inputElement.addEventListener('focus', () => {
     positionMicButton(inputElement, micButton);
   });
-  
+
   // No need to hide on blur anymore, we keep it visible
-  
+
   // Position the button appropriately based on the input element
   positionMicButton(inputElement, micButton);
-  
+
   // Listen for input resize (if ResizeObserver is available)
   if (window.ResizeObserver) {
     const resizeObserver = new ResizeObserver(() => {
@@ -1112,12 +1108,12 @@ function addMicrophoneToInput(inputElement) {
     });
     resizeObserver.observe(inputElement);
   }
-  
+
   // Listen for input position changes
   window.addEventListener('resize', () => {
     positionMicButton(inputElement, micButton);
   });
-  
+
   // Update position when input changes visibility
   const observer = new MutationObserver(() => {
     positionMicButton(inputElement, micButton);
@@ -1128,68 +1124,68 @@ function addMicrophoneToInput(inputElement) {
 // Helper function to strictly validate if an element is a proper text input
 function isValidTextInputElement(element) {
   if (!element) return false;
-  
+
   // Get the computed style to check actual visibility
   const computedStyle = window.getComputedStyle(element);
-  
+
   // Basic visibility checks
-  if (computedStyle.display === 'none' || 
-      computedStyle.visibility === 'hidden' || 
+  if (computedStyle.display === 'none' ||
+      computedStyle.visibility === 'hidden' ||
       parseFloat(computedStyle.opacity) < 0.1 ||
-      element.offsetHeight === 0 || 
+      element.offsetHeight === 0 ||
       element.offsetWidth === 0) {
     return false;
   }
-  
+
   // Check element type and attributes
   const tagName = element.tagName.toLowerCase();
-  
+
   // Check for <input> with valid text types
   if (tagName === 'input') {
     const inputType = (element.getAttribute('type') || 'text').toLowerCase();
     const validTypes = ['text', 'search', 'email', 'url', 'tel'];
-    
+
     // Only allow specific input types
     return validTypes.includes(inputType) && !element.disabled && !element.readOnly;
   }
-  
+
   // Check for <textarea>
   if (tagName === 'textarea') {
     return !element.disabled && !element.readOnly;
   }
-  
+
   // Check for contentEditable divs, spans, etc.
   if (element.isContentEditable) {
     // Make sure it's not a control panel, button, or link
     // By checking for interactive elements inside
     const hasButtons = element.querySelectorAll('button, a, [role="button"]').length > 0;
     const hasClicks = element.onclick !== null;
-    
+
     // Check if it's intended to be a textbox by role or aria attributes
-    const isTextbox = element.getAttribute('role') === 'textbox' || 
+    const isTextbox = element.getAttribute('role') === 'textbox' ||
                       element.getAttribute('aria-multiline') === 'true';
-                      
+
     // Check dimensions - text inputs are typically larger than icon buttons
     const isLargeEnough = element.offsetWidth > 50 && element.offsetHeight > 20;
-    
+
     // Look for common text input classes and placeholders
     const hasTextClasses = element.className.toLowerCase().match(/input|text|edit|field|area|compose|comment/);
     const hasPlaceholder = element.getAttribute('placeholder') !== null;
-    
+
     // Look for element descendants that suggest it's not a text input
     const hasInteractiveDescendants = element.querySelector('button, select, [role="button"], [role="menuitem"], [role="tab"]') !== null;
-    
+
     // Check for explicit aria-label suggesting this is a text field
     const ariaLabel = (element.getAttribute('aria-label') || '').toLowerCase();
     const hasTextLabel = ariaLabel.match(/comment|text|write|input|compose|editor|post|message|reply|search/) !== null;
-    
+
     // Combine all checks - must have positive indicators and no disqualifying attributes
-    return (isTextbox || hasTextClasses || hasTextLabel || hasPlaceholder || isLargeEnough) && 
+    return (isTextbox || hasTextClasses || hasTextLabel || hasPlaceholder || isLargeEnough) &&
            !hasButtons && !hasClicks && !hasInteractiveDescendants;
   }
-  
+
   // Special case for specific rich text editors - expanded list
-  if (element.classList.contains('ql-editor') || 
+  if (element.classList.contains('ql-editor') ||
       element.classList.contains('ProseMirror') ||
       element.classList.contains('public-DraftEditor-content') ||
       element.classList.contains('richTextArea') ||
@@ -1200,16 +1196,16 @@ function isValidTextInputElement(element) {
       (element.getAttribute('data-testid')?.includes('rich-text'))) {
     return true;
   }
-  
+
   // Special case for iframes that are editors
-  if (tagName === 'iframe' && 
+  if (tagName === 'iframe' &&
       (element.id.includes('editor') || element.name.includes('editor'))) {
     return true;
   }
-  
+
   // Special case for common editor containers - expanded for better detection
-  if (element.getAttribute('role') === 'textbox' || 
-      element.getAttribute('data-testid')?.includes('input') || 
+  if (element.getAttribute('role') === 'textbox' ||
+      element.getAttribute('data-testid')?.includes('input') ||
       element.getAttribute('data-testid')?.includes('editor') ||
       element.getAttribute('data-testid')?.includes('composer') ||
       element.getAttribute('aria-label')?.includes('ompose') || // Catches "Compose", "compose", etc.
@@ -1217,7 +1213,7 @@ function isValidTextInputElement(element) {
       (element.isContentEditable && element.getAttribute('aria-multiline') === 'true')) {
     return true;
   }
-  
+
   // If we get here, it's not a valid text input
   return false;
 }
@@ -1228,18 +1224,18 @@ function positionMicButton(inputElement, micButton) {
   // console.log('TalkType: Positioning mic button for input:', inputElement);
   const inputRect = inputElement.getBoundingClientRect();
   // console.log('TalkType: Input element rect:', inputRect);
-  
+
   // Determine the type of input element
   const elementType = inputElement.tagName.toLowerCase();
   const isTextArea = elementType === 'textarea';
   const isContentEditable = inputElement.isContentEditable;
-  const isLargeElement = isTextArea || isContentEditable || 
-                        (inputRect.height > 40) || 
+  const isLargeElement = isTextArea || isContentEditable ||
+                        (inputRect.height > 40) ||
                         (elementType !== 'input' && elementType !== 'textarea');
-  
+
   // IMPROVED POSITIONING: Create a wrapper element that will be positioned absolutely
   // relative to the input. This provides better alignment in all scenarios.
-  
+
   // Check if we already have a wrapper for this button
   let wrapper = micButton.parentElement;
   if (!wrapper || !wrapper.classList.contains('talktype-button-wrapper')) {
@@ -1249,25 +1245,25 @@ function positionMicButton(inputElement, micButton) {
     wrapper.style.position = 'absolute';
     wrapper.style.zIndex = '99999';
     wrapper.style.pointerEvents = 'none'; // Let clicks go through to the button
-    
+
     // Move button into the wrapper
     if (micButton.parentElement) {
       micButton.parentElement.removeChild(micButton);
     }
     wrapper.appendChild(micButton);
-    
+
     // Make sure the button itself can receive clicks
     micButton.style.pointerEvents = 'auto';
-    
+
     // Add wrapper directly to the document body for best positioning
     document.body.appendChild(wrapper);
   }
-  
+
   // If input is not visible, hidden, disabled, or has zero dimensions, hide the wrapper
   const computedStyle = window.getComputedStyle(inputElement);
-  if (inputRect.width === 0 || inputRect.height === 0 || 
-      inputElement.offsetParent === null || 
-      computedStyle.display === 'none' || 
+  if (inputRect.width === 0 || inputRect.height === 0 ||
+      inputElement.offsetParent === null ||
+      computedStyle.display === 'none' ||
       computedStyle.visibility === 'hidden' ||
       (inputElement.disabled === true) ||
       (inputElement.readOnly === true) ||
@@ -1276,39 +1272,39 @@ function positionMicButton(inputElement, micButton) {
     wrapper.style.display = 'none';
     return;
   }
-  
+
   // Check if the element is part of the page and not in an iframe or overlay
   let isInPage = true;
   let parent = inputElement.parentElement;
-  
+
   while (parent !== null) {
     const parentStyle = window.getComputedStyle(parent);
     // Check if parent is invisible or detached from the main document
-    if (parentStyle.display === 'none' || parentStyle.visibility === 'hidden' || 
+    if (parentStyle.display === 'none' || parentStyle.visibility === 'hidden' ||
         parseFloat(parentStyle.opacity) < 0.1) {
       isInPage = false;
       break;
     }
     parent = parent.parentElement;
   }
-  
+
   if (!isInPage) {
     wrapper.style.display = 'none';
     return;
   }
-  
+
   // Show the wrapper
   wrapper.style.display = 'block';
-  
+
   // Position calculation based on element type and viewport position
   // Use absolute positioning relative to viewport, then adjust for scroll
-  
+
   // Calculate position to ensure mic is properly placed
   const padding = 8; // Minimum padding from edge
-  
+
   // Get position relative to viewport
   let top, right;
-  
+
   if (isLargeElement) {
     // For large elements (textareas, contenteditable)
     // Place in top-right corner
@@ -1318,33 +1314,33 @@ function positionMicButton(inputElement, micButton) {
     // For regular inputs, position at vertically centered on right side
     top = inputRect.top + (inputRect.height - 28) / 2; // Center vertically (button is 28px)
     right = window.innerWidth - (inputRect.right - padding);
-    
+
     // For small inputs, ensure the button doesn't overflow
     if (inputRect.height < 28) {
       // Adjust to be centered on the input's height
       top = inputRect.top + (inputRect.height - 28) / 2;
     }
-    
+
     // For messaging apps with chat boxes (often at bottom of screen)
     // Check if this is likely a chat input (bottom of viewport, wider than tall)
-    if (inputRect.bottom > window.innerHeight - 100 && 
+    if (inputRect.bottom > window.innerHeight - 100 &&
         inputRect.width > inputRect.height * 3) {
       // This is likely a chat input at the bottom of the screen
       // Position the button higher up to avoid being cut off
       top = inputRect.top - 2; // Position at the top of the input
     }
   }
-  
+
   // Apply the calculated position to the wrapper
   wrapper.style.top = `${top}px`;
   wrapper.style.right = `${right}px`;
   wrapper.style.left = 'auto'; // Clear any previous left value
-  
+
   // Only adjust padding for standard input elements
   if (elementType === 'input' || elementType === 'textarea') {
     // If input has a right padding of less than 30px, add padding to make room for the button
     const rightPadding = parseInt(computedStyle.paddingRight, 10) || 0;
-    
+
     if (rightPadding < 25 && !inputElement.dataset.originalPadding) {
       // Store original padding
       inputElement.dataset.originalPadding = rightPadding;
@@ -1356,24 +1352,24 @@ function positionMicButton(inputElement, micButton) {
 // Function to start recording
 async function startRecording(targetInput, indicator) {
   console.log('TalkType: Starting recording with services:', !!audioService, !!apiService);
-  
+
   // If services aren't initialized, show a helpful error and try to initialize again
   if (!audioService || !apiService) {
     console.error('TalkType: Services not initialized!');
-    
+
     // Show error notification
     showStatusNotification('TalkType services not initialized. Reconnecting...', 'error');
-    
+
     // Try to initialize directly with the simplified approach
     try {
       console.log('TalkType: Attempting to create services directly');
-      
+
       // Create services directly if classes are available globally
       if (typeof window.AudioRecordingService !== 'undefined') {
         audioService = new window.AudioRecordingService();
         console.log('TalkType: AudioRecordingService created directly');
       }
-      
+
       if (typeof window.GeminiApiService !== 'undefined') {
         window.TalkTypeStorage.getWithApiKey(['apiKey', 'transcriptionStyle']).then(function(result) {
           apiKey = result.apiKey || '';
@@ -1381,10 +1377,10 @@ async function startRecording(targetInput, indicator) {
         debugLog('TalkType: Creating API service with key:', apiKey ? 'Valid key' : 'Empty key');
           apiService = new window.GeminiApiService(apiKey);
           if (result.transcriptionStyle) apiService.setStyle(result.transcriptionStyle);
-          
+
           console.log('TalkType: Services restored, retrying recording');
           showStatusNotification('Services reconnected! Trying again...', 'info');
-          
+
           // Now try recording again after a short delay
           setTimeout(() => {
             if (audioService && apiService && targetInput && indicator) {
@@ -1401,12 +1397,12 @@ async function startRecording(targetInput, indicator) {
     } catch (directInitError) {
       console.error('TalkType: Failed to create services directly:', directInitError);
     }
-    
+
     // Show error message
     showStatusNotification('Could not initialize TalkType. Please refresh the page or check your API key in options.', 'error');
     return;
   }
-  
+
   // Continue with the core recording logic
   await startRecordingCore(targetInput, indicator);
 }
@@ -1418,35 +1414,35 @@ async function startRecordingCore(targetInput, indicator) {
     console.log('TalkType: Already recording, ignoring start request');
     return;
   }
-  
+
   try {
     // Comprehensive browser API debugging
     console.log('TalkType: Checking browser API support...');
-    
+
     if (!navigator.mediaDevices) {
       console.error('TalkType: navigator.mediaDevices not available!');
       showStatusNotification('Your browser does not support media recording', 'error');
       return;
     }
-    
+
     console.log('TalkType: mediaDevices API available:', !!navigator.mediaDevices);
     console.log('TalkType: getUserMedia available:', !!navigator.mediaDevices.getUserMedia);
     console.log('TalkType: MediaRecorder available:', typeof MediaRecorder !== 'undefined');
-    
+
     // Check if recording is supported by audioService
     if (!audioService.isRecordingSupported()) {
       console.error('TalkType: Recording not supported according to audioService');
       showStatusNotification('Your browser does not support audio recording', 'error');
       return;
     }
-    
+
     // Check permissions directly
     console.log('TalkType: Checking permissions...');
     if (navigator.permissions && navigator.permissions.query) {
       try {
         const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
         console.log('TalkType: Microphone permission status:', permissionStatus.state);
-        
+
         if (permissionStatus.state === 'denied') {
           showStatusNotification('Microphone permission denied. Please enable in your browser settings.', 'error');
           return;
@@ -1455,20 +1451,20 @@ async function startRecordingCore(targetInput, indicator) {
         console.log('TalkType: Permission check error (this is normal in some browsers):', permError);
       }
     }
-    
+
     // Update state
     isRecording = true;
     activeInput = targetInput;
     debugLog('TalkType: Set isRecording=true');
-    
+
     // Show recording indicator with animations using classes
     if (indicator) {
       console.log('TalkType: Showing recording indicator');
       indicator.style.display = 'block';
-      
+
       // Add pulse animation class
       indicator.classList.add('pulse-animation');
-      
+
       // Find the mic button (parent of the indicator)
       const micButton = indicator.parentElement;
       if (micButton) {
@@ -1484,7 +1480,7 @@ async function startRecordingCore(targetInput, indicator) {
             micIcon.classList.remove('wiggle-animation');
           }, 500);
         }
-        
+
         // Add more prominent TalkType branded recording state
         micButton.style.opacity = '1';
         micButton.style.background = 'rgba(255, 64, 129, 0.2)';
@@ -1493,10 +1489,10 @@ async function startRecordingCore(targetInput, indicator) {
         micButton.style.filter = 'drop-shadow(0 0 4px rgba(255, 64, 129, 0.4))';
       }
     }
-    
+
     // Show enhanced listening notification - shorter text
     showStatusNotification('Recording... Click to stop', 'recording');
-    
+
     // Start recording with thorough error handling
     console.log('TalkType: Calling audioService.startRecording()...');
     try {
@@ -1506,18 +1502,18 @@ async function startRecordingCore(targetInput, indicator) {
       // This detailed error is handled below in the main catch block
       throw recError;
     }
-    
+
     debugLog('TalkType: Recording active');
   } catch (error) {
     console.error('TalkType: Failed to start recording:', error);
-    
+
     // Handle different error types with user-friendly notifications instead of alerts
     if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
       console.log('TalkType: Permission error detected:', error.name);
-      
+
       // Create a detailed but friendly notification
       showStatusNotification('Microphone permission needed. Click the lock icon in your address bar and allow microphone access.', 'error');
-      
+
       // Try to check system permissions too
       if (navigator.permissions && navigator.permissions.query) {
         navigator.permissions.query({ name: 'microphone' })
@@ -1528,7 +1524,7 @@ async function startRecordingCore(targetInput, indicator) {
             console.log('TalkType: System permission check failed:', permErr);
           });
       }
-      
+
       // On Mac, show a special notification
       if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
         console.log('TalkType: Mac detected, showing special message');
@@ -1545,28 +1541,28 @@ async function startRecordingCore(targetInput, indicator) {
       console.log('TalkType: General recording error:', error);
       showStatusNotification(`Recording error: ${error.message}`, 'error');
     }
-    
+
     // Reset state
     isRecording = false;
     activeInput = null;
     console.log('TalkType: Reset recording state after error');
-    
+
     // Hide recording indicator and update button state
     if (indicator) {
       indicator.style.display = 'none';
-      
+
       // Reset button appearance
       const micButton = indicator.parentElement;
       if (micButton) {
         micButton.style.animation = '';
         micButton.style.opacity = '1';
-        micButton.style.background = 'rgba(111, 66, 193, 0.15)';
-        micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
-        micButton.style.boxShadow = '0 2px 6px rgba(111, 66, 193, 0.4)';
+        micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+        micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
+        micButton.style.boxShadow = '0 2px 6px rgba(255, 92, 159, 0.4)';
         micButton.style.filter = 'none';
       }
     }
-    
+
     // Remove any recording notifications
     document.querySelectorAll('.audio-to-text-notification-recording').forEach(notification => {
       if (document.body.contains(notification)) {
@@ -1579,52 +1575,52 @@ async function startRecordingCore(targetInput, indicator) {
 // Function to stop recording and process audio
 async function stopRecording() {
   debugLog('TalkType: stopRecording called, isRecording:', isRecording, 'activeInput:', !!activeInput);
-  
+
   if (!audioService) {
     console.error('TalkType: Cannot stop recording - audioService is not initialized');
     showStatusNotification('Error: Audio service not initialized', 'error');
     return;
   }
-  
+
   if (!isRecording) {
     console.error('TalkType: Cannot stop recording - not currently recording');
     showStatusNotification('Error: Not currently recording', 'error');
     return;
   }
-  
+
   if (!activeInput) {
     console.error('TalkType: Cannot stop recording - no active input');
     showStatusNotification('Error: No active input element', 'error');
     return;
   }
-  
+
   try {
     debugLog('TalkType: Stopping recording on audioService...');
-    
+
     // Remove ALL existing notifications first to avoid duplicates
     document.querySelectorAll('.audio-to-text-notification').forEach(notification => {
       if (document.body.contains(notification)) {
         document.body.removeChild(notification);
       }
     });
-    
+
     // Now show a single processing notification
     showStatusNotification('Processing audio...', 'processing');
-    
+
     // Stop recording and get audio blob
     const audioBlob = await audioService.stopRecording();
     debugLog('TalkType: Recording stopped successfully, got audio blob:', !!audioBlob);
-    
+
     // Update recording state immediately
     isRecording = false;
-    
+
     // Store currentInput locally for processing
     const currentInput = activeInput;
-    
+
     // Hide all recording indicators and update button styling
     document.querySelectorAll('.audio-to-text-recording-indicator').forEach(indicator => {
       indicator.style.display = 'none';
-      
+
       // Update the parent button styling to show processing state
       const micButton = indicator.parentElement;
       if (micButton) {
@@ -1635,19 +1631,19 @@ async function stopRecording() {
           micButton.style.background = 'rgba(52, 168, 83, 0.2)'; // Green processing color for light mode
           micButton.style.border = '1px solid rgba(52, 168, 83, 0.35)';
         }
-        
+
         micButton.style.boxShadow = '0 1px 4px rgba(52, 168, 83, 0.3)';
-        
+
         // Add a subtle pulse animation during processing
         micButton.style.animation = 'subtle-glow 1.5s infinite';
-        
+
         // We're using the subtle-glow animation now which is already defined
       }
     });
-    
+
     // Process the audio data directly instead of creating another function
     debugLog('TalkType: Processing audio data directly...');
-    
+
     let progressNotification = null;
 
     try {
@@ -1664,15 +1660,15 @@ async function stopRecording() {
       // Create a fresh API service with current style
       const transcriptionService = new window.GeminiApiService(apiKeyResult.apiKey);
       if (apiKeyResult.transcriptionStyle) transcriptionService.setStyle(apiKeyResult.transcriptionStyle);
-      
+
       // Make sure the service is valid
       if (!transcriptionService) {
         throw new Error('Could not create transcription service');
       }
-      
+
       // Show transcribing notification with progress bar
       progressNotification = createProgressNotification('Transcribing audio...');
-      
+
       // Process the audio and get the transcription
       // Add callback to update progress bar during transcription
       const transcription = await transcriptionService.transcribeAudio(audioBlob, (status, percentage) => {
@@ -1681,7 +1677,7 @@ async function stopRecording() {
         }
       });
       debugLog('TalkType: Transcription received');
-      
+
       // Complete progress animation and show success notification
       if (progressNotification) {
         updateProgressNotification(progressNotification, 100);
@@ -1694,7 +1690,7 @@ async function stopRecording() {
       } else {
         showStatusNotification('Transcription complete!', 'success');
       }
-      
+
       // Insert the transcription at cursor position (append if no selection)
       if (currentInput) {
         insertTextIntoInput(currentInput, transcription);
@@ -1703,65 +1699,65 @@ async function stopRecording() {
       }
     } catch (transcriptionError) {
       console.error('TalkType: Transcription failed:', transcriptionError);
-      
+
       // Hide progress notification if it exists
       if (progressNotification && document.body.contains(progressNotification)) {
         document.body.removeChild(progressNotification);
       }
-      
+
       showStatusNotification(`Transcription failed: ${transcriptionError.message}`, 'error');
     }
-    
+
     // Reset button appearance after processing
     document.querySelectorAll('.audio-to-text-mic-button').forEach(button => {
       button.style.animation = 'none';
       button.style.transform = 'scale(1)';
       button.style.opacity = '1';
-      
+
       if (button.dataset.darkMode === 'true') {
-        button.style.background = 'rgba(111, 66, 193, 0.2)';
-        button.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+        button.style.background = 'rgba(255, 92, 159, 0.2)';
+        button.style.border = '1px solid rgba(255, 92, 159, 0.4)';
       } else {
-        button.style.background = 'rgba(111, 66, 193, 0.15)';
-        button.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+        button.style.background = 'rgba(255, 92, 159, 0.15)';
+        button.style.border = '1px solid rgba(255, 92, 159, 0.3)';
       }
-      
-      button.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.3)';
+
+      button.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)';
       button.style.filter = 'none';
     });
-    
+
   } catch (error) {
     console.error('TalkType: Failed to stop recording:', error);
     showStatusNotification('Error: Failed to stop recording - ' + error.message, 'error');
-    
+
     // Reset state
     isRecording = false;
     activeInput = null;
-    
+
     // Hide all recording indicators and reset buttons
     document.querySelectorAll('.audio-to-text-recording-indicator').forEach(indicator => {
       indicator.style.display = 'none';
-      
+
       // Also reset the parent button
       const micButton = indicator.parentElement;
       if (micButton) {
         micButton.style.animation = 'none';
         micButton.style.transform = 'scale(1)';
         micButton.style.opacity = '1';
-        
+
         if (micButton.dataset.darkMode === 'true') {
-          micButton.style.background = 'rgba(111, 66, 193, 0.2)';
-          micButton.style.border = '1px solid rgba(111, 66, 193, 0.4)';
+          micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+          micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
         } else {
-          micButton.style.background = 'rgba(111, 66, 193, 0.15)';
-          micButton.style.border = '1px solid rgba(111, 66, 193, 0.3)';
+          micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+          micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
         }
-        
-        micButton.style.boxShadow = '0 1px 3px rgba(111, 66, 193, 0.3)';
+
+        micButton.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)';
         micButton.style.filter = 'none';
       }
     });
-    
+
     // Also remove any recording notifications on error
     document.querySelectorAll('.audio-to-text-notification-recording').forEach(notification => {
       if (document.body.contains(notification)) {
@@ -1775,8 +1771,8 @@ async function stopRecording() {
 // Function to show status notifications with enhanced visual appeal
 function showStatusNotification(message, type = 'info') {
   debugLog('TalkType: Showing notification', type);
-  
-  
+
+
   // Remove ALL existing notifications to avoid duplicates
   const existingNotifications = document.querySelectorAll(`.audio-to-text-notification`);
   existingNotifications.forEach(notification => {
@@ -1784,7 +1780,7 @@ function showStatusNotification(message, type = 'info') {
       document.body.removeChild(notification);
     }
   });
-  
+
   // Create notification element with enhanced glass morphism style
   const notification = document.createElement('div');
   notification.className = `audio-to-text-notification audio-to-text-notification-${type}`;
@@ -1805,7 +1801,7 @@ function showStatusNotification(message, type = 'info') {
   notification.style.webkitBackdropFilter = 'blur(16px)';
   notification.style.border = '2px solid rgba(255, 255, 255, 0.25)';
   notification.style.pointerEvents = 'all';
-  
+
   // Create notification styles with animations if they don't exist yet
   if (!document.getElementById('talktype-notification-styles')) {
     const styleEl = document.createElement('style');
@@ -1816,50 +1812,50 @@ function showStatusNotification(message, type = 'info') {
         50% { box-shadow: 0 12px 40px rgba(255, 255, 255, 0.5); border-color: rgba(255, 255, 255, 0.5); }
         100% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
       }
-      
+
       @keyframes talktype-gradientBg {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
       }
-      
+
       @keyframes talktype-float {
         0% { transform: translateY(0px); }
         50% { transform: translateY(-5px); }
         100% { transform: translateY(0px); }
       }
-      
+
       @keyframes talktype-sparkle {
         0%, 100% { opacity: 0; }
         50% { opacity: 1; }
       }
-      
+
       .talktype-gradient-notification {
-        background: linear-gradient(90deg, #4568DC, #7474BF, #348AC7, #56CCF2);
+        background: linear-gradient(90deg, #4568DC, #7474BF, #348AC7, #54d6bb);
         background-size: 300% 100%;
         animation: talktype-gradientBg 3s ease infinite;
       }
-      
+
       .talktype-recording-notification {
-        background: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.8));
+        background: linear-gradient(135deg, rgba(255, 92, 159, 0.85), rgba(70, 174, 247, 0.8));
         animation: talktype-gentle-pulse 2s infinite;
       }
-      
+
       .talktype-success-notification {
         background: linear-gradient(135deg, rgba(76, 175, 80, 0.85), rgba(105, 220, 155, 0.8));
       }
-      
+
       .talktype-error-notification {
         background: linear-gradient(135deg, rgba(244, 67, 54, 0.85), rgba(255, 87, 34, 0.8));
       }
-      
+
       .talktype-notification-icon {
         display: inline-block;
         margin-right: 10px;
         vertical-align: middle;
         animation: talktype-float 2s ease-in-out infinite;
       }
-      
+
       .talktype-sparkle {
         position: absolute;
         width: 5px;
@@ -1871,10 +1867,10 @@ function showStatusNotification(message, type = 'info') {
     `;
     document.head.appendChild(styleEl);
   }
-  
+
   // Create notification content with icon and message
   let notificationIcon = '';
-  
+
   // Set styles based on notification type with enhanced aesthetics
   if (type === 'error') {
     notification.classList.add('talktype-error-notification');
@@ -1885,7 +1881,7 @@ function showStatusNotification(message, type = 'info') {
   } else if (type === 'recording') {
     notification.classList.add('talktype-recording-notification');
     notificationIcon = '🎤';
-    
+
     // Add sparkle effects for recording
     for (let i = 0; i < 3; i++) {
       const sparkle = document.createElement('span');
@@ -1902,26 +1898,26 @@ function showStatusNotification(message, type = 'info') {
     notification.style.background = 'linear-gradient(135deg, rgba(33, 150, 243, 0.85), rgba(3, 169, 244, 0.8))';
     notificationIcon = 'ℹ️';
   }
-  
+
   // Create icon element
   const iconElement = document.createElement('span');
   iconElement.className = 'talktype-notification-icon';
   iconElement.textContent = notificationIcon;
-  
+
   // Create message text element
   const messageElement = document.createElement('span');
   messageElement.textContent = message;
   messageElement.style.verticalAlign = 'middle';
-  
+
   // Add icon and message to notification
   notification.appendChild(iconElement);
   notification.appendChild(messageElement);
-  
+
   // Apply common styles
   notification.style.color = 'white';
   notification.style.display = 'flex';
   notification.style.alignItems = 'center';
-  
+
   // Add close button with improved styling
   const closeButton = document.createElement('button');
   closeButton.innerHTML = '&times;';
@@ -1936,23 +1932,23 @@ function showStatusNotification(message, type = 'info') {
   closeButton.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
   closeButton.style.padding = '0 5px';
   closeButton.style.borderRadius = '50%';
-  
+
   // Add hover effects to close button
   closeButton.onmouseenter = () => {
     closeButton.style.opacity = '1';
     closeButton.style.transform = 'scale(1.1)';
   };
-  
+
   closeButton.onmouseleave = () => {
     closeButton.style.opacity = '0.8';
     closeButton.style.transform = 'scale(1)';
   };
-  
+
   closeButton.onclick = () => {
     if (document.body.contains(notification)) {
       notification.style.opacity = '0';
       notification.style.transform = 'translateY(30px) scale(0.9)';
-      
+
       setTimeout(() => {
         if (document.body.contains(notification)) {
           document.body.removeChild(notification);
@@ -1960,25 +1956,25 @@ function showStatusNotification(message, type = 'info') {
       }, 500);
     }
   };
-  
+
   notification.appendChild(closeButton);
-  
+
   // Add to DOM
   document.body.appendChild(notification);
-  
+
   // Trigger enhanced entrance animation (adjusted for top position)
   setTimeout(() => {
     notification.style.opacity = '1';
     notification.style.transform = 'translateY(0) scale(1)';
   }, 10);
-  
+
   // Auto-remove after timeout (except for recording notifications)
   if (type !== 'recording') {
     setTimeout(() => {
       if (document.body.contains(notification)) {
         notification.style.opacity = '0';
         notification.style.transform = 'translateY(-20px) scale(0.95)';
-        
+
         // Remove from DOM after transition
         setTimeout(() => {
           if (document.body.contains(notification)) {
@@ -1988,7 +1984,7 @@ function showStatusNotification(message, type = 'info') {
       }
     }, 6000);
   }
-  
+
   return notification;
 }
 
@@ -2000,12 +1996,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const selectedInput = getActiveInput();
       const hasActiveInput = selectedInput !== null && smartModeEnabled;
       debugLog('TalkType: Popup requested active input status:', hasActiveInput);
-      
+
       let response = {
         hasActiveInput: hasActiveInput,
         inputInfo: null
       };
-      
+
       if (hasActiveInput) {
         response.inputInfo = {
           type: selectedInput.tagName,
@@ -2013,7 +2009,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           className: selectedInput.className || '(no class)'
         };
       }
-      
+
       debugLog('TalkType: Sending response:', response);
       sendResponse(response);
       return true;
@@ -2037,12 +2033,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   } catch (error) {
     console.error('TalkType: Error processing message:', error);
-    sendResponse({ 
-      success: false, 
-      error: 'Error processing message: ' + error.message 
+    sendResponse({
+      success: false,
+      error: 'Error processing message: ' + error.message
     });
   }
-  
+
   // Return true to indicate we'll respond asynchronously
   return true;
 });
@@ -2094,7 +2090,7 @@ function insertTranscriptionIntoActiveInput(text) {
     showStatusNotification('Error: No active input element', 'error');
     return false;
   }
-  
+
   try {
     insertTextIntoInput(targetInput, text);
 
