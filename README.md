@@ -33,7 +33,7 @@ Pick a voice. Each style has its own generation config tuned for the job.
 
 ## Installation
 
-1. Download the extension zip from TalkType or clone this repo
+1. Download the extension zip from [talktype.app/downloads/talktype-extension.zip](https://talktype.app/downloads/talktype-extension.zip) or clone this repo
 2. Open `chrome://extensions/` in Chrome
 3. Toggle **Developer mode** (top-right)
 4. Click **Load unpacked**
@@ -100,7 +100,7 @@ No build step. No bundler. Vanilla JS all the way through.
 
 ## Version
 
-1.4
+1.5
 
 ## License
 

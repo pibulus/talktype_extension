@@ -7,6 +7,8 @@ class AudioRecordingService {
     this.stream = null;
     this.permissionDialog = null;
     this.permissionGranted = false;
+    this.recordingMimeType = '';
+    this.stopPromise = null;
   }
 
   /**
@@ -159,12 +161,37 @@ class AudioRecordingService {
     chrome.runtime.sendMessage({ action: 'requestMicrophonePermission' });
   }
 
+  getPreferredMimeType() {
+    if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) {
+      return '';
+    }
+
+    return [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/mp4'
+    ].find((mimeType) => MediaRecorder.isTypeSupported(mimeType)) || '';
+  }
+
+  stopStreamTracks() {
+    if (!this.stream) return;
+    this.stream.getTracks().forEach(track => track.stop());
+  }
+
   /**
    * Request microphone access and start recording
    * @returns {Promise<void>}
    */
   async startRecording() {
     try {
+      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+        throw new Error('Recording is already in progress');
+      }
+
+      this.stopPromise = null;
+      this.recordingMimeType = '';
+
       // Check if we're on Mac
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       
@@ -214,14 +241,16 @@ class AudioRecordingService {
       
       // Create media recorder with fallbacks for different browser implementations
       try {
-        this.mediaRecorder = new MediaRecorder(this.stream);
+        const preferredMimeType = this.getPreferredMimeType();
+        this.mediaRecorder = preferredMimeType
+          ? new MediaRecorder(this.stream, { mimeType: preferredMimeType })
+          : new MediaRecorder(this.stream);
+        this.recordingMimeType = this.mediaRecorder.mimeType || preferredMimeType || '';
       } catch (recorderError) {
         console.error('MediaRecorder error:', recorderError);
         
         // Clean up stream if media recorder creation fails
-        if (this.stream) {
-          this.stream.getTracks().forEach(track => track.stop());
-        }
+        this.stopStreamTracks();
         
         throw new Error('Could not create audio recorder. Your browser may not support this feature.');
       }
@@ -230,7 +259,9 @@ class AudioRecordingService {
       
       // Set up event handlers
       this.mediaRecorder.addEventListener('dataavailable', event => {
-        this.audioChunks.push(event.data);
+        if (event.data && event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
       });
       
       // Start recording with error handling
@@ -241,9 +272,7 @@ class AudioRecordingService {
         console.error('Error starting recording:', startError);
         
         // Clean up resources
-        if (this.stream) {
-          this.stream.getTracks().forEach(track => track.stop());
-        }
+        this.stopStreamTracks();
         
         throw new Error('Failed to start recording: ' + startError.message);
       }
@@ -258,32 +287,71 @@ class AudioRecordingService {
    * @returns {Promise<Blob>} - The recorded audio as a Blob
    */
   stopRecording() {
-    return new Promise((resolve, reject) => {
-      if (!this.mediaRecorder) {
-        reject(new Error('No active recording'));
-        return;
-      }
+    if (this.stopPromise) return this.stopPromise;
 
-      // Handle recording stop
-      this.mediaRecorder.addEventListener('stop', () => {
-        // Create audio blob from chunks
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-        
-        // Stop all tracks
-        if (this.stream) {
-          this.stream.getTracks().forEach(track => track.stop());
-        }
-        
+    if (!this.mediaRecorder) {
+      return Promise.reject(new Error('No active recording'));
+    }
+
+    const recorder = this.mediaRecorder;
+    const mimeType =
+      this.recordingMimeType ||
+      recorder.mimeType ||
+      this.audioChunks[0]?.type ||
+      'audio/webm';
+
+    this.stopPromise = new Promise((resolve, reject) => {
+      let settled = false;
+
+      const cleanup = () => {
+        this.stopStreamTracks();
         this.stream = null;
         this.mediaRecorder = null;
         this.audioChunks = [];
-        
-        console.log('Recording stopped, audio blob created');
-        resolve(audioBlob);
-      });
+        this.recordingMimeType = '';
+      };
 
-      // Stop recording
-      this.mediaRecorder.stop();
+      const settle = (handler, value) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        handler(value);
+      };
+
+      const resolveWithBlob = () => {
+        const audioBlob = new Blob(this.audioChunks, { type: mimeType });
+        if (!audioBlob.size) {
+          settle(reject, new Error('No audio captured'));
+          return;
+        }
+
+        console.log('Recording stopped, audio blob created');
+        settle(resolve, audioBlob);
+      };
+
+      recorder.addEventListener('stop', resolveWithBlob, { once: true });
+      recorder.addEventListener(
+        'error',
+        (event) => {
+          settle(reject, event.error || new Error('Recording failed'));
+        },
+        { once: true }
+      );
+
+      try {
+        if (recorder.state === 'inactive') {
+          resolveWithBlob();
+          return;
+        }
+
+        recorder.stop();
+      } catch (error) {
+        settle(reject, error);
+      }
+    });
+
+    return this.stopPromise.finally(() => {
+      this.stopPromise = null;
     });
   }
 

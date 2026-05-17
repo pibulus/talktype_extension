@@ -16,9 +16,9 @@ function saveOptions() {
   const apiKey = document.getElementById('apiKey').value.trim();
 
   window.TalkTypeStorage.setApiKey(apiKey)
-    .then(() => {
+    .then((savedKey) => {
       const status = document.getElementById('status');
-      status.textContent = 'API key saved.';
+      status.textContent = savedKey ? 'API key saved.' : 'API key removed.';
       status.className = 'status success';
       status.style.display = 'block';
 

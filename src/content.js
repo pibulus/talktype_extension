@@ -9,9 +9,22 @@ let isRecording = false;
 let activeInput = null;
 let apiKey = ''; // This should be set through extension options
 let smartModeEnabled = true; // Default to enabled
+const TALKTYPE_DEBUG = false;
+const debugLog = (...args) => {
+  if (TALKTYPE_DEBUG) console.log(...args);
+};
+
+function getActiveInput() {
+  if (!activeInput || activeInput.isConnected === false) {
+    activeInput = null;
+    return null;
+  }
+
+  return activeInput;
+}
 
 // Initialize - document_idle guarantees DOM is ready
-console.log('TalkType content script loading...');
+debugLog('TalkType content script loading...');
 initializeExtensionCore();
 
 
@@ -20,7 +33,7 @@ function initializeExtensionCore() {
   // Verify that required objects are available in the page context
   if (typeof window.AudioRecordingService === 'undefined') {
     console.error('TalkType: AudioRecordingService is not defined! Check that audio-service.js is loaded.');
-    console.log('TalkType: Available global objects:', Object.keys(window).filter(k => k.includes('Service')));
+    debugLog('TalkType: Available global objects:', Object.keys(window).filter(k => k.includes('Service')));
     showStatusNotification('TalkType initialization error: Required scripts missing', 'error');
     return;
   }
@@ -40,25 +53,25 @@ function initializeExtensionCore() {
   
   // Get API key from local storage and preferences from sync storage.
   window.TalkTypeStorage.getWithApiKey(['apiKey', 'smartModeEnabled', 'transcriptionStyle']).then(function(result) {
-    console.log('TalkType: Got API key from storage:', result.apiKey ? 'Valid key' : 'Empty key');
+    debugLog('TalkType: Got API key from storage:', result.apiKey ? 'Valid key' : 'Empty key');
     apiKey = result.apiKey || '';
     
     // Get smart mode setting if available
     if (result.smartModeEnabled !== undefined) {
       smartModeEnabled = result.smartModeEnabled;
-      console.log('TalkType: Smart Mode setting loaded:', smartModeEnabled);
+      debugLog('TalkType: Smart Mode setting loaded:', smartModeEnabled);
     }
     
     // Initialize services - even with empty API key to allow detection of inputs
     try {
-      console.log('TalkType: Creating AudioRecordingService instance');
+      debugLog('TalkType: Creating AudioRecordingService instance');
       audioService = new window.AudioRecordingService();
       
-      console.log('TalkType: Creating GeminiApiService instance with API key');
+      debugLog('TalkType: Creating GeminiApiService instance with API key');
       apiService = new window.GeminiApiService(apiKey);
       if (result.transcriptionStyle) {
         apiService.setStyle(result.transcriptionStyle);
-        console.log('TalkType: Transcription style set to:', result.transcriptionStyle);
+        debugLog('TalkType: Transcription style set to:', result.transcriptionStyle);
       }
 
       // Check if services initialized correctly
@@ -69,22 +82,22 @@ function initializeExtensionCore() {
       }
       
       // Initialize input detection - do this regardless of API key status
-      console.log('TalkType: Initializing input detection');
+      debugLog('TalkType: Initializing input detection');
       initializeInputDetection();
       
       // Initialize focus tracking for smart mode
-      console.log('TalkType: Initializing focus tracking for smart mode');
+      debugLog('TalkType: Initializing focus tracking for smart mode');
       initializeFocusTracking();
       
       // Add observer to detect dynamically added inputs
-      console.log('TalkType: Setting up DOM mutation observer');
+      debugLog('TalkType: Setting up DOM mutation observer');
       observeDynamicInputs();
       
-      console.log('TalkType: Extension initialized successfully');
+      debugLog('TalkType: Extension initialized successfully');
       
       // Check for browser mic support as an early diagnostic
       if (audioService.isRecordingSupported()) {
-        console.log('TalkType: Browser supports recording');
+        debugLog('TalkType: Browser supports recording');
       } else {
         console.warn('TalkType: Browser may not support recording!');
         showStatusNotification('Your browser may not support recording. Chrome is recommended.', 'info');
@@ -109,17 +122,17 @@ function initializeExtensionCore() {
 
 // Function to initialize focus tracking for smart mode
 function initializeFocusTracking() {
-  console.log('TalkType: Initializing focus tracking for contextual transcription');
+  debugLog('TalkType: Initializing focus tracking for contextual transcription');
   
   // Track focus events on the entire document
   document.addEventListener('focusin', (event) => {
     // Check if the focused element is a text input
     if (isValidTextInputElement(event.target)) {
-      console.log('TalkType: Text input focused:', event.target);
+      debugLog('TalkType: Text input focused');
       activeInput = event.target;
       
       // For debugging
-      console.log('TalkType: Active input set with properties:', {
+      debugLog('TalkType: Active input set with properties:', {
         tagName: activeInput.tagName,
         id: activeInput.id || '(no id)',
         class: activeInput.className || '(no class)'
@@ -148,17 +161,33 @@ function initializeFocusTracking() {
       // or switching quickly between inputs
       setTimeout(() => {
         // Check if a new focus event happened during the delay
-        if (activeInput === event.target) {
-          console.log('TalkType: Active input lost focus, clearing');
+        if (activeInput !== event.target) return;
+
+        if (!event.target.isConnected) {
           activeInput = null;
-          
-          // Notify popup that no input is active
-          if (smartModeEnabled) {
-            chrome.runtime.sendMessage({
-              action: 'activeInputChanged',
-              hasActiveInput: false
-            });
-          }
+        } else if (!document.hasFocus()) {
+          // Opening the extension popup blurs the page. Keep this target so
+          // Smart Mode can still insert into the field the user picked.
+          return;
+        } else {
+          const focusedElement = document.activeElement;
+          const focusStillInsideInput =
+            focusedElement === event.target ||
+            (typeof event.target.contains === 'function' &&
+              event.target.contains(focusedElement));
+
+          if (focusStillInsideInput) return;
+
+          debugLog('TalkType: Active input lost focus, clearing');
+          activeInput = null;
+        }
+
+        // Notify popup that no input is active
+        if (!activeInput && smartModeEnabled) {
+          chrome.runtime.sendMessage({
+            action: 'activeInputChanged',
+            hasActiveInput: false
+          });
         }
       }, 100);
     }
@@ -167,11 +196,11 @@ function initializeFocusTracking() {
 
 // Function to initialize input detection
 function initializeInputDetection() {
-  console.log('TalkType: Initializing input detection for mic buttons...');
+  debugLog('TalkType: Initializing input detection for mic buttons...');
   
   // Focus on standard inputs first - these are most reliable
   const standardInputs = document.querySelectorAll('input[type="text"], input[type="search"], input:not([type]), textarea');
-  console.log(`TalkType: Found ${standardInputs.length} standard input elements`);
+  debugLog(`TalkType: Found ${standardInputs.length} standard input elements`);
   
   // Process standard inputs first - these are the most reliable
   standardInputs.forEach(input => {
@@ -281,7 +310,7 @@ function initializeInputDetection() {
     [data-testid*="message-composer"]
   `);
   
-  console.log(`TalkType: Found ${chatInputs.length} chat input elements`);
+  debugLog(`TalkType: Found ${chatInputs.length} chat input elements`);
   
   chatInputs.forEach(input => {
     if (!input.dataset.hasMicButton && isValidTextInputElement(input)) {
@@ -672,13 +701,13 @@ function addMicrophoneToInput(inputElement) {
   
   // CRITICAL: Perform strict validation to ensure this is really a text input element
   if (!isValidTextInputElement(inputElement)) {
-    console.log('TalkType: Element is not a valid text input, skipping:', inputElement);
+    debugLog('TalkType: Element is not a valid text input, skipping');
     return;
   }
   
   // Check if this input already has a microphone button
   if (inputElement.dataset.hasMicButton) {
-    console.log('TalkType: Input already has mic button, skipping');
+    debugLog('TalkType: Input already has mic button, skipping');
     return;
   }
   
@@ -690,7 +719,7 @@ function addMicrophoneToInput(inputElement) {
   
   // Try to get the SVG icon URL
   let micIconUrl = chrome.runtime.getURL('icons/mic.svg');
-  console.log('TalkType: Microphone icon URL:', micIconUrl);
+  debugLog('TalkType: Microphone icon URL:', micIconUrl);
   
   // Whether we have a valid icon URL
   const hasValidIcon = micIconUrl && !micIconUrl.includes('undefined') && !micIconUrl.includes('chrome-extension://null');
@@ -754,7 +783,7 @@ function addMicrophoneToInput(inputElement) {
     document.head.appendChild(styleEl);
   }
   
-  console.log('TalkType: Created mic button for input:', inputElement);
+  debugLog('TalkType: Created mic button for input');
   
   // Create the icon (either image or text)
   if (hasValidIcon) {
@@ -871,7 +900,8 @@ function addMicrophoneToInput(inputElement) {
     }
   });
   
-  micButton.addEventListener('mousedown', () => {
+  micButton.addEventListener('mousedown', (event) => {
+    event.preventDefault();
     micButton.style.transform = 'scale(0.95)';
     micButton.style.boxShadow = '0 0 2px rgba(0,0,0,0.1)';
   });
@@ -886,8 +916,23 @@ function addMicrophoneToInput(inputElement) {
     // Prevent any default behavior and event bubbling
     event.preventDefault();
     event.stopPropagation();
+
+    if (!event.isTrusted) {
+      return;
+    }
     
-    console.log('TalkType: Mic button clicked!', inputElement, 'isRecording:', isRecording);
+    const focusedElement = document.activeElement;
+    const inputHasFocus =
+      focusedElement === inputElement ||
+      (typeof inputElement.contains === 'function' && inputElement.contains(focusedElement));
+
+    if (!isRecording && !inputHasFocus) {
+      inputElement.focus();
+      showStatusNotification('Click in the text field first, then record.', 'info');
+      return;
+    }
+
+    debugLog('TalkType: Mic button clicked, isRecording:', isRecording);
     
     // Visual feedback - always show something when clicked
     micButton.style.transform = 'scale(1.1)';
@@ -896,7 +941,7 @@ function addMicrophoneToInput(inputElement) {
       // SIMPLIFIED LOGIC: Just toggle based on recording state
       if (isRecording) {
         // We're recording, so stop it and process
-        console.log('TalkType: Stopping recording...');
+        debugLog('TalkType: Stopping recording...');
         showStatusNotification('Processing recording...', 'info');
         
         // Update button appearance to processing state - more subtle
@@ -923,7 +968,7 @@ function addMicrophoneToInput(inputElement) {
       } 
       else {
         // Not recording, start a new recording
-        console.log('TalkType: Starting new recording...');
+        debugLog('TalkType: Starting new recording...');
         showStatusNotification('Recording... Click to stop', 'recording');
         
         // Set active input element as a global target
@@ -958,7 +1003,7 @@ function addMicrophoneToInput(inputElement) {
         try {
           // First make sure we have the services initialized
           if (!audioService || !apiService) {
-            console.log('TalkType: Services not initialized, initializing now...');
+            debugLog('TalkType: Services not initialized, initializing now...');
             showStatusNotification('Initializing TalkType...', 'processing');
             
             // Initialize directly with storage API key
@@ -972,7 +1017,7 @@ function addMicrophoneToInput(inputElement) {
                   apiService = new window.GeminiApiService(apiKey);
                   if (result.transcriptionStyle) apiService.setStyle(result.transcriptionStyle);
 
-                  console.log('TalkType: Services initialized directly');
+                  debugLog('TalkType: Services initialized directly');
                   resolve();
                 } else {
                   console.error('TalkType: No API key found in storage');
@@ -1004,10 +1049,10 @@ function addMicrophoneToInput(inputElement) {
           }
           
           // Now start the actual recording
-          console.log('TalkType: Calling startRecording directly...');
+          debugLog('TalkType: Calling startRecording directly...');
           await startRecording(inputElement, recordingIndicator);
           
-          console.log('TalkType: Recording started successfully');
+          debugLog('TalkType: Recording started successfully');
         } catch (error) {
           console.error('TalkType: Error starting recording:', error);
           showStatusNotification('Error starting recording: ' + error.message, 'error');
@@ -1102,8 +1147,7 @@ function isValidTextInputElement(element) {
   // Check for <input> with valid text types
   if (tagName === 'input') {
     const inputType = (element.getAttribute('type') || 'text').toLowerCase();
-    const validTypes = ['text', 'search', 'email', 'url', 'tel', 'number', 'password', 
-                        'date', 'datetime-local', 'time', 'month', 'week'];
+    const validTypes = ['text', 'search', 'email', 'url', 'tel'];
     
     // Only allow specific input types
     return validTypes.includes(inputType) && !element.disabled && !element.readOnly;
@@ -1334,7 +1378,7 @@ async function startRecording(targetInput, indicator) {
         window.TalkTypeStorage.getWithApiKey(['apiKey', 'transcriptionStyle']).then(function(result) {
           apiKey = result.apiKey || '';
 
-          console.log('TalkType: Creating API service with key:', apiKey ? 'Valid key' : 'Empty key');
+        debugLog('TalkType: Creating API service with key:', apiKey ? 'Valid key' : 'Empty key');
           apiService = new window.GeminiApiService(apiKey);
           if (result.transcriptionStyle) apiService.setStyle(result.transcriptionStyle);
           
@@ -1415,7 +1459,7 @@ async function startRecordingCore(targetInput, indicator) {
     // Update state
     isRecording = true;
     activeInput = targetInput;
-    console.log('TalkType: Set isRecording=true, activeInput=', targetInput);
+    debugLog('TalkType: Set isRecording=true');
     
     // Show recording indicator with animations using classes
     if (indicator) {
@@ -1457,13 +1501,13 @@ async function startRecordingCore(targetInput, indicator) {
     console.log('TalkType: Calling audioService.startRecording()...');
     try {
       await audioService.startRecording();
-      console.log('TalkType: Recording started successfully for', targetInput);
+      debugLog('TalkType: Recording started successfully');
     } catch (recError) {
       // This detailed error is handled below in the main catch block
       throw recError;
     }
     
-    console.log('TalkType: Recording active for', targetInput);
+    debugLog('TalkType: Recording active');
   } catch (error) {
     console.error('TalkType: Failed to start recording:', error);
     
@@ -1534,7 +1578,7 @@ async function startRecordingCore(targetInput, indicator) {
 
 // Function to stop recording and process audio
 async function stopRecording() {
-  console.log('TalkType: stopRecording called, isRecording:', isRecording, 'activeInput:', !!activeInput);
+  debugLog('TalkType: stopRecording called, isRecording:', isRecording, 'activeInput:', !!activeInput);
   
   if (!audioService) {
     console.error('TalkType: Cannot stop recording - audioService is not initialized');
@@ -1555,7 +1599,7 @@ async function stopRecording() {
   }
   
   try {
-    console.log('TalkType: Stopping recording on audioService...');
+    debugLog('TalkType: Stopping recording on audioService...');
     
     // Remove ALL existing notifications first to avoid duplicates
     document.querySelectorAll('.audio-to-text-notification').forEach(notification => {
@@ -1569,15 +1613,10 @@ async function stopRecording() {
     
     // Stop recording and get audio blob
     const audioBlob = await audioService.stopRecording();
-    console.log('TalkType: Recording stopped successfully, got audio blob:', !!audioBlob);
+    debugLog('TalkType: Recording stopped successfully, got audio blob:', !!audioBlob);
     
     // Update recording state immediately
     isRecording = false;
-    
-    // Get info about the current input element for debugging
-    console.log('TalkType: Current activeInput:', activeInput);
-    console.log('TalkType: activeInput type:', activeInput.tagName);
-    if (activeInput.id) console.log('TalkType: activeInput id:', activeInput.id);
     
     // Store currentInput locally for processing
     const currentInput = activeInput;
@@ -1607,7 +1646,7 @@ async function stopRecording() {
     });
     
     // Process the audio data directly instead of creating another function
-    console.log('TalkType: Processing audio data directly...');
+    debugLog('TalkType: Processing audio data directly...');
     
     let progressNotification = null;
 
@@ -1641,7 +1680,7 @@ async function stopRecording() {
           updateProgressNotification(progressNotification, percentage);
         }
       });
-      console.log('TalkType: Transcription received:', transcription);
+      debugLog('TalkType: Transcription received');
       
       // Complete progress animation and show success notification
       if (progressNotification) {
@@ -1735,7 +1774,7 @@ async function stopRecording() {
 
 // Function to show status notifications with enhanced visual appeal
 function showStatusNotification(message, type = 'info') {
-  console.log('TalkType: Showing notification -', message, type);
+  debugLog('TalkType: Showing notification', type);
   
   
   // Remove ALL existing notifications to avoid duplicates
@@ -1958,8 +1997,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   try {
     if (request.action === 'checkActiveInput') {
       // Return info about the currently focused input element
-      const hasActiveInput = activeInput !== null && smartModeEnabled;
-      console.log('TalkType: Popup requested active input status:', hasActiveInput);
+      const selectedInput = getActiveInput();
+      const hasActiveInput = selectedInput !== null && smartModeEnabled;
+      debugLog('TalkType: Popup requested active input status:', hasActiveInput);
       
       let response = {
         hasActiveInput: hasActiveInput,
@@ -1968,20 +2008,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       
       if (hasActiveInput) {
         response.inputInfo = {
-          type: activeInput.tagName,
-          id: activeInput.id || '(no id)',
-          className: activeInput.className || '(no class)'
+          type: selectedInput.tagName,
+          id: selectedInput.id || '(no id)',
+          className: selectedInput.className || '(no class)'
         };
       }
       
-      console.log('TalkType: Sending response:', response);
+      debugLog('TalkType: Sending response:', response);
       sendResponse(response);
       return true;
     }
     else if (request.action === 'insertTranscription') {
       // Popup is requesting to insert transcription text into the focused input
       const text = request.text || '';
-      console.log('TalkType: Received request to insert transcription:', text.substring(0, 30) + (text.length > 30 ? '...' : ''));
+      debugLog('TalkType: Received request to insert transcription');
       const success = insertTranscriptionIntoActiveInput(text);
       sendResponse({ success });
       return true;
@@ -1991,7 +2031,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       smartModeEnabled = request.enabled;
       // Save to storage for persistence
       chrome.storage.sync.set({ smartModeEnabled: smartModeEnabled });
-      console.log('TalkType: Smart mode toggled to:', smartModeEnabled);
+      debugLog('TalkType: Smart mode toggled to:', smartModeEnabled);
       sendResponse({ success: true });
       return true;
     }
@@ -2013,7 +2053,7 @@ function insertTextIntoInput(targetInput, text) {
   if (targetInput.isContentEditable) {
     document.execCommand('insertText', false, text);
     targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-    console.log('TalkType: Inserted text into contenteditable element');
+    debugLog('TalkType: Inserted text into contenteditable element');
     return;
   }
 
@@ -2032,7 +2072,7 @@ function insertTextIntoInput(targetInput, text) {
 
     targetInput.dispatchEvent(new Event('input', { bubbles: true }));
     targetInput.dispatchEvent(new Event('change', { bubbles: true }));
-    console.log('TalkType: Inserted text into input/textarea element');
+    debugLog('TalkType: Inserted text into input/textarea element');
 
     if (typeof targetInput.setSelectionRange === 'function') {
       targetInput.setSelectionRange(newPos, newPos);
@@ -2042,19 +2082,21 @@ function insertTextIntoInput(targetInput, text) {
 
   document.execCommand('insertText', false, text);
   targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-  console.log('TalkType: Inserted text using execCommand fallback');
+  debugLog('TalkType: Inserted text using execCommand fallback');
 }
 
 // Function to insert transcription into active input element
 function insertTranscriptionIntoActiveInput(text) {
-  if (!activeInput) {
+  const targetInput = getActiveInput();
+
+  if (!targetInput) {
     console.error('TalkType: No active input to insert transcription into');
     showStatusNotification('Error: No active input element', 'error');
     return false;
   }
   
   try {
-    insertTextIntoInput(activeInput, text);
+    insertTextIntoInput(targetInput, text);
 
     // Show success notification
     showStatusNotification('Text inserted successfully', 'success');

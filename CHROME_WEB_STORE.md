@@ -31,21 +31,21 @@ You still need the usual Chrome Web Store package:
 - small promo tile if you want better presentation
 - short description
 - full description
-- privacy policy URL
+- privacy policy URL: `https://talktype.app/extension/privacy`
 
 3. Privacy policy page
 
-The extension is privacy-friendly, and the main TalkType site should host a clean public URL explaining:
+The extension privacy policy is intended to live at:
+
+- `https://talktype.app/extension/privacy`
+
+The Web Store listing and privacy dashboard still need to point at that URL. It should explain:
 
 - what audio is sent to Google
 - that the user provides their own Gemini key
 - that TalkType does not run its own transcription server for the extension
 - that the API key is stored locally in Chrome extension storage
 - what preferences are stored in `chrome.storage.sync`
-
-Suggested URL:
-
-- `https://talktype.app/extension/privacy`
 
 4. Repo and public identity
 

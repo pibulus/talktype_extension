@@ -10,6 +10,10 @@ let activeInputInfo = null;
 let smartModeEnabled = true; // Default to enabled
 const MAX_RECORDING_TIME = 30000; // 30 seconds
 const GEMINI_KEY_URL = 'https://aistudio.google.com/app/apikey';
+const TALKTYPE_DEBUG = false;
+const debugLog = (...args) => {
+  if (TALKTYPE_DEBUG) console.log(...args);
+};
 
 async function getSetupState() {
   const result = await window.TalkTypeStorage.getWithApiKey(['apiKey', 'microphonePermission']);
@@ -281,7 +285,8 @@ async function stopRecording() {
     transformButtonToProgressBar(recordButton);
     
     // Get API key and create fresh service instance to avoid stale state
-    const { apiKey } = await window.TalkTypeStorage.getWithApiKey(['apiKey']);
+    const { apiKey, transcriptionStyle } =
+      await window.TalkTypeStorage.getWithApiKey(['apiKey', 'transcriptionStyle']);
 
     if (!apiKey || !apiKey.trim()) {
       throw new Error('Missing Gemini API key. Add it in settings first.');
@@ -290,6 +295,7 @@ async function stopRecording() {
     // Create a new API service instance to prevent stale state
     apiService = null;
     apiService = new GeminiApiService(apiKey);
+    if (transcriptionStyle) apiService.setStyle(transcriptionStyle);
 
     // Update status indicator with random fun messages
     showTranscribingStatus(statusElement, true);
@@ -1028,7 +1034,7 @@ async function checkActiveInputStatus() {
     if (response) {
       hasActiveInput = response.hasActiveInput;
       activeInputInfo = response.inputInfo;
-      console.log('Active input status:', hasActiveInput, activeInputInfo);
+      debugLog('Active input status:', hasActiveInput);
       
       // Update UI based on active input status
       updateSmartModeUI();
@@ -1672,7 +1678,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <p style="font-size: 14px; margin: 0 0 20px; opacity: 0.85; line-height: 1.5;">
               Enter your Gemini API key to enable voice transcription
             </p>
-            <input type="text" id="api-key-field" placeholder="Enter your Gemini API key" spellcheck="false" autocomplete="off" style="width: 100%; box-sizing: border-box; max-width: 100%;" />
+            <input type="password" id="api-key-field" placeholder="Enter your Gemini API key" spellcheck="false" autocomplete="off" style="width: 100%; box-sizing: border-box; max-width: 100%;" />
             <button id="save-api-key" class="save-button">
               <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 6px;">
                 <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
