@@ -235,15 +235,38 @@ function requestMicrophonePermission() {
 function restoreOptions() {
   Promise.all([
     window.TalkTypeStorage.getApiKey(),
-    chrome.storage.sync.get({ transcriptionStyle: 'standard' })
+    chrome.storage.sync.get({
+      transcriptionStyle: 'standard',
+      soundEffectsEnabled: true,
+      historyEnabled: false
+    })
   ]).then(([apiKey, items]) => {
     document.getElementById('apiKey').value = apiKey;
     document.getElementById('transcriptionStyle').value = items.transcriptionStyle;
+    document.getElementById('soundEffects').checked = items.soundEffectsEnabled !== false;
+    document.getElementById('historyEnabled').checked = items.historyEnabled === true;
     updateStylePreview();
   });
 
   // Check microphone permission
   checkMicrophonePermission();
+}
+
+// Extras toggles save instantly on change
+function saveExtras() {
+  const soundEffectsEnabled = document.getElementById('soundEffects').checked;
+  const historyEnabled = document.getElementById('historyEnabled').checked;
+
+  chrome.storage.sync.set({ soundEffectsEnabled, historyEnabled }, () => {
+    const status = document.getElementById('extrasStatus');
+    if (!status) return;
+    status.textContent = 'Saved.';
+    status.className = 'status success';
+    status.style.display = 'block';
+    setTimeout(() => {
+      status.style.display = 'none';
+    }, 1500);
+  });
 }
 
 // Open Chrome's microphone settings
@@ -258,6 +281,8 @@ document.addEventListener('DOMContentLoaded', restoreOptions);
 document.getElementById('save').addEventListener('click', saveOptions);
 document.getElementById('saveStyle').addEventListener('click', saveStyle);
 document.getElementById('transcriptionStyle').addEventListener('change', updateStylePreview);
+document.getElementById('soundEffects').addEventListener('change', saveExtras);
+document.getElementById('historyEnabled').addEventListener('change', saveExtras);
 document.getElementById('requestPermission').addEventListener('click', requestMicrophonePermission);
 document.getElementById('openChromeSettings').addEventListener('click', openChromeSettings);
 document.getElementById('openAiStudio').addEventListener('click', () => {

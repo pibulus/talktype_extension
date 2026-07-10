@@ -207,6 +207,16 @@
       margin-bottom: 8px;
     }
 
+    :focus:not(:focus-visible) {
+      outline: none;
+    }
+
+    :focus-visible {
+      outline: 2px solid rgba(255, 92, 159, 0.85);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
     .permission-status {
       margin-top: 15px;
       padding: 15px;
@@ -230,7 +240,7 @@
 
     .unknown {
       background-color: rgba(255, 152, 0, 0.2);
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--brand-ink);
       border-color: rgba(255, 152, 0, 0.3);
     }
 
@@ -431,6 +441,33 @@
 
       <button id="saveStyle" class="primary">Save Style</button>
       <div id="styleStatus" class="status"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+        </svg>
+        Extras
+      </div>
+
+      <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <label for="soundEffects" style="margin: 0;">Sound chirps on start, stop, and success</label>
+        <input type="checkbox" id="soundEffects" checked style="width: 18px; height: 18px; accent-color: #ff5c9f; cursor: pointer;">
+      </div>
+
+      <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <label for="historyEnabled" style="margin: 0;">Keep the last 20 transcripts on this device</label>
+        <input type="checkbox" id="historyEnabled" style="width: 18px; height: 18px; accent-color: #ff5c9f; cursor: pointer;">
+      </div>
+
+      <div class="note">
+        History never leaves this device and you can clear it anytime from the popup.
+        Keyboard: <strong>Alt+Shift+D</strong> starts/stops dictation in the focused text
+        field, <strong>Esc</strong> discards a recording. Change the shortcut at
+        <code>chrome://extensions/shortcuts</code>.
+      </div>
+      <div id="extrasStatus" class="status"></div>
     </div>
 
     <div class="card">

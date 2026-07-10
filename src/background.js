@@ -8,7 +8,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
   if (details.reason === 'install') {
     await chrome.storage.sync.set({
-      enabledSites: ['*'],
       smartModeEnabled: true,
       transcriptionStyle: 'standard'
     });
@@ -18,25 +17,29 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 
   // Ensure newer settings exist for upgrades without treating a missing API key as a reinstall.
-  const settings = await chrome.storage.sync.get(['enabledSites', 'smartModeEnabled', 'transcriptionStyle']);
+  const settings = await chrome.storage.sync.get(['smartModeEnabled', 'transcriptionStyle']);
   const updates = {};
-  if (settings.enabledSites === undefined) updates.enabledSites = ['*'];
   if (settings.smartModeEnabled === undefined) updates.smartModeEnabled = true;
   if (settings.transcriptionStyle === undefined) updates.transcriptionStyle = 'standard';
   if (Object.keys(updates).length) await chrome.storage.sync.set(updates);
+});
+
+// Keyboard shortcut (Alt+Shift+D by default) → toggle dictation in the active tab
+chrome.commands.onCommand.addListener((command) => {
+  if (command !== 'toggle-recording') return;
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs[0]?.id) return;
+    chrome.tabs.sendMessage(tabs[0].id, { action: 'toggleRecording' }).catch(() => {
+      // No content script on this page (chrome://, web store) — nothing to toggle.
+    });
+  });
 });
 
 // Handle messages from content scripts and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Validate sender is our own extension
   if (sender.id !== chrome.runtime.id) return;
-
-  if (message.action === 'getApiKey') {
-    globalThis.TalkTypeStorage.getApiKey()
-      .then((apiKey) => sendResponse({ apiKey }))
-      .catch(() => sendResponse({ apiKey: '' }));
-    return true;
-  }
 
   if (message.action === 'activeInputChanged') {
     // Forward to popup if it's open
@@ -46,22 +49,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       inputInfo: message.inputInfo
     }).catch(() => {
       // Popup not open — that's fine
-    });
-    return true;
-  }
-
-  if (message.action === 'checkSiteEnabled') {
-    if (!sender.tab?.url) {
-      sendResponse({ isEnabled: false });
-      return true;
-    }
-    const url = new URL(sender.tab.url);
-    const hostname = url.hostname;
-
-    chrome.storage.sync.get(['enabledSites'], (result) => {
-      const enabledSites = result.enabledSites || ['*'];
-      const isEnabled = enabledSites.includes('*') || enabledSites.includes(hostname);
-      sendResponse({ isEnabled });
     });
     return true;
   }

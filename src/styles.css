@@ -25,7 +25,15 @@
   box-shadow: 0 2px 8px rgba(255, 92, 159, 0.3);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  outline: none !important;
+}
+
+.audio-to-text-mic-button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.audio-to-text-mic-button:focus-visible {
+  outline: 2px solid #ff5c9f;
+  outline-offset: 2px;
 }
 
 .audio-to-text-mic-button:hover {
@@ -215,8 +223,19 @@
    ACCESSIBILITY
    =================================================================== */
 
+/* Scoped to TalkType's own UI only — this stylesheet is injected into every
+   page, so a bare * selector here would kill the host page's animations. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  .audio-to-text-mic-button,
+  .audio-to-text-mic-button *,
+  .audio-to-text-recording-indicator,
+  .audio-to-text-notification,
+  .audio-to-text-notification *,
+  .audio-to-text-progress-notification,
+  .audio-to-text-progress-notification *,
+  .talktype-button-wrapper,
+  .talktype-notification-icon,
+  .talktype-sparkle {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TalkType",
-  "version": "1.6",
+  "version": "1.7",
   "description": "Voice-to-text for any text input with personality-driven transcription styles",
   "permissions": ["storage"],
   "host_permissions": ["https://generativelanguage.googleapis.com/*"],
@@ -22,8 +22,8 @@
     {
       "matches": ["<all_urls>"],
       "js": [
-        "permission-dialog.js",
         "storage-service.js",
+        "sound-service.js",
         "audio-service.js",
         "api-service.js",
         "content.js"
@@ -48,6 +48,14 @@
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
+  },
+  "commands": {
+    "toggle-recording": {
+      "suggested_key": {
+        "default": "Alt+Shift+D"
+      },
+      "description": "Start or stop dictation in the focused text field"
+    }
   },
   "web_accessible_resources": [
     {

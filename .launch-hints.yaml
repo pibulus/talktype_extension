@@ -1,0 +1,32 @@
+# Launch hints for Launch Arsenal.
+# Edit aggressively. These fields should pin the app's real audience, problem, and promise.
+name: TalkType
+slug: talktype-extension
+app_type: chrome-extension
+audience: people who talk faster than they type and want cleaner transcription
+problem: 'most transcription tools feel cold, slow, or built like subscription bait'
+promise: Six transcription styles with personality (see below)
+cta: Reply if you want the link.
+differentiators:
+  - Inserts text at cursor position without overwriting what's already there
+  - Glass morphism UI that adapts to light and dark mode
+proof_points:
+  - >-
+    Adds a mic button to any text input on any website (including
+    contenteditable fields)
+  - Records audio and transcribes via Google Gemini 3.1 Flash-Lite Preview
+  - Inserts text at cursor position without overwriting what's already there
+  - Auto-copies transcription to clipboard
+objections:
+  - 'Still wants a human pass on audience, proof, and the sharpest angle.'
+keywords:
+  seed:
+    - TalkType
+    - talktype extension
+    - chrome extension
+  audience: people who talk faster than they type and want cleaner transcription
+  intent:
+    - launch faster
+    - clearer first draft
+manual_notes:
+  - Edit this aggressively. Keep only the lines that feel native to the app.

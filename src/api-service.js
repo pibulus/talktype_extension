@@ -49,12 +49,12 @@ const STYLE_LABELS = {
 // Generation config per style type.
 // Gemini 3 models keep their recommended default temperature.
 const STYLE_CONFIGS = {
-  standard: { temperature: 0, topP: 1.0, topK: 1, maxOutputTokens: 4096 },
-  surlyPirate: { temperature: 0.7, topP: 0.9, topK: 40, maxOutputTokens: 4096 },
-  leetSpeak: { temperature: 0.3, topP: 0.9, topK: 20, maxOutputTokens: 4096 },
-  sparklePop: { temperature: 0.8, topP: 0.9, topK: 40, maxOutputTokens: 4096 },
-  codeWhisperer: { temperature: 0.1, topP: 0.95, topK: 10, maxOutputTokens: 4096 },
-  quillAndInk: { temperature: 0.7, topP: 0.9, topK: 40, maxOutputTokens: 4096 },
+  standard: { temperature: 0, topP: 1.0, topK: 1, maxOutputTokens: 8192 },
+  surlyPirate: { temperature: 0.7, topP: 0.9, topK: 40, maxOutputTokens: 8192 },
+  leetSpeak: { temperature: 0.3, topP: 0.9, topK: 20, maxOutputTokens: 8192 },
+  sparklePop: { temperature: 0.8, topP: 0.9, topK: 40, maxOutputTokens: 8192 },
+  codeWhisperer: { temperature: 0.1, topP: 0.95, topK: 10, maxOutputTokens: 8192 },
+  quillAndInk: { temperature: 0.7, topP: 0.9, topK: 40, maxOutputTokens: 8192 },
 };
 
 class GeminiApiService {
@@ -175,7 +175,22 @@ class GeminiApiService {
       throw new Error("No transcription returned. The audio may be too short or unclear.");
     }
 
-    return text;
+    if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+      console.warn('TalkType: Gemini hit maxOutputTokens — transcript may be cut off.');
+    }
+
+    return this._cleanTranscriptionText(text);
+  }
+
+  // The prompt asks for bare text, but models occasionally wrap output in
+  // markdown fences anyway — strip them so backticks never land in a text field.
+  _cleanTranscriptionText(text) {
+    let cleaned = text.trim();
+    const fenceMatch = cleaned.match(/^```[a-z]*\s*\n([\s\S]*?)\n?\s*```$/i);
+    if (fenceMatch) {
+      cleaned = fenceMatch[1].trim();
+    }
+    return cleaned;
   }
 
   /**
@@ -231,13 +246,35 @@ class GeminiApiService {
     const audioContext = new AudioContextClass();
     try {
       const audioBuffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer());
+      const speechBuffer = await this._downsampleForSpeech(audioBuffer);
       return {
-        blob: this._audioBufferToWavBlob(audioBuffer),
+        blob: this._audioBufferToWavBlob(speechBuffer),
         mimeType: 'audio/wav'
       };
     } finally {
       if (audioContext.close) await audioContext.close();
     }
+  }
+
+  // Resample to 16kHz mono before WAV-encoding. Speech models don't benefit
+  // from more, and 48kHz stereo WAV blows past Gemini's ~20MB inline request
+  // limit after ~2.5 minutes; 16kHz mono stays under it past 10 minutes.
+  async _downsampleForSpeech(audioBuffer) {
+    const targetRate = 16000;
+    if (audioBuffer.numberOfChannels === 1 && audioBuffer.sampleRate <= targetRate) {
+      return audioBuffer;
+    }
+
+    const OfflineContextClass = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!OfflineContextClass) return audioBuffer;
+
+    const length = Math.max(1, Math.ceil(audioBuffer.duration * targetRate));
+    const offlineContext = new OfflineContextClass(1, length, targetRate);
+    const source = offlineContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(offlineContext.destination);
+    source.start(0);
+    return offlineContext.startRendering();
   }
 
   _audioBufferToWavBlob(audioBuffer) {

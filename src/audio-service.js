@@ -189,6 +189,13 @@ class AudioRecordingService {
         throw new Error('Recording is already in progress');
       }
 
+      // The mediaRecorder guard above only exists once getUserMedia resolves;
+      // this flag closes the window where two rapid starts both pass it.
+      if (this.isStarting) {
+        throw new Error('Recording is already starting');
+      }
+      this.isStarting = true;
+
       this.stopPromise = null;
       this.recordingMimeType = '';
 
@@ -279,6 +286,8 @@ class AudioRecordingService {
     } catch (error) {
       console.error('Error in startRecording:', error);
       throw error;
+    } finally {
+      this.isStarting = false;
     }
   }
 

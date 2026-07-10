@@ -4,6 +4,7 @@
 let audioService = null;
 let apiService = null;
 let isRecording = false;
+let isStartingRecording = false; // Synchronous lock — set before any await in the start flow
 let recordingTimeout = null;
 let hasActiveInput = false;
 let activeInputInfo = null;
@@ -88,7 +89,8 @@ function openOptions() {
 
 // Start recording immediately
 async function startRecording() {
-  if (isRecording) return;
+  if (isRecording || isStartingRecording) return;
+  isStartingRecording = true;
 
   // Show transcription area
   const transcriptionContainer = document.getElementById('transcription-container');
@@ -169,6 +171,7 @@ async function startRecording() {
     // Start recording
     await audioService.startRecording();
     isRecording = true;
+    window.TalkTypeSounds?.play('start');
 
     // Auto-stop after MAX_RECORDING_TIME
     recordingTimeout = setTimeout(() => {
@@ -180,6 +183,8 @@ async function startRecording() {
   } catch (error) {
     console.error('Error starting recording:', error);
     handleRecordingError(error);
+  } finally {
+    isStartingRecording = false;
   }
 }
 
@@ -258,6 +263,10 @@ function showClipboardNotification() {
 async function stopRecording() {
   if (!isRecording || !audioService) return;
 
+  // Flip state synchronously so a racing second stop (manual click vs the
+  // 30s auto-stop timer) can't transcribe and bill the same audio twice.
+  isRecording = false;
+
   // Clear timeout
   if (recordingTimeout) {
     clearTimeout(recordingTimeout);
@@ -279,7 +288,6 @@ async function stopRecording() {
 
     // Stop recording and get audio data
     const audioBlob = await audioService.stopRecording();
-    isRecording = false;
 
     // Transform recording button into progress bar
     transformButtonToProgressBar(recordButton);
@@ -305,6 +313,14 @@ async function stopRecording() {
 
     // Complete the progress animation
     completeProgressAnimation();
+    window.TalkTypeSounds?.play('success');
+
+    // Keep an on-device copy if the user opted into history
+    window.TalkTypeStorage.appendTranscriptToHistory({
+      text: transcription,
+      style: transcriptionStyle || 'standard',
+      host: 'popup'
+    }).then(renderHistory).catch(() => {});
 
     // Dynamically adjust the transcription container height based on content
     const adjustTranscriptionContainer = (text) => {
@@ -452,6 +468,7 @@ async function stopRecording() {
 
   } catch (error) {
     console.error('Error in recording/transcription:', error);
+    window.TalkTypeSounds?.play('error');
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-message';
     errorDiv.innerHTML = `<svg class="icon" style="color: #ff5252" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>`;
@@ -959,6 +976,66 @@ const startInit = () => {
 // Run pre-initialization immediately
 startInit();
 
+// The popup's JS context dies the instant it closes — make sure a mid-recording
+// close releases the microphone instead of abandoning a live stream.
+window.addEventListener('pagehide', () => {
+  if (audioService) {
+    audioService.stopStreamTracks();
+  }
+});
+
+// ===================================================================
+// TRANSCRIPT HISTORY - render recent transcripts (opt-in via options)
+// ===================================================================
+
+async function renderHistory() {
+  const section = document.getElementById('history-section');
+  const list = document.getElementById('history-list');
+  if (!section || !list) return;
+
+  const { historyEnabled } = await chrome.storage.sync.get({ historyEnabled: false });
+  if (!historyEnabled) {
+    section.style.display = 'none';
+    return;
+  }
+
+  const history = await window.TalkTypeStorage.getTranscriptHistory();
+  if (!history.length) {
+    section.style.display = 'none';
+    return;
+  }
+
+  list.textContent = '';
+  history.slice(0, 5).forEach((entry) => {
+    const item = document.createElement('button');
+    item.className = 'history-item';
+    item.title = 'Click to copy';
+
+    if (entry.host && entry.host !== 'popup') {
+      const host = document.createElement('span');
+      host.className = 'history-host';
+      host.textContent = entry.host;
+      item.appendChild(host);
+    }
+
+    item.appendChild(document.createTextNode(entry.text));
+
+    item.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(entry.text);
+        showClipboardNotification();
+        window.TalkTypeSounds?.play('success');
+      } catch (err) {
+        console.error('Failed to copy history item:', err);
+      }
+    });
+
+    list.appendChild(item);
+  });
+
+  section.style.display = 'block';
+}
+
 // Function to update UI based on smart mode and active input state
 function updateSmartModeUI() {
   const statusElement = document.getElementById('status');
@@ -1061,6 +1138,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check API key in parallel with rendering
   checkApiKey();
   updateSetupCard();
+  renderHistory();
+
+  // Clear-history button
+  const clearHistoryButton = document.getElementById('clear-history');
+  if (clearHistoryButton) {
+    clearHistoryButton.addEventListener('click', async () => {
+      await window.TalkTypeStorage.clearTranscriptHistory();
+      renderHistory();
+    });
+  }
 
   // Get smart mode setting
   chrome.storage.sync.get(['smartModeEnabled'], (result) => {

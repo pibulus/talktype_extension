@@ -6,9 +6,12 @@
 let audioService = null;
 let apiService = null;
 let isRecording = false;
+let isStartingRecording = false; // Synchronous lock — set before any await in the start flow
+let maxRecordingTimer = null;
 let activeInput = null;
 let apiKey = ''; // This should be set through extension options
 let smartModeEnabled = true; // Default to enabled
+const MAX_RECORDING_MS = 5 * 60 * 1000; // Auto-stop long recordings before the inline Gemini payload gets too big
 const TALKTYPE_DEBUG = false;
 const debugLog = (...args) => {
   if (TALKTYPE_DEBUG) console.log(...args);
@@ -92,6 +95,9 @@ function initializeExtensionCore() {
       // Add observer to detect dynamically added inputs
       debugLog('TalkType: Setting up DOM mutation observer');
       observeDynamicInputs();
+
+      // Keep buttons positioned on scroll/resize and sweep orphans
+      initializeButtonTracking();
 
       debugLog('TalkType: Extension initialized successfully');
 
@@ -677,6 +683,7 @@ function observeDynamicInputs() {
       setTimeout(() => {
         lastScanTime = Date.now(); // Update last scan time
         scanAndAttachMic(document.body);
+        queueMicButtonReposition(); // Also sweeps orphaned buttons after DOM churn
       }, 100);
     }
   });
@@ -917,6 +924,12 @@ function addMicrophoneToInput(inputElement) {
       return;
     }
 
+    // A start is already in flight (getUserMedia prompt, service init) —
+    // ignore extra clicks until it settles so we never open two mic streams.
+    if (isStartingRecording) {
+      return;
+    }
+
     const focusedElement = document.activeElement;
     const inputHasFocus =
       focusedElement === inputElement ||
@@ -991,7 +1004,12 @@ function addMicrophoneToInput(inputElement) {
         }
 
         // Start the recording process
-        await startSimpleRecording();
+        isStartingRecording = true;
+        try {
+          await startSimpleRecording();
+        } finally {
+          isStartingRecording = false;
+        }
       }
 
       // Simplified function for starting recording - more direct
@@ -1101,24 +1119,127 @@ function addMicrophoneToInput(inputElement) {
   // Position the button appropriately based on the input element
   positionMicButton(inputElement, micButton);
 
-  // Listen for input resize (if ResizeObserver is available)
+  // Listen for input resize (if ResizeObserver is available).
+  // Observers are stored on the button so the orphan sweep can disconnect them.
   if (window.ResizeObserver) {
     const resizeObserver = new ResizeObserver(() => {
       positionMicButton(inputElement, micButton);
     });
     resizeObserver.observe(inputElement);
+    micButton.talkTypeResizeObserver = resizeObserver;
   }
 
-  // Listen for input position changes
-  window.addEventListener('resize', () => {
+  // Update position when input changes visibility
+  const visibilityObserver = new MutationObserver(() => {
     positionMicButton(inputElement, micButton);
+  });
+  visibilityObserver.observe(inputElement, { attributes: true, attributeFilter: ['style', 'class'] });
+  micButton.talkTypeMutationObserver = visibilityObserver;
+}
+
+// ===================================================================
+// BUTTON TRACKING - keep mic buttons glued to their inputs on scroll,
+// and sweep away buttons whose inputs left the DOM (SPA rerenders)
+// ===================================================================
+
+let repositionQueued = false;
+
+function repositionAllMicButtons() {
+  repositionQueued = false;
+
+  document.querySelectorAll('.talktype-button-wrapper').forEach((wrapper) => {
+    const micButton = wrapper.querySelector('.audio-to-text-mic-button');
+    const input = micButton && micButton.talkTypeInputElement;
+
+    if (!input || !input.isConnected) {
+      // Input is gone — tear down the button, its observers, and the wrapper
+      // so long-lived SPAs (Gmail, Slack) don't accumulate orphans.
+      if (micButton) {
+        micButton.talkTypeResizeObserver?.disconnect();
+        micButton.talkTypeMutationObserver?.disconnect();
+      }
+      wrapper.remove();
+      return;
+    }
+
+    positionMicButton(input, micButton);
+  });
+}
+
+function queueMicButtonReposition() {
+  if (repositionQueued) return;
+  repositionQueued = true;
+  requestAnimationFrame(repositionAllMicButtons);
+}
+
+function initializeButtonTracking() {
+  // Capture phase catches scrolling inside nested containers, not just the page.
+  window.addEventListener('scroll', queueMicButtonReposition, { capture: true, passive: true });
+  window.addEventListener('resize', queueMicButtonReposition, { passive: true });
+
+  // Esc bails out of a recording without transcribing (capture phase so the
+  // page doesn't also react, e.g. Gmail closing its compose window).
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key === 'Escape' && isRecording) {
+        event.preventDefault();
+        event.stopPropagation();
+        cancelRecording();
+      }
+    },
+    true
+  );
+}
+
+// Find the mic button indicator that belongs to a given input (used by the
+// keyboard shortcut, which starts recording without a button click)
+function findRecordingIndicatorFor(inputElement) {
+  const buttons = document.querySelectorAll('.audio-to-text-mic-button');
+  for (const button of buttons) {
+    if (button.talkTypeInputElement === inputElement) {
+      return button.querySelector('.audio-to-text-recording-indicator');
+    }
+  }
+  return null;
+}
+
+// Stop and throw away the current recording — no transcription, no API call
+async function cancelRecording() {
+  if (!isRecording) return;
+
+  isRecording = false;
+  if (maxRecordingTimer) {
+    clearTimeout(maxRecordingTimer);
+    maxRecordingTimer = null;
+  }
+
+  try {
+    await audioService.stopRecording();
+  } catch (e) {
+    // Nothing captured — that's fine, we're discarding anyway.
+  }
+
+  document.querySelectorAll('.audio-to-text-recording-indicator').forEach((indicator) => {
+    indicator.style.display = 'none';
+    const micButton = indicator.parentElement;
+    if (micButton) {
+      micButton.style.animation = 'none';
+      micButton.style.transform = 'scale(1)';
+      if (micButton.dataset.darkMode === 'true') {
+        micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+        micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
+      } else {
+        micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+        micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
+      }
+      micButton.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)';
+      micButton.style.filter = 'none';
+    }
   });
 
-  // Update position when input changes visibility
-  const observer = new MutationObserver(() => {
-    positionMicButton(inputElement, micButton);
-  });
-  observer.observe(inputElement, { attributes: true, attributeFilter: ['style', 'class'] });
+  window.TalkTypeSounds?.play('stop');
+  showStatusNotification('Recording discarded', 'info');
 }
 
 // Helper function to strictly validate if an element is a proper text input
@@ -1239,10 +1360,11 @@ function positionMicButton(inputElement, micButton) {
   // Check if we already have a wrapper for this button
   let wrapper = micButton.parentElement;
   if (!wrapper || !wrapper.classList.contains('talktype-button-wrapper')) {
-    // Create a wrapper for absolute positioning
+    // Fixed positioning: getBoundingClientRect gives viewport coordinates, and
+    // position:fixed consumes viewport coordinates — no scroll math needed.
     wrapper = document.createElement('div');
     wrapper.className = 'talktype-button-wrapper';
-    wrapper.style.position = 'absolute';
+    wrapper.style.position = 'fixed';
     wrapper.style.zIndex = '99999';
     wrapper.style.pointerEvents = 'none'; // Let clicks go through to the button
 
@@ -1296,10 +1418,8 @@ function positionMicButton(inputElement, micButton) {
   // Show the wrapper
   wrapper.style.display = 'block';
 
-  // Position calculation based on element type and viewport position
-  // Use absolute positioning relative to viewport, then adjust for scroll
-
-  // Calculate position to ensure mic is properly placed
+  // Calculate position to ensure mic is properly placed (viewport coordinates,
+  // consumed by the fixed-position wrapper)
   const padding = 8; // Minimum padding from edge
 
   // Get position relative to viewport
@@ -1503,6 +1623,18 @@ async function startRecordingCore(targetInput, indicator) {
       throw recError;
     }
 
+    window.TalkTypeSounds?.play('start');
+
+    // Safety net: auto-stop before the recording outgrows Gemini's inline
+    // request limit, and so a forgotten recording can't run forever.
+    if (maxRecordingTimer) clearTimeout(maxRecordingTimer);
+    maxRecordingTimer = setTimeout(() => {
+      if (isRecording) {
+        showStatusNotification('Recording hit the 5 minute limit — transcribing now', 'info');
+        stopRecording();
+      }
+    }, MAX_RECORDING_MS);
+
     debugLog('TalkType: Recording active');
   } catch (error) {
     console.error('TalkType: Failed to start recording:', error);
@@ -1583,15 +1715,16 @@ async function stopRecording() {
   }
 
   if (!isRecording) {
-    console.error('TalkType: Cannot stop recording - not currently recording');
-    showStatusNotification('Error: Not currently recording', 'error');
+    debugLog('TalkType: stopRecording called while not recording, ignoring');
     return;
   }
 
-  if (!activeInput) {
-    console.error('TalkType: Cannot stop recording - no active input');
-    showStatusNotification('Error: No active input element', 'error');
-    return;
+  // Flip state synchronously so a racing second stop (double click, auto-stop
+  // timer) can't transcribe and bill the same audio twice.
+  isRecording = false;
+  if (maxRecordingTimer) {
+    clearTimeout(maxRecordingTimer);
+    maxRecordingTimer = null;
   }
 
   try {
@@ -1605,16 +1738,15 @@ async function stopRecording() {
     });
 
     // Now show a single processing notification
+    window.TalkTypeSounds?.play('stop');
     showStatusNotification('Processing audio...', 'processing');
 
     // Stop recording and get audio blob
     const audioBlob = await audioService.stopRecording();
     debugLog('TalkType: Recording stopped successfully, got audio blob:', !!audioBlob);
 
-    // Update recording state immediately
-    isRecording = false;
-
-    // Store currentInput locally for processing
+    // Store currentInput locally for processing (may be null if the field
+    // disappeared mid-recording — we still transcribe and fall back to clipboard)
     const currentInput = activeInput;
 
     // Hide all recording indicators and update button styling
@@ -1691,11 +1823,28 @@ async function stopRecording() {
         showStatusNotification('Transcription complete!', 'success');
       }
 
+      // Keep an on-device copy if the user opted into history
+      window.TalkTypeStorage.appendTranscriptToHistory({
+        text: transcription,
+        style: apiKeyResult.transcriptionStyle || 'standard',
+        host: location.hostname
+      }).catch(() => {});
+
       // Insert the transcription at cursor position (append if no selection)
-      if (currentInput) {
+      if (currentInput && currentInput.isConnected) {
         insertTextIntoInput(currentInput, transcription);
+        window.TalkTypeSounds?.play('success');
       } else {
-        console.error('TalkType: No input element to insert transcription into');
+        // The field was removed (SPA rerender) or focus was lost — don't drop
+        // the user's words, park them on the clipboard instead.
+        try {
+          await navigator.clipboard.writeText(transcription);
+          window.TalkTypeSounds?.play('success');
+          showStatusNotification('Text field disappeared — transcript copied to clipboard', 'info');
+        } catch (clipError) {
+          console.error('TalkType: Clipboard fallback failed:', clipError);
+          showStatusNotification('Could not find the text field to insert into', 'error');
+        }
       }
     } catch (transcriptionError) {
       console.error('TalkType: Transcription failed:', transcriptionError);
@@ -1705,6 +1854,7 @@ async function stopRecording() {
         document.body.removeChild(progressNotification);
       }
 
+      window.TalkTypeSounds?.play('error');
       showStatusNotification(`Transcription failed: ${transcriptionError.message}`, 'error');
     }
 
@@ -2022,6 +2172,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success });
       return true;
     }
+    else if (request.action === 'toggleRecording') {
+      // Keyboard shortcut (Alt+Shift+D) relayed from the background worker
+      if (isRecording) {
+        stopRecording();
+        sendResponse({ success: true, state: 'stopping' });
+      } else if (isStartingRecording) {
+        sendResponse({ success: false, state: 'starting' });
+      } else {
+        const focused = document.activeElement;
+        const target =
+          getActiveInput() || (isValidTextInputElement(focused) ? focused : null);
+
+        if (!target) {
+          showStatusNotification('Click into a text field first, then hit the shortcut.', 'info');
+          sendResponse({ success: false, state: 'no-input' });
+        } else {
+          activeInput = target;
+          isStartingRecording = true;
+          startRecording(target, findRecordingIndicatorFor(target)).finally(() => {
+            isStartingRecording = false;
+          });
+          sendResponse({ success: true, state: 'starting' });
+        }
+      }
+      return true;
+    }
     else if (request.action === 'toggleSmartMode') {
       // Update smart mode setting
       smartModeEnabled = request.enabled;
@@ -2044,11 +2220,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 function insertTextIntoInput(targetInput, text) {
+  if (!targetInput.isConnected) {
+    throw new Error('The text field is no longer on the page.');
+  }
+
   targetInput.focus();
 
   if (targetInput.isContentEditable) {
     document.execCommand('insertText', false, text);
-    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+    targetInput.dispatchEvent(
+      new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text })
+    );
     debugLog('TalkType: Inserted text into contenteditable element');
     return;
   }
@@ -2062,11 +2244,26 @@ function insertTextIntoInput(targetInput, text) {
       start === end && before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n')
         ? ' '
         : '';
+    const nextValue = before + spacer + text + after;
 
-    targetInput.value = before + spacer + text + after;
+    // React/Vue instrument the element's own `value` property to track changes;
+    // only a write through the native prototype setter is seen by their state.
+    const proto =
+      targetInput.tagName === 'TEXTAREA'
+        ? window.HTMLTextAreaElement.prototype
+        : window.HTMLInputElement.prototype;
+    const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+    if (nativeSetter) {
+      nativeSetter.call(targetInput, nextValue);
+    } else {
+      targetInput.value = nextValue;
+    }
+
     const newPos = before.length + spacer.length + text.length;
 
-    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+    targetInput.dispatchEvent(
+      new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text })
+    );
     targetInput.dispatchEvent(new Event('change', { bubbles: true }));
     debugLog('TalkType: Inserted text into input/textarea element');
 

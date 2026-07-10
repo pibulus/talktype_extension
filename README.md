@@ -12,6 +12,9 @@ TalkType is a Chrome extension that drops a mic button next to every text field 
 - Records audio and transcribes through Gemini 3 Flash, with Gemini 3.1 Flash-Lite fallbacks
 - Inserts text at cursor position without overwriting what's already there
 - Auto-copies transcription to clipboard
+- Keyboard control: **Alt+Shift+D** starts/stops dictation in the focused field, **Esc** discards a recording (rebindable at `chrome://extensions/shortcuts`)
+- Little sound chirps on start/stop/success (WebAudio, no audio files — toggle in options)
+- Optional on-device history of your last 20 transcripts (off by default, clearable from the popup)
 - Glass morphism UI that adapts to light and dark mode
 - Six transcription styles with personality (see below)
 - Single inline API request -- no upload pipeline, no middleware
@@ -65,7 +68,7 @@ src/
   background.js        Service worker
   api-service.js       Gemini API calls + style configs
   audio-service.js     Audio recording
-  permission-dialog.js Mic permission handling
+  permission-fix.html/js  Mic permission window
   popup.html/js        Toolbar popup UI
   options.html/js      Settings page
   styles.css           Glass morphism styles
@@ -81,7 +84,7 @@ No build step. No bundler. Vanilla JS all the way through.
 - We do not run an app server or store transcripts ourselves
 - Your API key is stored in Chrome's local extension storage on this device
 - Non-secret preferences are stored with Chrome's `storage.sync`
-- Transcriptions are inserted into the page and copied to your clipboard, but this extension does not keep a local transcript history
+- Transcriptions are inserted into the page and copied to your clipboard. Transcript history is off by default; if you turn it on, the last 20 transcripts are kept only in Chrome's local storage on this device and can be cleared anytime from the popup
 - No analytics, no telemetry, no user accounts
 
 ## Tech
@@ -100,7 +103,7 @@ No build step. No bundler. Vanilla JS all the way through.
 
 ## Version
 
-1.6
+1.7
 
 ## License
 

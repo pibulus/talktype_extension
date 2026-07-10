@@ -59,10 +59,47 @@
     return result;
   }
 
+  // ===================================================================
+  // TRANSCRIPT HISTORY - opt-in, capped, device-local (storage.local)
+  // ===================================================================
+
+  const HISTORY_KEY = 'transcriptHistory';
+  const HISTORY_LIMIT = 20;
+
+  async function appendTranscriptToHistory(entry) {
+    const settings = await chrome.storage.sync.get({ historyEnabled: false });
+    if (!settings.historyEnabled) return;
+
+    const text = typeof entry?.text === 'string' ? entry.text.trim() : '';
+    if (!text) return;
+
+    const result = await chrome.storage.local.get({ [HISTORY_KEY]: [] });
+    const history = Array.isArray(result[HISTORY_KEY]) ? result[HISTORY_KEY] : [];
+    history.unshift({
+      text,
+      host: entry.host || '',
+      style: entry.style || 'standard',
+      at: Date.now()
+    });
+    await chrome.storage.local.set({ [HISTORY_KEY]: history.slice(0, HISTORY_LIMIT) });
+  }
+
+  async function getTranscriptHistory() {
+    const result = await chrome.storage.local.get({ [HISTORY_KEY]: [] });
+    return Array.isArray(result[HISTORY_KEY]) ? result[HISTORY_KEY] : [];
+  }
+
+  async function clearTranscriptHistory() {
+    await chrome.storage.local.remove([HISTORY_KEY]);
+  }
+
   globalThis.TalkTypeStorage = {
     getApiKey,
     setApiKey,
     getWithApiKey,
-    migrateApiKeyToLocal: getApiKey
+    migrateApiKeyToLocal: getApiKey,
+    appendTranscriptToHistory,
+    getTranscriptHistory,
+    clearTranscriptHistory
   };
 })();
