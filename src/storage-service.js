@@ -60,6 +60,27 @@
   }
 
   // ===================================================================
+  // DEEPGRAM KEY - BYOK for live mode, device-local like the Gemini key
+  // ===================================================================
+
+  const DEEPGRAM_KEY = 'deepgramApiKey';
+
+  async function getDeepgramApiKey() {
+    const result = await chrome.storage.local.get([DEEPGRAM_KEY]);
+    return normalizeApiKey(result[DEEPGRAM_KEY]);
+  }
+
+  async function setDeepgramApiKey(apiKey) {
+    const normalized = normalizeApiKey(apiKey);
+    if (normalized) {
+      await chrome.storage.local.set({ [DEEPGRAM_KEY]: normalized });
+    } else {
+      await chrome.storage.local.remove([DEEPGRAM_KEY]);
+    }
+    return normalized;
+  }
+
+  // ===================================================================
   // TRANSCRIPT HISTORY - opt-in, capped, device-local (storage.local)
   // ===================================================================
 
@@ -98,6 +119,8 @@
     setApiKey,
     getWithApiKey,
     migrateApiKeyToLocal: getApiKey,
+    getDeepgramApiKey,
+    setDeepgramApiKey,
     appendTranscriptToHistory,
     getTranscriptHistory,
     clearTranscriptHistory

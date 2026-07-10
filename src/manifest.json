@@ -26,6 +26,7 @@
         "sound-service.js",
         "audio-service.js",
         "api-service.js",
+        "live-service.js",
         "content.js"
       ],
       "css": ["styles.css"],

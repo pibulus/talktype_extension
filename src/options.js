@@ -235,13 +235,17 @@ function requestMicrophonePermission() {
 function restoreOptions() {
   Promise.all([
     window.TalkTypeStorage.getApiKey(),
+    window.TalkTypeStorage.getDeepgramApiKey(),
     chrome.storage.sync.get({
       transcriptionStyle: 'standard',
+      transcriptionEngine: 'cloud',
       soundEffectsEnabled: true,
       historyEnabled: false
     })
-  ]).then(([apiKey, items]) => {
+  ]).then(([apiKey, deepgramKey, items]) => {
     document.getElementById('apiKey').value = apiKey;
+    document.getElementById('deepgramApiKey').value = deepgramKey;
+    document.getElementById('transcriptionEngine').value = items.transcriptionEngine;
     document.getElementById('transcriptionStyle').value = items.transcriptionStyle;
     document.getElementById('soundEffects').checked = items.soundEffectsEnabled !== false;
     document.getElementById('historyEnabled').checked = items.historyEnabled === true;
@@ -250,6 +254,36 @@ function restoreOptions() {
 
   // Check microphone permission
   checkMicrophonePermission();
+}
+
+// Save transcription engine choice + Deepgram key
+function saveEngine() {
+  const engine = document.getElementById('transcriptionEngine').value;
+  const deepgramKey = document.getElementById('deepgramApiKey').value.trim();
+  const status = document.getElementById('engineStatus');
+
+  Promise.all([
+    chrome.storage.sync.set({ transcriptionEngine: engine }),
+    window.TalkTypeStorage.setDeepgramApiKey(deepgramKey)
+  ])
+    .then(([, savedKey]) => {
+      if (engine === 'live' && !savedKey) {
+        status.textContent = 'Engine saved — Live mode still needs a Deepgram key.';
+        status.className = 'status error';
+      } else {
+        status.textContent = 'Engine saved.';
+        status.className = 'status success';
+      }
+      status.style.display = 'block';
+      setTimeout(() => {
+        status.style.display = 'none';
+      }, 2500);
+    })
+    .catch(() => {
+      status.textContent = 'Could not save engine settings.';
+      status.className = 'status error';
+      status.style.display = 'block';
+    });
 }
 
 // Extras toggles save instantly on change
@@ -283,6 +317,7 @@ document.getElementById('saveStyle').addEventListener('click', saveStyle);
 document.getElementById('transcriptionStyle').addEventListener('change', updateStylePreview);
 document.getElementById('soundEffects').addEventListener('change', saveExtras);
 document.getElementById('historyEnabled').addEventListener('change', saveExtras);
+document.getElementById('saveEngine').addEventListener('click', saveEngine);
 document.getElementById('requestPermission').addEventListener('click', requestMicrophonePermission);
 document.getElementById('openChromeSettings').addEventListener('click', openChromeSettings);
 document.getElementById('openAiStudio').addEventListener('click', () => {

@@ -1,5 +1,5 @@
 // Background service worker for TalkType extension
-importScripts('storage-service.js');
+importScripts('storage-service.js', 'gemini-service.js', 'deepgram-live.js');
 
 // Initialize extension when installed
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -40,6 +40,27 @@ chrome.commands.onCommand.addListener((command) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Validate sender is our own extension
   if (sender.id !== chrome.runtime.id) return;
+
+  if (message.action === 'transcribeAudio') {
+    // All Gemini calls route through here so the API key stays in this worker.
+    globalThis.TalkTypeGemini.transcribe(message)
+      .then((text) => sendResponse({ text }))
+      .catch((error) => sendResponse({ error: error.message || 'Transcription failed.' }));
+    return true;
+  }
+
+  if (message.action === 'getSetupState') {
+    // Lets content scripts show setup hints without ever touching the key itself.
+    Promise.all([
+      globalThis.TalkTypeStorage.getApiKey(),
+      globalThis.TalkTypeStorage.getDeepgramApiKey()
+    ])
+      .then(([geminiKey, deepgramKey]) =>
+        sendResponse({ hasApiKey: Boolean(geminiKey), hasDeepgramKey: Boolean(deepgramKey) })
+      )
+      .catch(() => sendResponse({ hasApiKey: false, hasDeepgramKey: false }));
+    return true;
+  }
 
   if (message.action === 'activeInputChanged') {
     // Forward to popup if it's open

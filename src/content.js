@@ -9,8 +9,8 @@ let isRecording = false;
 let isStartingRecording = false; // Synchronous lock — set before any await in the start flow
 let maxRecordingTimer = null;
 let activeInput = null;
-let apiKey = ''; // This should be set through extension options
 let smartModeEnabled = true; // Default to enabled
+let liveSession = null; // Active TalkTypeLiveSession when the live engine is recording
 const MAX_RECORDING_MS = 5 * 60 * 1000; // Auto-stop long recordings before the inline Gemini payload gets too big
 const TALKTYPE_DEBUG = false;
 const debugLog = (...args) => {
@@ -54,24 +54,22 @@ function initializeExtensionCore() {
     return;
   }
 
-  // Get API key from local storage and preferences from sync storage.
-  window.TalkTypeStorage.getWithApiKey(['apiKey', 'smartModeEnabled', 'transcriptionStyle']).then(function(result) {
-    debugLog('TalkType: Got API key from storage:', result.apiKey ? 'Valid key' : 'Empty key');
-    apiKey = result.apiKey || '';
-
+  // Preferences come from sync storage; the API key stays in the background
+  // worker and never enters this content-script world.
+  chrome.storage.sync.get(['smartModeEnabled', 'transcriptionStyle']).then(function(result) {
     // Get smart mode setting if available
     if (result.smartModeEnabled !== undefined) {
       smartModeEnabled = result.smartModeEnabled;
       debugLog('TalkType: Smart Mode setting loaded:', smartModeEnabled);
     }
 
-    // Initialize services - even with empty API key to allow detection of inputs
+    // Initialize services
     try {
       debugLog('TalkType: Creating AudioRecordingService instance');
       audioService = new window.AudioRecordingService();
 
-      debugLog('TalkType: Creating GeminiApiService instance with API key');
-      apiService = new window.GeminiApiService(apiKey);
+      debugLog('TalkType: Creating GeminiApiService client');
+      apiService = new window.GeminiApiService();
       if (result.transcriptionStyle) {
         apiService.setStyle(result.transcriptionStyle);
         debugLog('TalkType: Transcription style set to:', result.transcriptionStyle);
@@ -109,11 +107,14 @@ function initializeExtensionCore() {
         showStatusNotification('Your browser may not support recording. Chrome is recommended.', 'info');
       }
 
-      // If no API key, show prompt but still allow initialization
-      if (!apiKey) {
-        console.warn('TalkType: No API key found in storage.');
-        showStatusNotification('Please set your API key in the extension options.', 'warning');
-      }
+      // If no API key is configured, show a setup prompt (the background
+      // worker checks — we only learn a boolean here, never the key)
+      chrome.runtime.sendMessage({ action: 'getSetupState' }).then((setup) => {
+        if (setup && !setup.hasApiKey) {
+          console.warn('TalkType: No API key configured.');
+          showStatusNotification('Please set your API key in the extension options.', 'warning');
+        }
+      }).catch(() => {});
     } catch (initError) {
       console.error('TalkType: Error during service initialization:', initError);
       showStatusNotification('Error initializing speech services: ' + initError.message, 'error');
@@ -1015,42 +1016,12 @@ function addMicrophoneToInput(inputElement) {
       // Simplified function for starting recording - more direct
       async function startSimpleRecording() {
         try {
-          // First make sure we have the services initialized
+          // First make sure we have the services initialized (no key needed —
+          // the background worker holds it)
           if (!audioService || !apiService) {
             debugLog('TalkType: Services not initialized, initializing now...');
-            showStatusNotification('Initializing TalkType...', 'processing');
-
-            // Initialize directly with storage API key
-            await new Promise((resolve) => {
-              window.TalkTypeStorage.getWithApiKey(['apiKey', 'transcriptionStyle']).then(function(result) {
-                if (result && result.apiKey) {
-                  apiKey = result.apiKey;
-
-                  // Create services directly
-                  audioService = new window.AudioRecordingService();
-                  apiService = new window.GeminiApiService(apiKey);
-                  if (result.transcriptionStyle) apiService.setStyle(result.transcriptionStyle);
-
-                  debugLog('TalkType: Services initialized directly');
-                  resolve();
-                } else {
-                  console.error('TalkType: No API key found in storage');
-                  showStatusNotification('Please set your API key in extension options', 'error');
-                  resolve(); // Resolve anyway to continue
-                }
-              }).catch((error) => {
-                console.error('TalkType: Error reading API key from storage:', error);
-                showStatusNotification('Error reading API key from extension storage', 'error');
-                resolve();
-              });
-            });
-
-            // Verify services were created
-            if (!audioService || !apiService) {
-              console.error('TalkType: Failed to initialize services!');
-              showStatusNotification('Failed to initialize TalkType services. Please check options.', 'error');
-              return;
-            }
+            audioService = new window.AudioRecordingService();
+            apiService = new window.GeminiApiService();
           }
 
           // Simple animation using class-based approach
@@ -1204,22 +1175,8 @@ function findRecordingIndicatorFor(inputElement) {
   return null;
 }
 
-// Stop and throw away the current recording — no transcription, no API call
-async function cancelRecording() {
-  if (!isRecording) return;
-
-  isRecording = false;
-  if (maxRecordingTimer) {
-    clearTimeout(maxRecordingTimer);
-    maxRecordingTimer = null;
-  }
-
-  try {
-    await audioService.stopRecording();
-  } catch (e) {
-    // Nothing captured — that's fine, we're discarding anyway.
-  }
-
+// Reset every mic button + indicator back to the idle look
+function resetRecordingIndicators() {
   document.querySelectorAll('.audio-to-text-recording-indicator').forEach((indicator) => {
     indicator.style.display = 'none';
     const micButton = indicator.parentElement;
@@ -1237,9 +1194,167 @@ async function cancelRecording() {
       micButton.style.filter = 'none';
     }
   });
+}
 
+// Stop and throw away the current recording — no transcription, no API call
+async function cancelRecording() {
+  if (!isRecording) return;
+
+  isRecording = false;
+  if (maxRecordingTimer) {
+    clearTimeout(maxRecordingTimer);
+    maxRecordingTimer = null;
+  }
+
+  if (liveSession) {
+    const current = liveSession;
+    liveSession = null;
+    try {
+      current.session.cancel();
+    } catch (e) {
+      // Already gone.
+    }
+  } else {
+    try {
+      await audioService.stopRecording();
+    } catch (e) {
+      // Nothing captured — that's fine, we're discarding anyway.
+    }
+  }
+
+  resetRecordingIndicators();
   window.TalkTypeSounds?.play('stop');
   showStatusNotification('Recording discarded', 'info');
+}
+
+// ===================================================================
+// LIVE ENGINE (Deepgram) - words land in the field while you talk.
+// Audio streams through the background worker, which holds the key.
+// ===================================================================
+
+async function startLiveRecording(targetInput, indicator) {
+  if (isRecording) return;
+
+  if (typeof window.TalkTypeLiveSession === 'undefined') {
+    showStatusNotification('Live mode failed to load. Try reloading the page.', 'error');
+    return;
+  }
+
+  const setup = await chrome.runtime.sendMessage({ action: 'getSetupState' }).catch(() => null);
+  if (!setup?.hasDeepgramKey) {
+    showStatusNotification('Live mode needs a Deepgram API key — add it in the extension options.', 'error');
+    return;
+  }
+
+  isRecording = true;
+  activeInput = targetInput;
+
+  if (indicator) {
+    indicator.style.display = 'block';
+    indicator.classList.add('pulse-animation');
+  }
+
+  const liveNotification = showStatusNotification('Listening — your words land as you talk', 'recording');
+  const updateInterim = (text) => {
+    const messageEl = liveNotification?.querySelector('.talktype-notification-message');
+    if (messageEl && text) {
+      messageEl.textContent = text.length > 90 ? '…' + text.slice(-90) : text;
+    }
+  };
+
+  let fullTranscript = '';
+
+  const session = new window.TalkTypeLiveSession({
+    onInterim: updateInterim,
+    onFinal: (text) => {
+      fullTranscript = fullTranscript ? `${fullTranscript} ${text}` : text;
+      const target = targetInput.isConnected ? targetInput : getActiveInput();
+      if (target) {
+        try {
+          insertTextIntoInput(target, text + ' ');
+        } catch (e) {
+          debugLog('TalkType: live insert failed', e);
+        }
+      }
+    },
+    onError: (message) => {
+      window.TalkTypeSounds?.play('error');
+      showStatusNotification(message, 'error');
+      abortLiveSession();
+    }
+  });
+
+  liveSession = { session, getTranscript: () => fullTranscript };
+
+  try {
+    await session.start();
+    window.TalkTypeSounds?.play('start');
+
+    if (maxRecordingTimer) clearTimeout(maxRecordingTimer);
+    maxRecordingTimer = setTimeout(() => {
+      if (isRecording) {
+        showStatusNotification('Recording hit the 5 minute limit — wrapping up', 'info');
+        stopRecording();
+      }
+    }, MAX_RECORDING_MS);
+  } catch (error) {
+    console.error('TalkType: Failed to start live session:', error);
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      showStatusNotification('Microphone permission needed. Click the lock icon in your address bar and allow microphone access.', 'error');
+    } else {
+      showStatusNotification('Could not start live transcription: ' + error.message, 'error');
+    }
+    abortLiveSession();
+  }
+}
+
+function abortLiveSession() {
+  const current = liveSession;
+  liveSession = null;
+  isRecording = false;
+  if (maxRecordingTimer) {
+    clearTimeout(maxRecordingTimer);
+    maxRecordingTimer = null;
+  }
+  if (current) {
+    try {
+      current.session.cancel();
+    } catch (e) {
+      // Already gone.
+    }
+  }
+  resetRecordingIndicators();
+}
+
+async function finishLiveRecording() {
+  const current = liveSession;
+  liveSession = null;
+  if (!current) return;
+
+  window.TalkTypeSounds?.play('stop');
+  showStatusNotification('Finishing up...', 'processing');
+
+  try {
+    // Finals still arriving during the flush grace keep inserting via onFinal
+    await current.session.stop();
+  } catch (e) {
+    debugLog('TalkType: live stop error', e);
+  }
+
+  resetRecordingIndicators();
+
+  const transcript = current.getTranscript();
+  if (transcript) {
+    window.TalkTypeSounds?.play('success');
+    showStatusNotification('Transcription complete!', 'success');
+    window.TalkTypeStorage.appendTranscriptToHistory({
+      text: transcript,
+      style: 'standard',
+      host: location.hostname
+    }).catch(() => {});
+  } else {
+    showStatusNotification('No speech detected', 'info');
+  }
 }
 
 // Helper function to strictly validate if an element is a proper text input
@@ -1473,54 +1588,27 @@ function positionMicButton(inputElement, micButton) {
 async function startRecording(targetInput, indicator) {
   console.log('TalkType: Starting recording with services:', !!audioService, !!apiService);
 
-  // If services aren't initialized, show a helpful error and try to initialize again
-  if (!audioService || !apiService) {
-    console.error('TalkType: Services not initialized!');
-
-    // Show error notification
-    showStatusNotification('TalkType services not initialized. Reconnecting...', 'error');
-
-    // Try to initialize directly with the simplified approach
-    try {
-      console.log('TalkType: Attempting to create services directly');
-
-      // Create services directly if classes are available globally
-      if (typeof window.AudioRecordingService !== 'undefined') {
-        audioService = new window.AudioRecordingService();
-        console.log('TalkType: AudioRecordingService created directly');
-      }
-
-      if (typeof window.GeminiApiService !== 'undefined') {
-        window.TalkTypeStorage.getWithApiKey(['apiKey', 'transcriptionStyle']).then(function(result) {
-          apiKey = result.apiKey || '';
-
-        debugLog('TalkType: Creating API service with key:', apiKey ? 'Valid key' : 'Empty key');
-          apiService = new window.GeminiApiService(apiKey);
-          if (result.transcriptionStyle) apiService.setStyle(result.transcriptionStyle);
-
-          console.log('TalkType: Services restored, retrying recording');
-          showStatusNotification('Services reconnected! Trying again...', 'info');
-
-          // Now try recording again after a short delay
-          setTimeout(() => {
-            if (audioService && apiService && targetInput && indicator) {
-              console.log('TalkType: Retrying recording with reconnected services');
-              startRecordingCore(targetInput, indicator);
-            }
-          }, 500);
-        }).catch((error) => {
-          console.error('TalkType: Error restoring services:', error);
-          showStatusNotification('Could not reconnect TalkType services', 'error');
-        });
-        return;
-      }
-    } catch (directInitError) {
-      console.error('TalkType: Failed to create services directly:', directInitError);
-    }
-
-    // Show error message
-    showStatusNotification('Could not initialize TalkType. Please refresh the page or check your API key in options.', 'error');
+  // Live engine takes a completely different path: streaming instead of batch
+  const { transcriptionEngine } = await chrome.storage.sync.get({ transcriptionEngine: 'cloud' });
+  if (transcriptionEngine === 'live') {
+    await startLiveRecording(targetInput, indicator);
     return;
+  }
+
+  // If services aren't initialized, create them directly — no key needed,
+  // the background worker holds it
+  if (!audioService || !apiService) {
+    debugLog('TalkType: Services not initialized, creating directly');
+    if (typeof window.AudioRecordingService !== 'undefined') {
+      audioService = new window.AudioRecordingService();
+    }
+    if (typeof window.GeminiApiService !== 'undefined') {
+      apiService = new window.GeminiApiService();
+    }
+    if (!audioService || !apiService) {
+      showStatusNotification('Could not initialize TalkType. Please refresh the page.', 'error');
+      return;
+    }
   }
 
   // Continue with the core recording logic
@@ -1727,6 +1815,12 @@ async function stopRecording() {
     maxRecordingTimer = null;
   }
 
+  // Live engine: flush the remaining finals and wrap up — no batch step
+  if (liveSession) {
+    await finishLiveRecording();
+    return;
+  }
+
   try {
     debugLog('TalkType: Stopping recording on audioService...');
 
@@ -1779,24 +1873,12 @@ async function stopRecording() {
     let progressNotification = null;
 
     try {
-      // Ensure we have fresh API key
-      const apiKeyResult = await window.TalkTypeStorage.getWithApiKey([
-        'apiKey',
-        'transcriptionStyle'
-      ]);
+      // Read the current style; the API key lives in the background worker
+      const prefs = await chrome.storage.sync.get({ transcriptionStyle: 'standard' });
 
-      if (!apiKeyResult || !apiKeyResult.apiKey) {
-        throw new Error('No API key found. Please set your API key in the extension options.');
-      }
-
-      // Create a fresh API service with current style
-      const transcriptionService = new window.GeminiApiService(apiKeyResult.apiKey);
-      if (apiKeyResult.transcriptionStyle) transcriptionService.setStyle(apiKeyResult.transcriptionStyle);
-
-      // Make sure the service is valid
-      if (!transcriptionService) {
-        throw new Error('Could not create transcription service');
-      }
+      // Create a fresh client with the current style
+      const transcriptionService = new window.GeminiApiService();
+      transcriptionService.setStyle(prefs.transcriptionStyle);
 
       // Show transcribing notification with progress bar
       progressNotification = createProgressNotification('Transcribing audio...');
@@ -1826,7 +1908,7 @@ async function stopRecording() {
       // Keep an on-device copy if the user opted into history
       window.TalkTypeStorage.appendTranscriptToHistory({
         text: transcription,
-        style: apiKeyResult.transcriptionStyle || 'standard',
+        style: prefs.transcriptionStyle || 'standard',
         host: location.hostname
       }).catch(() => {});
 
@@ -2054,8 +2136,9 @@ function showStatusNotification(message, type = 'info') {
   iconElement.className = 'talktype-notification-icon';
   iconElement.textContent = notificationIcon;
 
-  // Create message text element
+  // Create message text element (classed so live mode can update it in place)
   const messageElement = document.createElement('span');
+  messageElement.className = 'talktype-notification-message';
   messageElement.textContent = message;
   messageElement.style.verticalAlign = 'middle';
 

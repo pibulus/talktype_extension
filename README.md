@@ -9,7 +9,8 @@ TalkType is a Chrome extension that drops a mic button next to every text field 
 ## What it does
 
 - Adds a mic button to any text input on any website (including contenteditable fields)
-- Records audio and transcribes through Gemini 3 Flash, with Gemini 3.1 Flash-Lite fallbacks
+- Two engines: **Cloud** (Gemini 3 Flash with Flash-Lite fallbacks, all six styles) and **Live** (Deepgram nova-3 streaming — words land in the field while you talk, BYO Deepgram key)
+- API keys live only in the background service worker — never in page contexts
 - Inserts text at cursor position without overwriting what's already there
 - Auto-copies transcription to clipboard
 - Keyboard control: **Alt+Shift+D** starts/stops dictation in the focused field, **Esc** discards a recording (rebindable at `chrome://extensions/shortcuts`)
@@ -65,9 +66,14 @@ Works with standard inputs, textareas, and contenteditable elements (Gmail compo
 src/
   manifest.json        Extension config (Manifest V3)
   content.js           Injects mic buttons, handles text insertion
-  background.js        Service worker
-  api-service.js       Gemini API calls + style configs
+  background.js        Service worker: message router + keyboard command
+  gemini-service.js    Gemini backend (background-only — holds the API key)
+  deepgram-live.js     Deepgram live WebSocket bridge (background-only)
+  api-service.js       Page-side client: audio prep + message to background
+  live-service.js      Page-side live session: mic chunks over a Port
   audio-service.js     Audio recording
+  sound-service.js     WebAudio chirps
+  storage-service.js   Keys, prefs, transcript history
   permission-fix.html/js  Mic permission window
   popup.html/js        Toolbar popup UI
   options.html/js      Settings page
