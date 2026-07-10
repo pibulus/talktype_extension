@@ -5,6 +5,7 @@
 
 const DEEPGRAM_LIVE_URL = 'wss://api.deepgram.com/v1/listen';
 const KEEPALIVE_INTERVAL_MS = 8000; // Deepgram closes idle sockets after ~10s
+const MAX_BUFFERED_AUDIO_CHUNKS = 120; // ~30s of 250ms chunks awaiting socket open
 
 function buildDeepgramLiveUrl() {
   const params = new URLSearchParams({
@@ -128,7 +129,11 @@ chrome.runtime.onConnect.addListener((port) => {
       const buffer = base64ToArrayBuffer(msg.chunk);
       if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(buffer);
-      } else if (socket) {
+      } else if (pendingChunks.length < MAX_BUFFERED_AUDIO_CHUNKS) {
+        // Queue even before the socket object exists (the 'start' handler may
+        // still be reading the key from storage) — flushed in socket.onopen.
+        // When full, newest chunks are dropped: the first chunk carries the
+        // webm header, so it must never be evicted.
         pendingChunks.push(buffer);
       }
       return;

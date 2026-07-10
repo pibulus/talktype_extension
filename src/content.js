@@ -1275,6 +1275,9 @@ async function startLiveRecording(targetInput, indicator) {
         } catch (e) {
           debugLog('TalkType: live insert failed', e);
         }
+      } else {
+        // Field vanished mid-dictation — tell the user we're still capturing
+        updateInterim('Text field lost — still listening, your words will be copied at the end');
       }
     },
     onError: (message) => {
@@ -1284,10 +1287,14 @@ async function startLiveRecording(targetInput, indicator) {
     }
   });
 
-  liveSession = { session, getTranscript: () => fullTranscript };
+  liveSession = { session, targetInput, getTranscript: () => fullTranscript };
 
   try {
-    await session.start();
+    const started = await session.start();
+    if (!started) {
+      // Cancelled while the mic prompt was open — session already tore down.
+      return;
+    }
     window.TalkTypeSounds?.play('start');
 
     if (maxRecordingTimer) clearTimeout(maxRecordingTimer);
@@ -1298,6 +1305,11 @@ async function startLiveRecording(targetInput, indicator) {
       }
     }, MAX_RECORDING_MS);
   } catch (error) {
+    if (session.cancelled) {
+      // User bailed during the prompt and then it failed — nothing to report.
+      abortLiveSession();
+      return;
+    }
     console.error('TalkType: Failed to start live session:', error);
     if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
       showStatusNotification('Microphone permission needed. Click the lock icon in your address bar and allow microphone access.', 'error');
@@ -1346,7 +1358,20 @@ async function finishLiveRecording() {
   const transcript = current.getTranscript();
   if (transcript) {
     window.TalkTypeSounds?.play('success');
-    showStatusNotification('Transcription complete!', 'success');
+
+    if (current.targetInput && current.targetInput.isConnected) {
+      showStatusNotification('Transcription complete!', 'success');
+    } else {
+      // The field the user dictated into is gone — park the words on the
+      // clipboard like batch mode does.
+      try {
+        await navigator.clipboard.writeText(transcript);
+        showStatusNotification('Text field disappeared — transcript copied to clipboard', 'info');
+      } catch (clipError) {
+        showStatusNotification('Text field disappeared and clipboard copy failed', 'error');
+      }
+    }
+
     window.TalkTypeStorage.appendTranscriptToHistory({
       text: transcript,
       style: 'standard',
@@ -1796,12 +1821,6 @@ async function startRecordingCore(targetInput, indicator) {
 async function stopRecording() {
   debugLog('TalkType: stopRecording called, isRecording:', isRecording, 'activeInput:', !!activeInput);
 
-  if (!audioService) {
-    console.error('TalkType: Cannot stop recording - audioService is not initialized');
-    showStatusNotification('Error: Audio service not initialized', 'error');
-    return;
-  }
-
   if (!isRecording) {
     debugLog('TalkType: stopRecording called while not recording, ignoring');
     return;
@@ -1818,6 +1837,12 @@ async function stopRecording() {
   // Live engine: flush the remaining finals and wrap up — no batch step
   if (liveSession) {
     await finishLiveRecording();
+    return;
+  }
+
+  if (!audioService) {
+    console.error('TalkType: Cannot stop recording - audioService is not initialized');
+    showStatusNotification('Error: Audio service not initialized', 'error');
     return;
   }
 
