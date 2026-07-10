@@ -61,13 +61,16 @@ async function updateSetupCard() {
   `;
 }
 
-// Check if API key is set
+// Check if API key is set (Private/offline engine needs no key at all)
 async function checkApiKey() {
-  const result = await window.TalkTypeStorage.getWithApiKey(['apiKey']);
+  const [result, { transcriptionEngine }] = await Promise.all([
+    window.TalkTypeStorage.getWithApiKey(['apiKey']),
+    chrome.storage.sync.get({ transcriptionEngine: 'cloud' })
+  ]);
   const apiKeyError = document.getElementById('apiKeyError');
   const recordButton = document.getElementById('startRecording');
 
-  if (!result.apiKey) {
+  if (!result.apiKey && transcriptionEngine !== 'offline') {
     apiKeyError.style.display = 'block';
     recordButton.classList.add('disabled');
     recordButton.disabled = true;
@@ -292,18 +295,14 @@ async function stopRecording() {
     // Transform recording button into progress bar
     transformButtonToProgressBar(recordButton);
 
-    // Get API key and create fresh service instance to avoid stale state
-    const { apiKey, transcriptionStyle } =
-      await window.TalkTypeStorage.getWithApiKey(['apiKey', 'transcriptionStyle']);
-
-    if (!apiKey || !apiKey.trim()) {
-      throw new Error('Missing Gemini API key. Add it in settings first.');
-    }
+    // Style comes from prefs; the background router handles keys and reports
+    // a friendly error if the chosen engine is missing one
+    const { transcriptionStyle } = await chrome.storage.sync.get({ transcriptionStyle: 'standard' });
 
     // Create a new API service instance to prevent stale state
     apiService = null;
-    apiService = new GeminiApiService(apiKey);
-    if (transcriptionStyle) apiService.setStyle(transcriptionStyle);
+    apiService = new GeminiApiService();
+    apiService.setStyle(transcriptionStyle);
 
     // Update status indicator with random fun messages
     showTranscribingStatus(statusElement, true);

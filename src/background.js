@@ -24,6 +24,52 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (Object.keys(updates).length) await chrome.storage.sync.set(updates);
 });
 
+// ===================================================================
+// ENGINE ROUTER + OFFSCREEN DOCUMENT (offline model host)
+// ===================================================================
+
+let offscreenCreationPromise = null;
+
+async function ensureOffscreenDocument() {
+  const contexts = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
+  if (contexts.length > 0) return;
+
+  // Latch so concurrent transcriptions don't race two createDocument calls
+  if (!offscreenCreationPromise) {
+    offscreenCreationPromise = chrome.offscreen
+      .createDocument({
+        url: 'offscreen.html',
+        reasons: ['WORKERS'],
+        justification:
+          'Runs the offline speech-recognition model (WASM) so audio never leaves the device.'
+      })
+      .finally(() => {
+        offscreenCreationPromise = null;
+      });
+  }
+  await offscreenCreationPromise;
+}
+
+async function routeTranscription(message) {
+  const { transcriptionEngine } = await chrome.storage.sync.get({ transcriptionEngine: 'cloud' });
+
+  if (transcriptionEngine === 'offline') {
+    await ensureOffscreenDocument();
+    const response = await chrome.runtime.sendMessage({
+      action: 'offscreenTranscribe',
+      audioBase64: message.audioBase64,
+      mimeType: message.mimeType
+    });
+    if (!response) throw new Error('Offline engine did not respond. Try again.');
+    if (response.error) throw new Error(response.error);
+    return response.text;
+  }
+
+  // 'cloud' and 'live' both land here for batch requests (the popup always
+  // records in batch mode, so live falls back to Gemini for it)
+  return globalThis.TalkTypeGemini.transcribe(message);
+}
+
 // Keyboard shortcut (Alt+Shift+D by default) → toggle dictation in the active tab
 chrome.commands.onCommand.addListener((command) => {
   if (command !== 'toggle-recording') return;
@@ -42,11 +88,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
 
   if (message.action === 'transcribeAudio') {
-    // All Gemini calls route through here so the API key stays in this worker.
-    globalThis.TalkTypeGemini.transcribe(message)
+    // All batch transcription routes through here: keys stay in this worker,
+    // and the engine setting decides Gemini (cloud) vs the offscreen model.
+    routeTranscription(message)
       .then((text) => sendResponse({ text }))
       .catch((error) => sendResponse({ error: error.message || 'Transcription failed.' }));
     return true;
+  }
+
+  if (message.action === 'prepareOfflineModel') {
+    ensureOffscreenDocument()
+      .then(() => chrome.runtime.sendMessage({ action: 'offscreenPrepareModel' }))
+      .then((response) => sendResponse(response || { error: 'Offline engine did not respond.' }))
+      .catch((error) => sendResponse({ error: error.message || 'Could not start the offline engine.' }));
+    return true;
+  }
+
+  if (message.action === 'offlineHeartbeat' || message.action === 'offlineModelProgress') {
+    // Heartbeats/progress from the offscreen document exist to reset this
+    // worker's idle timer during long model loads; progress also relays to
+    // any open options page directly. Nothing to do here.
+    return;
   }
 
   if (message.action === 'getSetupState') {

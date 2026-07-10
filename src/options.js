@@ -270,6 +270,9 @@ function saveEngine() {
       if (engine === 'live' && !savedKey) {
         status.textContent = 'Engine saved — Live mode still needs a Deepgram key.';
         status.className = 'status error';
+      } else if (engine === 'offline') {
+        status.textContent = 'Engine saved — Private mode downloads its model (~96MB, one time) on first use.';
+        status.className = 'status success';
       } else {
         status.textContent = 'Engine saved.';
         status.className = 'status success';
@@ -285,6 +288,48 @@ function saveEngine() {
       status.style.display = 'block';
     });
 }
+
+// Kick off (or verify) the offline model download, with live progress
+function prepareOfflineModel() {
+  const status = document.getElementById('offlineModelStatus');
+  const button = document.getElementById('prepareOfflineModel');
+
+  status.style.display = 'block';
+  status.textContent = 'Starting offline model download (~96MB, one time)...';
+  button.disabled = true;
+
+  chrome.runtime.sendMessage({ action: 'prepareOfflineModel' })
+    .then((response) => {
+      if (response?.ready) {
+        status.textContent = '✓ Offline model ready — Private mode works fully offline now.';
+      } else {
+        status.textContent = response?.error || 'Offline model setup failed. Try again.';
+      }
+    })
+    .catch(() => {
+      status.textContent = 'Offline model setup failed. Try again.';
+    })
+    .finally(() => {
+      button.disabled = false;
+    });
+}
+
+// Live download progress from the offscreen document
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action !== 'offlineModelProgress') return;
+
+  const status = document.getElementById('offlineModelStatus');
+  if (!status) return;
+
+  status.style.display = 'block';
+  if (message.status === 'ready') {
+    status.textContent = '✓ Offline model ready — Private mode works fully offline now.';
+  } else if (message.status === 'progress' && message.file && message.progress !== null) {
+    status.textContent = `Downloading ${message.file} — ${message.progress}%`;
+  } else if (message.status === 'done' && message.file) {
+    status.textContent = `Downloaded ${message.file}`;
+  }
+});
 
 // Extras toggles save instantly on change
 function saveExtras() {
@@ -318,6 +363,7 @@ document.getElementById('transcriptionStyle').addEventListener('change', updateS
 document.getElementById('soundEffects').addEventListener('change', saveExtras);
 document.getElementById('historyEnabled').addEventListener('change', saveExtras);
 document.getElementById('saveEngine').addEventListener('click', saveEngine);
+document.getElementById('prepareOfflineModel').addEventListener('click', prepareOfflineModel);
 document.getElementById('requestPermission').addEventListener('click', requestMicrophonePermission);
 document.getElementById('openChromeSettings').addEventListener('click', openChromeSettings);
 document.getElementById('openAiStudio').addEventListener('click', () => {

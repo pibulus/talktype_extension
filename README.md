@@ -9,7 +9,7 @@ TalkType is a Chrome extension that drops a mic button next to every text field 
 ## What it does
 
 - Adds a mic button to any text input on any website (including contenteditable fields)
-- Two engines: **Cloud** (Gemini 3 Flash with Flash-Lite fallbacks, all six styles) and **Live** (Deepgram nova-3 streaming — words land in the field while you talk, BYO Deepgram key)
+- Three engines: **☁️ Cloud** (Gemini 3 Flash with Flash-Lite fallbacks, all six styles), **⚡ Live** (Deepgram nova-3 streaming — words land in the field while you talk, BYO Deepgram key), and **🔒 Private** (Whisper running in your browser via WASM — one ~96MB download, then no audio ever leaves your machine and no API key needed)
 - API keys live only in the background service worker — never in page contexts
 - Inserts text at cursor position without overwriting what's already there
 - Auto-copies transcription to clipboard
@@ -69,6 +69,8 @@ src/
   background.js        Service worker: message router + keyboard command
   gemini-service.js    Gemini backend (background-only — holds the API key)
   deepgram-live.js     Deepgram live WebSocket bridge (background-only)
+  offscreen.html/js    Offline Whisper engine (transformers.js in an offscreen doc)
+  vendor/              Vendored transformers.js + ONNX runtime WASM (no build step)
   api-service.js       Page-side client: audio prep + message to background
   live-service.js      Page-side live session: mic chunks over a Port
   audio-service.js     Audio recording

@@ -56,7 +56,7 @@ function initializeExtensionCore() {
 
   // Preferences come from sync storage; the API key stays in the background
   // worker and never enters this content-script world.
-  chrome.storage.sync.get(['smartModeEnabled', 'transcriptionStyle']).then(function(result) {
+  chrome.storage.sync.get(['smartModeEnabled', 'transcriptionStyle', 'transcriptionEngine']).then(function(result) {
     // Get smart mode setting if available
     if (result.smartModeEnabled !== undefined) {
       smartModeEnabled = result.smartModeEnabled;
@@ -107,14 +107,18 @@ function initializeExtensionCore() {
         showStatusNotification('Your browser may not support recording. Chrome is recommended.', 'info');
       }
 
-      // If no API key is configured, show a setup prompt (the background
-      // worker checks — we only learn a boolean here, never the key)
-      chrome.runtime.sendMessage({ action: 'getSetupState' }).then((setup) => {
-        if (setup && !setup.hasApiKey) {
-          console.warn('TalkType: No API key configured.');
-          showStatusNotification('Please set your API key in the extension options.', 'warning');
-        }
-      }).catch(() => {});
+      // If the Cloud engine needs a key and none is configured, show a setup
+      // prompt (the background worker checks — we only learn a boolean here,
+      // never the key). Live warns at record time; Private needs no key.
+      const engine = result.transcriptionEngine || 'cloud';
+      if (engine === 'cloud') {
+        chrome.runtime.sendMessage({ action: 'getSetupState' }).then((setup) => {
+          if (setup && !setup.hasApiKey) {
+            console.warn('TalkType: No API key configured.');
+            showStatusNotification('Please set your API key in the extension options.', 'warning');
+          }
+        }).catch(() => {});
+      }
     } catch (initError) {
       console.error('TalkType: Error during service initialization:', initError);
       showStatusNotification('Error initializing speech services: ' + initError.message, 'error');

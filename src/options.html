@@ -427,6 +427,7 @@
           <select id="transcriptionEngine" style="width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1.5px solid var(--glass-border); background: rgba(255, 255, 255, 0.74); color: var(--brand-ink); font-size: 15px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-sizing: border-box; cursor: pointer; appearance: none; -webkit-appearance: none;">
             <option value="cloud">☁️ Cloud (Gemini) — record, then transcribe with styles</option>
             <option value="live">⚡ Live (Deepgram) — words land while you talk</option>
+            <option value="offline">🔒 Private (offline) — your voice never leaves this device</option>
           </select>
         </div>
       </div>
@@ -437,11 +438,23 @@
       </div>
 
       <div class="note">
-        Live mode streams your voice to Deepgram as you speak and types the words
-        straight into the field — Clean &amp; Accurate only (personality styles need
-        the Cloud engine). Get a free key at <strong>console.deepgram.com</strong>.
-        The popup always uses the Cloud engine.
+        <strong>Live</strong> streams your voice to Deepgram as you speak and types
+        the words straight into the field (free key at <strong>console.deepgram.com</strong>).
+        <strong>Private</strong> runs a Whisper model in your browser — a one-time
+        ~96MB download, then no audio ever leaves your machine and no key is needed.
+        Both are Clean &amp; Accurate only; personality styles need the Cloud engine.
+        The popup uses Cloud or Private (never Live).
       </div>
+
+      <div class="btn-group">
+        <button id="prepareOfflineModel">
+          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+          </svg>
+          Download Offline Model
+        </button>
+      </div>
+      <div id="offlineModelStatus" class="note" style="display: none;"></div>
 
       <button id="saveEngine" class="primary">Save Engine</button>
       <div id="engineStatus" class="status"></div>
