@@ -239,6 +239,7 @@ function restoreOptions() {
     chrome.storage.sync.get({
       transcriptionStyle: 'standard',
       transcriptionEngine: 'cloud',
+      offlineModel: 'tiny',
       soundEffectsEnabled: true,
       historyEnabled: false
     })
@@ -246,6 +247,7 @@ function restoreOptions() {
     document.getElementById('apiKey').value = apiKey;
     document.getElementById('deepgramApiKey').value = deepgramKey;
     document.getElementById('transcriptionEngine').value = items.transcriptionEngine;
+    document.getElementById('offlineModel').value = items.offlineModel;
     document.getElementById('transcriptionStyle').value = items.transcriptionStyle;
     document.getElementById('soundEffects').checked = items.soundEffectsEnabled !== false;
     document.getElementById('historyEnabled').checked = items.historyEnabled === true;
@@ -364,6 +366,10 @@ document.getElementById('soundEffects').addEventListener('change', saveExtras);
 document.getElementById('historyEnabled').addEventListener('change', saveExtras);
 document.getElementById('saveEngine').addEventListener('click', saveEngine);
 document.getElementById('prepareOfflineModel').addEventListener('click', prepareOfflineModel);
+document.getElementById('offlineModel').addEventListener('change', () => {
+  // Saves instantly so the Download button always fetches the selected model
+  chrome.storage.sync.set({ offlineModel: document.getElementById('offlineModel').value });
+});
 document.getElementById('requestPermission').addEventListener('click', requestMicrophonePermission);
 document.getElementById('openChromeSettings').addEventListener('click', openChromeSettings);
 document.getElementById('openAiStudio').addEventListener('click', () => {

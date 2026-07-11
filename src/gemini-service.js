@@ -152,7 +152,16 @@ async function transcribeWithModel(modelId, apiKey, audioBase64, mimeType, style
   return cleanTranscriptionText(text);
 }
 
+// After Gemini rate-limits the key, stop hammering it for a short cooldown —
+// immediate retries just extend the penalty box.
+const RATE_LIMIT_COOLDOWN_MS = 30 * 1000;
+let rateLimitCooldownUntil = 0;
+
 async function transcribe({ audioBase64, mimeType, style = 'standard' }) {
+  if (Date.now() < rateLimitCooldownUntil) {
+    throw new Error('Gemini is rate-limiting this key — cooling down for a moment. Try again shortly.');
+  }
+
   const apiKey = await globalThis.TalkTypeStorage.getApiKey();
   if (!apiKey) {
     throw new Error('Missing Gemini API key. Add it in the extension options first.');
@@ -168,6 +177,9 @@ async function transcribe({ audioBase64, mimeType, style = 'standard' }) {
       return await transcribeWithModel(modelId, apiKey, audioBase64, mimeType, style);
     } catch (error) {
       lastError = error;
+      if (error.status === 429) {
+        rateLimitCooldownUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+      }
       if (index === GEMINI_TRANSCRIPTION_MODELS.length - 1 || !shouldTryFallback(error)) {
         throw error;
       }

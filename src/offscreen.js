@@ -10,12 +10,28 @@
 
 import { pipeline, env } from './vendor/transformers.web.min.js';
 
-const MODEL_ID = 'onnx-community/whisper-tiny.en';
+// Only models proven against transformers.js 4.x in the TalkType webapp —
+// the onnx-community exports; older distil-whisper/* repos hit the q8/ort
+// rejection landmine, so don't add them here until the app proves them.
+const MODELS = {
+  tiny: {
+    id: 'onnx-community/whisper-tiny.en',
+    dtype: 'q4',
+    device: 'wasm' // Mobile-safe, runs anywhere
+  },
+  small: {
+    id: 'onnx-community/distil-small.en',
+    dtype: 'q4',
+    device: null // Resolved at load: WebGPU when available, else wasm
+  }
+};
+
 const TARGET_SAMPLE_RATE = 16000;
 const HEARTBEAT_INTERVAL_MS = 10000;
 
 let envConfigured = false;
 let transcriberPromise = null;
+let currentModelKey = null;
 let busyCount = 0;
 let heartbeatTimer = null;
 
@@ -73,18 +89,29 @@ function broadcastProgress(update) {
   });
 }
 
-function loadTranscriber() {
-  if (!transcriberPromise) {
-    configureEnv();
-    transcriberPromise = pipeline('automatic-speech-recognition', MODEL_ID, {
-      dtype: 'q4',
-      device: 'wasm',
-      progress_callback: broadcastProgress
-    }).catch((error) => {
-      transcriberPromise = null; // Allow retry after a failed download
-      throw error;
-    });
+async function loadTranscriber() {
+  const { offlineModel } = await chrome.storage.sync.get({ offlineModel: 'tiny' });
+  const modelKey = MODELS[offlineModel] ? offlineModel : 'tiny';
+
+  // Reuse the warm pipeline unless the user switched models
+  if (transcriberPromise && currentModelKey === modelKey) {
+    return transcriberPromise;
   }
+
+  configureEnv();
+  currentModelKey = modelKey;
+  const model = MODELS[modelKey];
+  const device = model.device || (navigator.gpu ? 'webgpu' : 'wasm');
+
+  transcriberPromise = pipeline('automatic-speech-recognition', model.id, {
+    dtype: model.dtype,
+    device,
+    progress_callback: broadcastProgress
+  }).catch((error) => {
+    transcriberPromise = null; // Allow retry after a failed download
+    currentModelKey = null;
+    throw error;
+  });
   return transcriberPromise;
 }
 

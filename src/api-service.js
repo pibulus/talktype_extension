@@ -32,6 +32,11 @@ class GeminiApiService {
       const preparedAudio = await this._prepareAudioForGemini(audioBlob);
       const base64Data = await this._blobToBase64Raw(preparedAudio.blob);
 
+      // Gemini's inline request cap is ~20MB; refuse before burning a request
+      if (base64Data.length > 19 * 1024 * 1024) {
+        throw new Error('Recording too large to send in one request. Try a shorter take.');
+      }
+
       if (progressCallback) progressCallback('sending', 30);
 
       const response = await chrome.runtime.sendMessage({

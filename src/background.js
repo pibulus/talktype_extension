@@ -50,7 +50,27 @@ async function ensureOffscreenDocument() {
   await offscreenCreationPromise;
 }
 
+// Runaway-loop brake: a bug or stuck retry shouldn't burn through a user's
+// API quota. Sliding one-minute window, in-memory (resets if the worker
+// sleeps — it's a soft brake, not a bouncer).
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_PER_WINDOW = 10;
+const recentTranscriptions = [];
+
+function enforceTranscriptionRateLimit() {
+  const now = Date.now();
+  while (recentTranscriptions.length && now - recentTranscriptions[0] > RATE_LIMIT_WINDOW_MS) {
+    recentTranscriptions.shift();
+  }
+  if (recentTranscriptions.length >= RATE_LIMIT_MAX_PER_WINDOW) {
+    throw new Error('Easy there — over 10 transcriptions in a minute. Take a breath and try again shortly.');
+  }
+  recentTranscriptions.push(now);
+}
+
 async function routeTranscription(message) {
+  enforceTranscriptionRateLimit();
+
   const { transcriptionEngine } = await chrome.storage.sync.get({ transcriptionEngine: 'cloud' });
 
   if (transcriptionEngine === 'offline') {
