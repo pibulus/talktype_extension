@@ -5,6 +5,10 @@ async function saveOptions() {
   const apiKey = document.getElementById('apiKey').value;
   const autoRecord = document.getElementById('autoRecord').checked;
   const contextMenu = document.getElementById('contextMenu').checked;
+  const transcriptionEngine = document.getElementById('transcriptionEngine').value;
+  const deepgramApiKey = document.getElementById('deepgramApiKey').value.trim();
+  const offlineModel = document.getElementById('offlineModel').value;
+
   
   try {
     // Initialize settings service if needed
@@ -14,7 +18,10 @@ async function saveOptions() {
     await window.SettingsService.setMultiple({
       apiKey,
       autoRecord,
-      contextMenu
+      contextMenu,
+      transcriptionEngine,
+      deepgramApiKey,
+      offlineModel
     });
     
     // Update status to let user know options were saved
@@ -232,6 +239,16 @@ async function restoreOptions() {
     document.getElementById('autoRecord').checked = !!settings.autoRecord;
     document.getElementById('contextMenu').checked = settings.contextMenu !== false; // Default to true
     
+    if (settings.transcriptionEngine) document.getElementById('transcriptionEngine').value = settings.transcriptionEngine;
+    if (settings.deepgramApiKey) document.getElementById('deepgramApiKey').value = settings.deepgramApiKey;
+    if (settings.offlineModel) document.getElementById('offlineModel').value = settings.offlineModel;
+    
+    // Trigger change event to show/hide fields
+    const engine = settings.transcriptionEngine || 'cloud';
+    document.getElementById('deepgramKeyGroup').style.display = engine === 'live' ? 'block' : 'none';
+    document.getElementById('offlineModelGroup').style.display = engine === 'offline' ? 'block' : 'none';
+
+    
     // Check microphone permission
     checkMicrophonePermission();
   } catch (error) {
@@ -242,12 +259,22 @@ async function restoreOptions() {
       { 
         apiKey: '',
         autoRecord: false,
-        contextMenu: true 
+        contextMenu: true,
+        transcriptionEngine: 'cloud',
+        deepgramApiKey: '',
+        offlineModel: 'tiny'
       },
       (items) => {
         document.getElementById('apiKey').value = items.apiKey;
         document.getElementById('autoRecord').checked = items.autoRecord;
         document.getElementById('contextMenu').checked = items.contextMenu;
+        document.getElementById('transcriptionEngine').value = items.transcriptionEngine;
+        document.getElementById('deepgramApiKey').value = items.deepgramApiKey;
+        document.getElementById('offlineModel').value = items.offlineModel;
+        
+        document.getElementById('deepgramKeyGroup').style.display = items.transcriptionEngine === 'live' ? 'block' : 'none';
+        document.getElementById('offlineModelGroup').style.display = items.transcriptionEngine === 'offline' ? 'block' : 'none';
+
       }
     );
     
@@ -279,6 +306,13 @@ function openContextMenuTestPage() {
 }
 
 // Initialize the page
+
+document.getElementById('transcriptionEngine').addEventListener('change', (e) => {
+  const engine = e.target.value;
+  document.getElementById('deepgramKeyGroup').style.display = engine === 'live' ? 'block' : 'none';
+  document.getElementById('offlineModelGroup').style.display = engine === 'offline' ? 'block' : 'none';
+});
+
 document.addEventListener('DOMContentLoaded', restoreOptions);
 document.getElementById('save').addEventListener('click', saveOptions);
 document.getElementById('requestPermission').addEventListener('click', requestMicrophonePermission);

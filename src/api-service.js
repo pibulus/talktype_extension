@@ -1,17 +1,27 @@
-// API Service for audio transcription
+// Page-side transcription client.
+// Prepares audio (decode → 16kHz mono WAV → base64) in the page context —
+// AudioContext doesn't exist in service workers — then hands it to the
+// background worker, which holds the API key and makes the Gemini request.
+// The key never enters this file's world.
+
+const GEMINI_SUPPORTED_AUDIO_MIME_TYPES = new Set([
+  'audio/wav',
+  'audio/mp3',
+  'audio/mpeg',
+  'audio/aiff',
+  'audio/aac',
+  'audio/ogg',
+  'audio/flac'
+]);
 
 class GeminiApiService {
+  // The apiKey argument is accepted for backward compatibility but unused —
+  // the background worker reads the key from storage itself.
   constructor(apiKey) {
-    this.apiKey = apiKey;
-    // Gemini API endpoints
-    this.uploadEndpoint =
-      "https://generativelanguage.googleapis.com/upload/v1beta/files";
-    this.generateEndpoint =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-      
-    // Register with ServiceRegistry if available
     this.registerWithServiceRegistry();
+    this.style = 'standard';
   }
+
   
   // Register with ServiceRegistry to ensure service is available
   registerWithServiceRegistry() {
@@ -25,362 +35,186 @@ class GeminiApiService {
     }
   }
 
-  /**
-   * Transcribe audio data using Gemini API
-   * @param {Blob} audioBlob - The recorded audio as a Blob
-   * @param {Function} progressCallback - Optional callback function to report progress
-   * @returns {Promise<string>} - The transcribed text
-   */
-  async transcribeAudio(audioBlob, progressCallback = null) {
-    try {
-      // Verify the API key before proceeding
-      const keyValidation = await this.verifyApiKey();
-      if (!keyValidation.valid) {
-        throw new Error(keyValidation.displayMessage);
-      }
-      
-      // Step 1: Upload the audio file to Gemini
-      if (progressCallback) progressCallback('upload-start', 0);
-      
-      const fileUri = await this.uploadAudioFile(audioBlob, progressCallback);
-      if (!fileUri) {
-        throw new Error("Failed to upload audio file");
-      }
-      
-      if (progressCallback) progressCallback('upload-complete', 50);
-
-      // Step 2: Generate content using the uploaded file
-      if (progressCallback) progressCallback('transcription-start', 50);
-      
-      const result = await this.generateContentFromAudio(fileUri);
-      
-      if (progressCallback) progressCallback('transcription-complete', 100);
-      
-      return result;
-    } catch (error) {
-      console.error("Transcription error:", error);
-      throw error;
-    }
+  async verifyApiKey() {
+    // API Key verification is now handled by the background script / popup.
+    return { valid: true, displayMessage: '' };
   }
-  
-  /**
-   * Transcribe audio with automatic retry for transient errors
-   * @param {Blob} audioBlob - The recorded audio as a Blob
-   * @param {Function} progressCallback - Optional callback function to report progress
-   * @param {number} maxRetries - Maximum number of retry attempts (default: 2)
-   * @returns {Promise<string>} - The transcribed text
-   */
+
   async transcribeAudioWithRetry(audioBlob, progressCallback = null, maxRetries = 2) {
     let retries = 0;
-    let lastError = null;
-    
-    while (retries <= maxRetries) {
+    while (true) {
       try {
-        // If retrying, update the progress callback
-        if (retries > 0 && progressCallback) {
-          progressCallback('retrying', 0);
-          progressCallback(`retry-attempt-${retries}`, 0);
-        }
-        
         return await this.transcribeAudio(audioBlob, progressCallback);
       } catch (error) {
-        lastError = error;
-        
-        // Check if error is retryable
-        const isRetryable = 
-          // Network errors
-          error.message.includes("network") || 
-          error.message.includes("timeout") ||
-          error.message.includes("connection") ||
-          // Server errors (5xx)
-          (error.status >= 500 && error.status < 600) ||
-          // Rate limit errors sometimes happen
-          error.message.includes("rate limit") ||
-          error.message.includes("429");
-        
-        if (isRetryable && retries < maxRetries) {
-          console.log(`Retrying transcription after error (attempt ${retries + 1}/${maxRetries}):`, error.message);
-          retries++;
-          
-          // Wait longer between each retry (exponential backoff)
-          const delayMs = 1000 * Math.pow(2, retries - 1); // 1s, 2s, 4s...
-          await new Promise(resolve => setTimeout(resolve, delayMs));
-          continue;
+        if (retries >= maxRetries) {
+          throw error;
         }
-        
-        // Not retryable or max retries exceeded
-        console.error(`Transcription failed after ${retries} retries:`, error);
-        throw error;
+        retries++;
+        console.warn(`Transcription attempt ${retries} failed, retrying...`, error);
+        await new Promise(resolve => setTimeout(resolve, 1000 * retries));
       }
     }
-    
-    // This should never be reached, but just in case
-    throw lastError || new Error("Transcription failed after multiple attempts");
   }
 
-  /**
-   * Upload audio file to Gemini API
-   * @param {Blob} audioBlob - The recorded audio blob
-   * @param {Function} progressCallback - Optional callback function to report progress
-   * @returns {Promise<string>} - The file URI for the uploaded file
-   */
-  async uploadAudioFile(audioBlob, progressCallback = null) {
+  setStyle(style) {
+    this.style = typeof style === 'string' && style ? style : 'standard';
+  }
+
+  async transcribeAudio(audioBlob, progressCallback = null) {
     try {
-      // Step 1: Get the audio file details
-      const mimeType = audioBlob.type || "audio/webm";
-      const numBytes = audioBlob.size;
-      const displayName = "AUDIO";
+      if (progressCallback) progressCallback('preparing', 10);
 
-      if (progressCallback) progressCallback('preparing-metadata', 5);
+      const preparedAudio = await this._prepareAudioForGemini(audioBlob);
+      const base64Data = await this._blobToBase64Raw(preparedAudio.blob);
 
-      // Step 2: Initial resumable request to define metadata
-      const uploadUrlResponse = await fetch(
-        `${this.uploadEndpoint}?key=${this.apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "X-Goog-Upload-Protocol": "resumable",
-            "X-Goog-Upload-Command": "start",
-            "X-Goog-Upload-Header-Content-Length": numBytes.toString(),
-            "X-Goog-Upload-Header-Content-Type": mimeType,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ file: { display_name: displayName } }),
-        }
-      );
-
-      if (!uploadUrlResponse.ok) {
-        const errorText = await uploadUrlResponse.text();
-        throw new Error(
-          `Failed to initiate upload: ${uploadUrlResponse.status} - ${errorText}`
-        );
+      // Gemini's inline request cap is ~20MB; refuse before burning a request
+      if (base64Data.length > 19 * 1024 * 1024) {
+        throw new Error('Recording too large to send in one request. Try a shorter take.');
       }
 
-      if (progressCallback) progressCallback('initial-request-complete', 20);
+      if (progressCallback) progressCallback('sending', 30);
 
-      // Get the upload URL from the response headers
-      const uploadUrl = uploadUrlResponse.headers.get("X-Goog-Upload-URL");
-      if (!uploadUrl) {
-        throw new Error("No upload URL received from Gemini API");
-      }
-
-      if (progressCallback) progressCallback('starting-file-upload', 25);
-
-      // Step 3: Upload the actual bytes
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "POST",
-        headers: {
-          "Content-Length": numBytes.toString(),
-          "X-Goog-Upload-Offset": "0",
-          "X-Goog-Upload-Command": "upload, finalize",
-        },
-        body: audioBlob,
+      const response = await chrome.runtime.sendMessage({
+        action: 'transcribeAudio',
+        audioBase64: base64Data,
+        mimeType: preparedAudio.mimeType,
+        style: this.style
       });
 
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(
-          `Failed to upload file: ${uploadResponse.status} - ${errorText}`
-        );
+      if (progressCallback) progressCallback('processing', 70);
+
+      if (!response) {
+        throw new Error('TalkType could not reach its background worker. Try reloading the extension.');
+      }
+      if (response.error) {
+        throw new Error(response.error);
       }
 
-      if (progressCallback) progressCallback('file-upload-complete', 45);
-
-      // Get the file info from the response
-      const fileInfo = await uploadResponse.json();
-
-      // Return the file URI
-      return fileInfo.file?.uri;
+      if (progressCallback) progressCallback('complete', 100);
+      return response.text;
     } catch (error) {
-      console.error("Error uploading audio:", error);
+      console.error('Transcription error:', error);
       throw error;
     }
   }
 
   /**
-   * Generate content from an audio file using Gemini API
-   * @param {string} fileUri - The URI of the uploaded audio file
-   * @param {Function} progressCallback - Optional callback function to report progress
-   * @returns {Promise<string>} - The transcribed text
+   * Convert Blob to raw base64 string (no data URL prefix)
    */
-  async generateContentFromAudio(fileUri, progressCallback = null) {
-    try {
-      if (progressCallback) progressCallback('sending-transcription-request', 55);
-      
-      // Call Gemini API to process the audio file
-      const response = await fetch(
-        `${this.generateEndpoint}?key=${this.apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  { text: "Transcribe this audio clip" },
-                  { file_data: { mime_type: "audio/webm", file_uri: fileUri } },
-                ],
-              },
-            ],
-          }),
-        }
-      );
-
-      if (progressCallback) progressCallback('transcription-response-received', 75);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          `Gemini API request failed with status ${response.status}: ${
-            errorData.error?.message || ""
-          }`
-        );
-      }
-
-      const data = await response.json();
-      
-      if (progressCallback) progressCallback('processing-response', 90);
-
-      // Extract the transcription from the response
-      if (
-        data.candidates &&
-        data.candidates.length > 0 &&
-        data.candidates[0].content &&
-        data.candidates[0].content.parts &&
-        data.candidates[0].content.parts.length > 0
-      ) {
-        return data.candidates[0].content.parts[0].text;
-      } else {
-        throw new Error("Unexpected response format from Gemini API");
-      }
-    } catch (error) {
-      console.error("Error generating content from audio:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Verify that the API key is valid
-   * @returns {Promise<Object>} - Result object with validation details
-   */
-  async verifyApiKey() {
-    try {
-      // Check if key is empty or missing
-      if (!this.apiKey || this.apiKey.trim() === '') {
-        return { 
-          valid: false, 
-          errorCode: "MISSING_KEY",
-          message: "API key is missing",
-          displayMessage: "Please set your API key in the extension options."
-        };
-      }
-
-      // Basic format validation - most Gemini API keys start with "AIza"
-      if (!this.apiKey.startsWith('AIza')) {
-        return { 
-          valid: false, 
-          errorCode: "INVALID_FORMAT",
-          message: "API key has invalid format",
-          displayMessage: "The API key format appears invalid. Gemini API keys typically start with 'AIza'."
-        };
-      }
-
-      // Make a simple request to verify the API key
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`
-      );
-      
-      if (response.ok) {
-        return { 
-          valid: true, 
-          message: "API key is valid" 
-        };
-      } else {
-        // Parse the error response for more details
-        const errorData = await response.json().catch(() => ({}));
-        const errorCode = errorData.error?.code || response.status;
-        const errorMessage = errorData.error?.message || "Unknown API error";
-        const displayMessage = this._getDisplayMessageForError(errorCode, errorMessage);
-        
-        console.error("API key verification failed:", errorCode, errorMessage);
-        
-        return { 
-          valid: false, 
-          errorCode,
-          message: errorMessage,
-          displayMessage
-        };
-      }
-    } catch (error) {
-      console.error("API key verification error:", error);
-      return { 
-        valid: false, 
-        errorCode: "NETWORK_ERROR",
-        message: error.message,
-        displayMessage: "Network error while validating API key. Please check your internet connection."
-      };
-    }
-  }
-  
-  /**
-   * Get user-friendly error message based on error code and message
-   * @private
-   * @param {number|string} code - The error code
-   * @param {string} message - The error message
-   * @returns {string} - User-friendly error message
-   */
-  _getDisplayMessageForError(code, message) {
-    switch(code) {
-      case 400:
-        return "Invalid API key format. Please check your key.";
-      case 401:
-        return "API key is invalid or expired.";
-      case 403:
-        return "API key doesn't have permission to access this resource.";
-      case 429:
-        return "API rate limit exceeded. Please try again later.";
-      default:
-        if (message.includes("API key")) {
-          return "API key validation failed: " + message;
-        }
-        return "Error validating API key: " + message;
-    }
-  }
-
-  /**
-   * Convert Blob to base64 string
-   * @param {Blob} blob - The audio blob
-   * @returns {Promise<string>} - Base64 encoded string
-   */
-  _blobToBase64(blob) {
+  _blobToBase64Raw(blob) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
+      reader.onloadend = () => {
+        // Strip "data:<mime>;base64," prefix to get raw base64.
+        const result = reader.result;
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
+  }
+
+  _normalizeAudioMimeType(mimeType = '') {
+    const [baseType] = mimeType.toLowerCase().split(';');
+    return baseType || 'audio/wav';
+  }
+
+  async _prepareAudioForGemini(audioBlob) {
+    const mimeType = this._normalizeAudioMimeType(audioBlob.type);
+    if (GEMINI_SUPPORTED_AUDIO_MIME_TYPES.has(mimeType)) {
+      return { blob: audioBlob, mimeType };
+    }
+
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      throw new Error('This browser cannot convert the recorded audio into a Gemini-supported format.');
+    }
+
+    const audioContext = new AudioContextClass();
+    try {
+      const audioBuffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer());
+      const speechBuffer = await this._downsampleForSpeech(audioBuffer);
+      return {
+        blob: this._audioBufferToWavBlob(speechBuffer),
+        mimeType: 'audio/wav'
+      };
+    } finally {
+      if (audioContext.close) await audioContext.close();
+    }
+  }
+
+  // Resample to 16kHz mono before WAV-encoding. Speech models don't benefit
+  // from more, and 48kHz stereo WAV blows past Gemini's ~20MB inline request
+  // limit after ~2.5 minutes; 16kHz mono stays under it past 10 minutes.
+  async _downsampleForSpeech(audioBuffer) {
+    const targetRate = 16000;
+    if (audioBuffer.numberOfChannels === 1 && audioBuffer.sampleRate <= targetRate) {
+      return audioBuffer;
+    }
+
+    const OfflineContextClass = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!OfflineContextClass) return audioBuffer;
+
+    const length = Math.max(1, Math.ceil(audioBuffer.duration * targetRate));
+    const offlineContext = new OfflineContextClass(1, length, targetRate);
+    const source = offlineContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(offlineContext.destination);
+    source.start(0);
+    return offlineContext.startRendering();
+  }
+
+  _audioBufferToWavBlob(audioBuffer) {
+    const numChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const bytesPerSample = 2;
+    const blockAlign = numChannels * bytesPerSample;
+    const dataSize = audioBuffer.length * blockAlign;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    this._writeAscii(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    this._writeAscii(view, 8, 'WAVE');
+    this._writeAscii(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bytesPerSample * 8, true);
+    this._writeAscii(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    const channelData = Array.from({ length: numChannels }, (_, channel) =>
+      audioBuffer.getChannelData(channel)
+    );
+    let offset = 44;
+    for (let i = 0; i < audioBuffer.length; i += 1) {
+      for (let channel = 0; channel < numChannels; channel += 1) {
+        const sample = Math.max(-1, Math.min(1, channelData[channel][i]));
+        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+        offset += bytesPerSample;
+      }
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  _writeAscii(view, offset, text) {
+    for (let i = 0; i < text.length; i += 1) {
+      view.setUint8(offset + i, text.charCodeAt(i));
+    }
   }
 }
 
 // Export the service
 window.GeminiApiService = GeminiApiService;
 
-// Create an instance to ensure it's available in ServiceRegistry
-document.addEventListener('DOMContentLoaded', () => {
-  // Only create a default instance if we have API key and ServiceRegistry
-  if (window.ServiceRegistry && window.apiKey) {
-    console.log("TalkType: Pre-registering GeminiApiService on DOMContentLoaded");
-    if (!window.apiService) {
-      window.apiService = new GeminiApiService(window.apiKey);
-    }
-  }
-});
-
-// Also ensure registration on window load as a fallback
 window.addEventListener('load', () => {
-  if (window.ServiceRegistry && window.apiKey && !window.ServiceRegistry.hasService('GeminiApiService')) {
+  if (window.ServiceRegistry && !window.ServiceRegistry.hasService('GeminiApiService')) {
     console.log("TalkType: Ensuring GeminiApiService is registered on window load");
     if (!window.apiService) {
       window.apiService = new GeminiApiService(window.apiKey);

@@ -5,8 +5,21 @@
   "description": "Premium voice-to-text for any website. Speak naturally and see your words appear instantly with our beautiful interface.",
   "author": "Pablo Alvarado and Dennis",
   "short_name": "TalkType",
-  "permissions": ["activeTab", "scripting", "storage", "tabCapture", "contextMenus", "notifications", "clipboard-write", "clipboard-read"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "clipboard-read",
+    "unlimitedStorage",
+    "scripting",
+    "contextMenus",
+    "storage",
+    "notifications",
+    "clipboard-write",
+    "offscreen",
+    "activeTab",
+    "tabCapture"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "action": {
     "default_icon": {
       "16": "icons/icon_white/favicon-16x16.png",
@@ -22,9 +35,31 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["service-registry.js", "permission-dialog.js", "audio-service.js", "api-service.js", "AudioVisualizer.js", "notification-service.js", "input-detection-service.js", "typing-simulator-service.js", "audio-processing-service.js", "context-menu-service.js", "message-handler-service.js", "focus-tracking-service.js", "initialization-helpers.js", "content.js"],
-      "css": ["styles.css"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "storage-service.js",
+        "sound-service.js",
+        "live-service.js",
+        "service-registry.js",
+        "permission-dialog.js",
+        "audio-service.js",
+        "api-service.js",
+        "AudioVisualizer.js",
+        "notification-service.js",
+        "input-detection-service.js",
+        "typing-simulator-service.js",
+        "audio-processing-service.js",
+        "context-menu-service.js",
+        "message-handler-service.js",
+        "focus-tracking-service.js",
+        "initialization-helpers.js",
+        "content.js"
+      ],
+      "css": [
+        "styles.css"
+      ],
       "run_at": "document_start"
     }
   ],
@@ -48,10 +83,10 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "permission.html", 
-        "permission-dialog.js", 
-        "icons/mic.svg", 
-        "permission-fix.html", 
+        "permission.html",
+        "permission-dialog.js",
+        "icons/mic.svg",
+        "permission-fix.html",
         "permission-fix.js",
         "icons/icon_black/*",
         "icons/icon_white/*",
@@ -74,9 +109,25 @@
         "robots.txt",
         "test-context-menu.html",
         "test-context-menu.js",
-        "test-notification.html"
+        "test-notification.html",
+        "offscreen.html",
+        "offscreen.js",
+        "vendor/*"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "<all_urls>"
+      ]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "commands": {
+    "toggle-recording": {
+      "suggested_key": {
+        "default": "Alt+Shift+D"
+      },
+      "description": "Start or stop dictation in the focused text field"
+    }
+  }
 }
