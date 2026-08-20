@@ -1,0 +1,3 @@
+
+# Packaged store builds — rebuild with ./package.sh
+dist/
