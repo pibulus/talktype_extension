@@ -342,3 +342,138 @@ document.addEventListener('DOMContentLoaded', () => {
     testContextMenuLink.addEventListener('click', openContextMenuTestPage);
   }
 });
+// ===================================================================
+// HOLOPASS & 4-WORD SYNC LOGIC
+// ===================================================================
+
+async function getVaultHash(code) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`talktype-vault-id:${code.trim().toUpperCase()}`);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('unlock-holopass');
+  if (!btn) return;
+  
+  // Auto-advance inputs
+  const inputs = [
+    document.getElementById('sync-word-1'),
+    document.getElementById('sync-word-2'),
+    document.getElementById('sync-word-3'),
+    document.getElementById('sync-word-4')
+  ];
+  
+  inputs.forEach((input, index) => {
+    if (!input) return;
+    input.addEventListener('input', (e) => {
+      // Basic sanitization
+      e.target.value = e.target.value.toLowerCase().replace(/[^a-z]/g, '');
+      
+      // Auto-advance if they hit space or it looks like a full word
+      if (e.target.value.length > 2 && e.data === ' ') {
+        e.target.value = e.target.value.trim();
+        if (index < 3) inputs[index + 1].focus();
+      }
+    });
+    
+    // Paste handler for all 4 words at once
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      const words = text.toLowerCase().replace(/[^a-z\s-]/g, ' ').split(/[\s-]+/).filter(Boolean);
+      
+      if (words.length > 0) {
+        let i = index;
+        let w = 0;
+        while (i < 4 && w < words.length) {
+          inputs[i].value = words[w];
+          i++; w++;
+        }
+        if (i < 4) inputs[i].focus();
+        else inputs[3].focus();
+      }
+    });
+  });
+
+  btn.addEventListener('click', async () => {
+    const code = inputs.map(i => i.value.trim()).filter(Boolean).join('-');
+    
+    if (code.split('-').length !== 4) {
+      btn.textContent = 'Please enter 4 words';
+      btn.style.background = '#ff4d4f';
+      setTimeout(() => {
+        btn.innerHTML = `<svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px;">
+                <path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+              </svg> Unlock Ecosystem`;
+        btn.style.background = 'var(--brand-pink)';
+      }, 2000);
+      return;
+    }
+    
+    // Generate identity
+    btn.innerHTML = 'Decrypting Vault...';
+    
+    const vaultHash = await getVaultHash(code);
+    const palette = window.PassportPalettes.selectPassportPalette(vaultHash);
+    
+    // Apply UI
+    setTimeout(() => {
+      const idCard = document.getElementById('holopass-identity');
+      const holoName = document.getElementById('holo-name');
+      const holoHash = document.getElementById('holo-hash');
+      const inputsRow = inputs[0].parentElement;
+      
+      inputsRow.style.display = 'none';
+      btn.style.display = 'none';
+      
+      idCard.style.display = 'block';
+      idCard.style.background = `linear-gradient(135deg, ${palette.bg[0]}, ${palette.bg[1] || palette.bg[0]})`;
+      idCard.style.color = palette.ink;
+      
+      holoName.textContent = palette.name;
+      holoName.style.color = palette.ink;
+      
+      holoHash.textContent = '0x' + vaultHash.substring(0, 12) + '...';
+      holoHash.style.color = palette.inkSoft;
+      
+      document.querySelector('#holopass-card .card-header').style.color = palette.accent;
+      
+      // Save the 4-word code locally so we remember they are unlocked
+      if (window.TalkTypeStorage) {
+        chrome.storage.local.set({ 'talktype-supporter-code': code });
+      }
+    }, 600);
+  });
+  
+  // Check on load if they already unlocked
+  chrome.storage.local.get(['talktype-supporter-code'], async (res) => {
+    if (res['talktype-supporter-code']) {
+      const code = res['talktype-supporter-code'];
+      const vaultHash = await getVaultHash(code);
+      const palette = window.PassportPalettes.selectPassportPalette(vaultHash);
+      
+      const idCard = document.getElementById('holopass-identity');
+      const holoName = document.getElementById('holo-name');
+      const holoHash = document.getElementById('holo-hash');
+      const inputsRow = inputs[0].parentElement;
+      
+      inputsRow.style.display = 'none';
+      btn.style.display = 'none';
+      
+      idCard.style.display = 'block';
+      idCard.style.background = `linear-gradient(135deg, ${palette.bg[0]}, ${palette.bg[1] || palette.bg[0]})`;
+      idCard.style.color = palette.ink;
+      
+      holoName.textContent = palette.name;
+      holoName.style.color = palette.ink;
+      
+      holoHash.textContent = '0x' + vaultHash.substring(0, 12) + '...';
+      holoHash.style.color = palette.inkSoft;
+      
+      document.querySelector('#holopass-card .card-header').style.color = palette.accent;
+    }
+  });
+});
