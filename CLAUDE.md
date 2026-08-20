@@ -8,7 +8,7 @@
 ## Code Style Guidelines
 - **Naming**: Use camelCase for variables/functions, PascalCase for classes
 - **DOM Manipulation**: Keep z-index values between 1-10 for better page integration
-- **CSS**: Use glass morphism design with CSS variables for theming
+- **CSS**: Warm cream/ink palette via CSS variables (see UI/UX Standards below)
 - **Animations**: Prefer CSS transitions over JavaScript animations for smoother performance
 - **Error Handling**: Add feedback mechanisms when operations fail with specific messages
 - **Architecture**: Use message passing between extension components
@@ -17,11 +17,19 @@
 - **Documentation**: Add comments for complex logic and component connections
 
 ## UI/UX Standards
-- **Glass Morphism**: Use backdrop-filter: blur(12px) with rgba backgrounds
-- **Color Scheme**: Use purple/pink/tangerine gradients for branded elements
-- **Primary Gradient**: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75))
-- **Progress Gradient**: linear-gradient(135deg, rgba(111, 66, 193, 0.9), rgba(247, 70, 180, 0.8), rgba(255, 152, 0, 0.85))
-- **Notifications**: Position in top-right with gentle purple/blue gradient backgrounds
+- **One palette, three surfaces**: the extension, talktype.app and the TalkType Mac app
+  share ONE palette, sourced from `talktype/src/app.css` — never eyeballed.
+- **Paper**: `#fff6e6`, as a radial `#fff8ed 0% → #fff6e6 52% → #fff3df 82% → #ffefda 100%`
+- **Ink**: `#1e1714` (warm near-black), secondary `#463f3a`
+- **Dark mode**: warm near-black `#1e1714` surfaces with cream ink — never cold blue-black
+- **NEVER `#fff` or `#000`** anywhere, on any surface or any ink. Cream and warm ink always.
+- **Brand duo**: pink `#ff82ca` → tangerine `#ffb060`
+- **Ghost gradient** (from `talktype/src/lib/components/ghost/gradients.js`):
+  `#ff60e0 → #ff82ca → #ff9a85 → #ffb060 → #ffcf40`
+- **The ghost** is a gradient-filled body with ink linework and eyes — two layers,
+  never outline-only.
+- **Semantic status colours** (red / green / amber) are meaning, not brand. Leave them.
+- **Notifications**: Position in top-right on warm cream with a soft pink→tangerine accent
 - **Animations**: Use subtle transitions including gradientBg, float, and pulse effects
 - **Status Indicators**: Include animated pulse dots with appropriate status colors
 - **Button Styling**: Apply subtle shine/glow effects on hover with scale transforms

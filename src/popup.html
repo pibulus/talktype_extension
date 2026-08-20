@@ -25,16 +25,16 @@
   </style>
   <style>
     :root {
-      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
-      --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
-      --progress-gradient: linear-gradient(135deg, rgba(70, 174, 247, 0.8), rgba(90, 120, 255, 0.85), rgba(130, 80, 255, 0.75));
-      --glass-bg: rgba(255, 255, 255, 0.65);
-      --glass-border: rgba(255, 255, 255, 0.7);
-      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-      --text-primary: rgba(60, 64, 67, 0.95);
-      --text-secondary: rgba(60, 64, 67, 0.85);
-      --accent-color: rgb(111, 66, 193);
-      --light-accent: rgba(111, 66, 193, 0.1);
+      --primary-gradient: linear-gradient(135deg, rgba(255, 130, 202, 0.85), rgba(255, 176, 96, 0.75));
+      --hover-gradient: linear-gradient(135deg, rgba(255, 150, 212, 0.95), rgba(255, 192, 120, 0.9));
+      --progress-gradient: linear-gradient(135deg, rgba(255, 176, 96, 0.8), rgba(90, 120, 255, 0.85), rgba(130, 80, 255, 0.75));
+      --glass-bg: rgba(255, 246, 230, 0.65);
+      --glass-border: rgba(255, 246, 230, 0.7);
+      --glass-shadow: 0 8px 32px rgba(30, 23, 20, 0.05);
+      --text-primary: rgba(30, 23, 20, 0.95);
+      --text-secondary: rgba(70, 63, 58, 0.9);
+      --accent-color: #1e1714;
+      --light-accent: rgba(255, 130, 202, 0.1);
     }
     
     html, body {
@@ -51,12 +51,12 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       padding: 14px 18px 14px; /* Reduced padding */
-      background: linear-gradient(225deg, rgba(255, 255, 255, 0.9), rgba(240, 245, 255, 0.95));
+      background: radial-gradient(circle at 50% 35%, #fff8ed 0%, #fff6e6 52%, #fff3df 82%, #ffefda 100%);
       border-radius: 20px; /* Curvier corners */
-      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 20px rgba(30, 23, 20, 0.08);
       position: relative;
       border: 2px solid var(--glass-border); /* Thicker border */
-      color: #333;
+      color: #1e1714;
       display: block !important; /* Force display */
       opacity: 1 !important; /* Force opacity */
       transform: none !important; /* Prevent transform animations */
@@ -111,7 +111,7 @@
       position: absolute;
       width: 150%;
       height: 80px;
-      background: linear-gradient(90deg, rgba(var(--accent-color), 0), rgba(255, 255, 255, 0.05), rgba(var(--accent-color), 0));
+      background: linear-gradient(90deg, rgba(var(--accent-color), 0), rgba(255, 246, 230, 0.05), rgba(var(--accent-color), 0));
       transform: rotate(-45deg);
       top: -40px;
       left: -20%;
@@ -138,14 +138,14 @@
     .header-divider {
       height: 2px;
       background: linear-gradient(90deg, 
-        rgba(111, 66, 193, 0.15), 
-        rgba(111, 66, 193, 0.4) 20%, 
+        rgba(255, 130, 202, 0.15), 
+        rgba(255, 130, 202, 0.4) 20%, 
         rgba(247, 70, 180, 0.4) 50%, 
-        rgba(111, 66, 193, 0.4) 80%, 
-        rgba(111, 66, 193, 0.15) 100%);
+        rgba(255, 130, 202, 0.4) 80%, 
+        rgba(255, 130, 202, 0.15) 100%);
       margin-bottom: 10px; /* Reduced margin */
       border-radius: 2px;
-      box-shadow: 0 1px 4px rgba(111, 66, 193, 0.08);
+      box-shadow: 0 1px 4px rgba(30, 23, 20, 0.08);
     }
     
     h1 {
@@ -180,11 +180,11 @@
       display: inline-flex;
       padding: 4px 10px;
       border-radius: 30px;
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 246, 230, 0.25);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 246, 230, 0.3);
+      box-shadow: 0 2px 6px rgba(30, 23, 20, 0.05);
       transition: all 0.2s ease;
       color: var(--text-primary);
       position: relative;
@@ -244,7 +244,7 @@
     
     /* Status-specific colors */
     .status-ready {
-      color: rgb(111, 66, 193); /* Purple - matches theme */
+      color: #1e1714; /* Purple - matches theme */
     }
     
     /* Dark mode style for ready status */
@@ -331,19 +331,18 @@
     
     button {
       background: var(--primary-gradient);
-      color: white;
+      color: #1e1714;
       border: 2px solid var(--glass-border); /* Thicker border */
       padding: 10px 15px;
       border-radius: 16px; /* Curvier corners */
       cursor: pointer;
-      font-weight: 500;
+      font-weight: 600;
       transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 12px rgba(30, 23, 20, 0.08);
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
       font-size: 14px;
       letter-spacing: 0.3px;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       position: relative;
       overflow: hidden;
       opacity: 1; /* Start fully visible */
@@ -357,14 +356,14 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 246, 230, 0.2), transparent);
       transition: all 0.6s ease;
     }
     
     button:hover {
       background: var(--hover-gradient);
       transform: translateY(-1px) scale(1.02);
-      box-shadow: 0 8px 20px rgba(111, 66, 193, 0.18);
+      box-shadow: 0 8px 20px rgba(30, 23, 20, 0.18);
     }
     
     button:hover::before {
@@ -373,7 +372,7 @@
     
     button:active {
       transform: translateY(1px) scale(0.98);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 2px 10px rgba(30, 23, 20, 0.15);
     }
     
     .disabled {
@@ -429,26 +428,26 @@
     .ghost-mic {
       width: 100%;
       height: 100%;
-      fill: rgba(0, 0, 0, 0.7); /* Black with slight transparency when inactive */
-      filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
+      fill: rgba(30, 23, 20, 0.7); /* Black with slight transparency when inactive */
+      filter: drop-shadow(0 1px 3px rgba(30, 23, 20, 0.1));
       transition: all 0.4s ease;
     }
     
     /* Dark mode ghost styling */
     .dark-theme .ghost-mic {
-      fill: rgba(255, 255, 255, 0.7); /* White with slight transparency for dark theme */
-      filter: drop-shadow(0 1px 3px rgba(255, 255, 255, 0.1));
+      fill: rgba(255, 246, 230, 0.7); /* White with slight transparency for dark theme */
+      filter: drop-shadow(0 1px 3px rgba(255, 246, 230, 0.1));
     }
     
     /* Enhanced hover effect on the ghost - purply glow */
     .recording-animation:hover .ghost-mic {
       transform: scale(1.05);
-      filter: drop-shadow(0 3px 8px rgba(111, 66, 193, 0.5));
+      filter: drop-shadow(0 3px 8px rgba(30, 23, 20, 0.5));
     }
     
     /* Light mode hover fill */
     .recording-animation:hover .ghost-mic {
-      fill: rgba(111, 66, 193, 0.7); /* Purply color on hover */
+      fill: rgba(30, 23, 20, 0.7); /* Purply color on hover */
       transition: all 0.3s ease;
     }
     
@@ -506,7 +505,7 @@
       width: 22px;
       height: 22px;
       margin-right: 8px;
-      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+      filter: drop-shadow(0 1px 2px rgba(30, 23, 20, 0.1));
       position: relative;
       z-index: 1;
       color: var(--accent-color);
@@ -538,7 +537,7 @@
     .dialog-content {
       padding: 28px 25px;
       max-width: 85%;
-      color: white;
+      color: #1e1714;
       text-align: center;
       transform: scale(0.95);
       opacity: 0;
@@ -566,18 +565,18 @@
       right: 10px;
       background: transparent;
       border: none;
-      color: white;
+      color: #1e1714;
       font-size: 20px;
       cursor: pointer;
     }
     
     /* Transcription container */
     .glass-container {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 246, 230, 0.12);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-radius: 18px; /* Curvier corners */
-      border: 2px solid rgba(255, 255, 255, 0.25); /* Subtler border */
+      border: 2px solid rgba(255, 246, 230, 0.25); /* Subtler border */
       padding: 14px; /* Slightly more padding */
       margin-top: 8px; /* Reduced margin */
       min-height: 70px; /* Smaller min-height */
@@ -586,7 +585,7 @@
       color: var(--text-primary);
       font-size: 14px;
       transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+      box-shadow: 0 8px 24px rgba(30, 23, 20, 0.07);
       position: relative;
     }
     
@@ -601,9 +600,9 @@
       z-index: -1;
       border-radius: 16px;
       background: linear-gradient(135deg, 
-        rgba(111, 66, 193, 0.15), 
+        rgba(255, 130, 202, 0.15), 
         rgba(247, 70, 180, 0.12) 50%, 
-        rgba(70, 174, 247, 0.15) 100%);
+        rgba(255, 176, 96, 0.15) 100%);
       opacity: 1;
     }
     
@@ -615,7 +614,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+      box-shadow: inset 0 1px 3px rgba(30, 23, 20, 0.05);
       border-radius: 16px;
       pointer-events: none;
     }
@@ -635,7 +634,7 @@
       padding-right: 38px; /* Increased room for copy button + scrollbar */
       padding-bottom: 30px; /* Room for bottom copy button */
       scrollbar-width: thin; /* Firefox */
-      scrollbar-color: rgba(111, 66, 193, 0.3) rgba(255, 255, 255, 0.1); /* Firefox */
+      scrollbar-color: rgba(255, 130, 202, 0.3) rgba(255, 246, 230, 0.1); /* Firefox */
       cursor: text; /* Indicates it's editable */
       border: none; /* Remove default border when focused */
       min-height: 30px; /* Minimum height for empty text */
@@ -655,17 +654,17 @@
     }
     
     #transcription-text::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 246, 230, 0.1);
       border-radius: 10px;
     }
     
     #transcription-text::-webkit-scrollbar-thumb {
-      background: rgba(111, 66, 193, 0.3);
+      background: rgba(255, 130, 202, 0.3);
       border-radius: 10px;
     }
     
     #transcription-text::-webkit-scrollbar-thumb:hover {
-      background: rgba(111, 66, 193, 0.5);
+      background: rgba(255, 130, 202, 0.5);
     }
     
     /* Copy button container and styles */
@@ -689,7 +688,7 @@
       cursor: pointer;
       opacity: 0.85;
       transition: all 0.2s ease;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 5px rgba(30, 23, 20, 0.1);
       padding: 0;
       pointer-events: auto; /* Enable clicks only on the button */
     }
@@ -697,7 +696,7 @@
     .copy-button:hover {
       transform: scale(1.15);
       opacity: 1;
-      box-shadow: 0 3px 8px rgba(111, 66, 193, 0.25);
+      box-shadow: 0 3px 8px rgba(30, 23, 20, 0.25);
     }
     
     .copy-button:active {
@@ -707,7 +706,7 @@
     .copy-button svg {
       width: 14px;
       height: 14px;
-      color: white;
+      color: #1e1714;
     }
     
     @keyframes fadeIn {
@@ -734,7 +733,7 @@
       max-width: 280px;
       transform: translateX(-50%) translateY(0);
       background: rgba(75, 203, 156, 0.95);
-      color: white;
+      color: #1e1714;
       padding: 12px;
       border-radius: 14px;
       text-align: center;
@@ -743,8 +742,8 @@
       z-index: 10;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 246, 230, 0.4);
+      box-shadow: 0 4px 20px rgba(30, 23, 20, 0.15);
     }
     
     .api-key-success.show {
@@ -761,8 +760,8 @@
       background: rgba(230, 230, 240, 0.5);
       margin: 10px 0;
       position: relative;
-      border: 1px solid rgba(111, 66, 193, 0.2);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 130, 202, 0.2);
+      box-shadow: 0 2px 8px rgba(30, 23, 20, 0.05);
       transition: all 0.2s ease;
       cursor: pointer;
       backdrop-filter: blur(5px);
@@ -771,31 +770,31 @@
     
     .dark-theme .context-badge {
       background: rgba(60, 60, 80, 0.5);
-      border-color: rgba(111, 66, 193, 0.3);
+      border-color: rgba(255, 130, 202, 0.3);
     }
     
     .context-badge:hover {
       background: rgba(230, 230, 240, 0.7);
-      border-color: rgba(111, 66, 193, 0.3);
+      border-color: rgba(255, 130, 202, 0.3);
       transform: translateY(-1px);
-      box-shadow: 0 3px 10px rgba(111, 66, 193, 0.1);
+      box-shadow: 0 3px 10px rgba(30, 23, 20, 0.1);
     }
     
     .dark-theme .context-badge:hover {
       background: rgba(70, 70, 90, 0.6);
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 3px 10px rgba(30, 23, 20, 0.2);
     }
     
     .context-badge.active {
-      background: rgba(111, 66, 193, 0.15);
-      border-color: rgba(111, 66, 193, 0.4);
-      box-shadow: 0 3px 12px rgba(111, 66, 193, 0.15);
+      background: rgba(255, 130, 202, 0.15);
+      border-color: rgba(255, 130, 202, 0.4);
+      box-shadow: 0 3px 12px rgba(30, 23, 20, 0.15);
     }
     
     .dark-theme .context-badge.active {
-      background: rgba(111, 66, 193, 0.3);
-      border-color: rgba(111, 66, 193, 0.5);
-      box-shadow: 0 3px 12px rgba(111, 66, 193, 0.2);
+      background: rgba(255, 130, 202, 0.3);
+      border-color: rgba(255, 130, 202, 0.5);
+      box-shadow: 0 3px 12px rgba(30, 23, 20, 0.2);
     }
     
     .context-icon {
@@ -803,8 +802,8 @@
       align-items: center;
       justify-content: center;
       margin-right: 10px;
-      color: rgba(111, 66, 193, 0.7);
-      background: rgba(111, 66, 193, 0.08);
+      color: rgba(30, 23, 20, 0.7);
+      background: rgba(255, 130, 202, 0.08);
       width: 28px;
       height: 28px;
       border-radius: 50%;
@@ -813,25 +812,25 @@
     
     .context-badge:hover .context-icon {
       transform: scale(1.1);
-      background: rgba(111, 66, 193, 0.12);
+      background: rgba(255, 130, 202, 0.12);
     }
     
     .context-badge.active .context-icon {
-      background: rgba(111, 66, 193, 0.2);
-      color: rgba(111, 66, 193, 0.9);
+      background: rgba(255, 130, 202, 0.2);
+      color: rgba(30, 23, 20, 0.9);
     }
     
     .dark-theme .context-icon {
-      background: rgba(111, 66, 193, 0.15);
+      background: rgba(255, 130, 202, 0.15);
       color: rgba(156, 126, 255, 0.9);
     }
     
     .dark-theme .context-badge:hover .context-icon {
-      background: rgba(111, 66, 193, 0.25);
+      background: rgba(255, 130, 202, 0.25);
     }
     
     .dark-theme .context-badge.active .context-icon {
-      background: rgba(111, 66, 193, 0.3);
+      background: rgba(255, 130, 202, 0.3);
       color: rgba(156, 126, 255, 1);
     }
     
@@ -845,7 +844,7 @@
     
     .context-tooltip strong {
       margin-bottom: 3px;
-      color: rgba(111, 66, 193, 0.9);
+      color: rgba(30, 23, 20, 0.9);
       font-size: 13px;
       font-weight: 600;
     }
@@ -864,7 +863,7 @@
 <body>
   <div class="header-container">
     <h1 id="about-header" style="cursor: pointer;" title="About TalkType">
-      <img src="icons/icon_black/favicon-32x32.png" alt="TalkType" width="24" height="24" style="margin-right: 8px; filter: drop-shadow(0 1px 3px rgba(111, 66, 193, 0.3)); transition: transform 0.3s ease;">
+      <img src="icons/icon_black/favicon-32x32.png" alt="TalkType" width="24" height="24" style="margin-right: 8px; filter: drop-shadow(0 1px 3px rgba(30, 23, 20, 0.3)); transition: transform 0.3s ease;">
       TalkType
       <small style="font-size: 9px; opacity: 0.5; margin-left: 5px; vertical-align: top;">ⓘ</small>
     </h1>
@@ -1009,9 +1008,11 @@
         <!-- Define the gradient for the active state -->
         <defs>
           <linearGradient id="ghost-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#ff79cd" />
-            <stop offset="50%" stop-color="#f168d1" />
-            <stop offset="100%" stop-color="#b168df" />
+            <stop offset="0%" stop-color="#ff60e0" />
+            <stop offset="35%" stop-color="#ff82ca" />
+            <stop offset="65%" stop-color="#ff9a85" />
+            <stop offset="85%" stop-color="#ffb060" />
+            <stop offset="100%" stop-color="#ffcf40" />
           </linearGradient>
           <!-- Add a radial glow effect -->
           <filter id="ghost-glow">
@@ -1043,8 +1044,8 @@
     <div id="transcription-text" contenteditable="true" spellcheck="true" style="outline: none;"></div>
     <!-- Copy button embedded in the transcription container -->
     <div id="copy-button-wrapper" style="display: none; position: absolute; bottom: 10px; right: 18px; z-index: 100;">
-      <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, rgba(111, 66, 193, 0.7), rgba(70, 174, 247, 0.6)); border: 1px solid rgba(255, 255, 255, 0.5); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); cursor: pointer; transition: all 0.2s ease;">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; color: white;">
+      <button id="copy-button" class="mini-button" title="Copy to clipboard" style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, rgba(255, 130, 202, 0.7), rgba(255, 176, 96, 0.6)); border: 1px solid rgba(255, 246, 230, 0.5); padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(30, 23, 20, 0.1); cursor: pointer; transition: all 0.2s ease;">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; color: #1e1714;">
           <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
         </svg>
       </button>

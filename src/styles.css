@@ -24,9 +24,9 @@
 }
 
 @keyframes gentle-pulse {
-  0% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
-  50% { box-shadow: 0 12px 40px rgba(255, 255, 255, 0.5); border-color: rgba(255, 255, 255, 0.5); }
-  100% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
+  0% { box-shadow: 0 8px 25px rgba(255, 246, 230, 0.3); border-color: rgba(255, 246, 230, 0.3); }
+  50% { box-shadow: 0 12px 40px rgba(255, 246, 230, 0.5); border-color: rgba(255, 246, 230, 0.5); }
+  100% { box-shadow: 0 8px 25px rgba(255, 246, 230, 0.3); border-color: rgba(255, 246, 230, 0.3); }
 }
 
 @keyframes gradientBg {
@@ -59,9 +59,9 @@
   margin-top: -8px;
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(111, 66, 193, 0.2);
+  border: 2px solid rgba(255, 130, 202, 0.2);
   border-radius: 50%;
-  border-top-color: #6f42c1;
+  border-top-color: #ff82ca;
   animation: spin 1s linear infinite;
 }
 
@@ -85,7 +85,7 @@
 }
 
 .talktype-recording-notification {
-  background: linear-gradient(135deg, rgba(111, 66, 193, 0.8), rgba(130, 160, 240, 0.75));
+  background: linear-gradient(135deg, rgba(255, 130, 202, 0.8), rgba(130, 160, 240, 0.75));
   animation: gentle-pulse 2s infinite;
 }
 
@@ -113,8 +113,8 @@
 }
 
 @keyframes talktype-indicator-pulse {
-  0% { box-shadow: 0 4px 25px rgba(111, 66, 193, 0.5); }
-  100% { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); }
+  0% { box-shadow: 0 4px 25px rgba(30, 23, 20, 0.5); }
+  100% { box-shadow: 0 4px 20px rgba(30, 23, 20, 0.2); }
 }
 
 /* Make sure the typing indicator isn't affected by page styles */

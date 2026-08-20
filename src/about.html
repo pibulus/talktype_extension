@@ -9,10 +9,10 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
     
     :root {
-      --primary-gradient: linear-gradient(135deg, rgba(111, 66, 193, 0.85), rgba(70, 174, 247, 0.75));
+      --primary-gradient: linear-gradient(135deg, rgba(255, 130, 202, 0.85), rgba(255, 176, 96, 0.75));
       --hover-gradient: linear-gradient(135deg, rgba(132, 97, 207, 0.85), rgba(103, 201, 255, 0.75));
-      --accent-color: rgb(111, 66, 193);
-      --accent-light: rgba(111, 66, 193, 0.1);
+      --accent-color: #1e1714;
+      --accent-light: rgba(255, 130, 202, 0.1);
       --text-primary: rgba(60, 64, 67, 0.95);
       --text-secondary: rgba(60, 64, 67, 0.75);
     }
@@ -23,7 +23,7 @@
       margin: 0 auto;
       padding: 30px;
       color: var(--text-primary);
-      background: linear-gradient(225deg, rgba(255, 255, 255, 0.9), rgba(240, 245, 255, 0.95));
+      background: linear-gradient(225deg, rgba(255, 246, 230, 0.9), rgba(240, 245, 255, 0.95));
       line-height: 1.6;
       position: relative;
       overflow-x: hidden;
@@ -51,7 +51,7 @@
       position: fixed;
       width: 150%;
       height: 80px;
-      background: linear-gradient(90deg, rgba(var(--accent-color), 0), rgba(255, 255, 255, 0.05), rgba(var(--accent-color), 0));
+      background: linear-gradient(90deg, rgba(var(--accent-color), 0), rgba(255, 246, 230, 0.05), rgba(var(--accent-color), 0));
       transform: rotate(-45deg);
       top: -40px;
       left: -20%;
@@ -71,13 +71,13 @@
     }
 
     .glass-container {
-      background: rgba(255, 255, 255, 0.65);
+      background: rgba(255, 246, 230, 0.65);
       backdrop-filter: blur(15px);
       -webkit-backdrop-filter: blur(15px);
       border-radius: 24px;
       padding: 50px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: 0 10px 30px rgba(30, 23, 20, 0.08);
+      border: 1px solid rgba(255, 246, 230, 0.7);
       margin-bottom: 40px;
       position: relative;
       overflow: hidden;
@@ -93,9 +93,9 @@
       z-index: -1;
       border-radius: 24px;
       background: linear-gradient(135deg, 
-        rgba(111, 66, 193, 0.08), 
+        rgba(255, 130, 202, 0.08), 
         rgba(247, 70, 180, 0.05) 50%, 
-        rgba(70, 174, 247, 0.08) 100%);
+        rgba(255, 176, 96, 0.08) 100%);
       opacity: 1;
     }
 
@@ -110,7 +110,7 @@
       width: 140px;
       margin: 0 auto 15px;
       animation: gentle-float 6s ease-in-out infinite;
-      filter: drop-shadow(0 10px 15px rgba(111, 66, 193, 0.2));
+      filter: drop-shadow(0 10px 15px rgba(30, 23, 20, 0.2));
     }
 
     @keyframes gentle-float {
@@ -127,7 +127,7 @@
       color: transparent;
       letter-spacing: -0.03em;
       font-weight: 900;
-      text-shadow: 0 5px 15px rgba(111, 66, 193, 0.1);
+      text-shadow: 0 5px 15px rgba(30, 23, 20, 0.1);
     }
 
     h2 {
@@ -162,8 +162,8 @@
       letter-spacing: -0.01em;
       position: relative;
       padding: 0 30px;
-      border-left: 3px solid rgba(111, 66, 193, 0.2);
-      border-right: 3px solid rgba(111, 66, 193, 0.2);
+      border-left: 3px solid rgba(255, 130, 202, 0.2);
+      border-right: 3px solid rgba(255, 130, 202, 0.2);
     }
     
     .tagline::before, .tagline::after {
@@ -197,11 +197,11 @@
     }
 
     .feature {
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 246, 230, 0.5);
       padding: 25px;
       border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.7);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(255, 246, 230, 0.7);
+      box-shadow: 0 5px 15px rgba(30, 23, 20, 0.03);
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
@@ -209,8 +209,8 @@
 
     .feature:hover {
       transform: translateY(-5px) scale(1.02);
-      box-shadow: 0 8px 25px rgba(111, 66, 193, 0.2);
-      border-color: rgba(111, 66, 193, 0.2);
+      box-shadow: 0 8px 25px rgba(30, 23, 20, 0.2);
+      border-color: rgba(255, 130, 202, 0.2);
     }
 
     .feature h3 {
@@ -229,7 +229,7 @@
       height: 22px;
       margin-right: 10px;
       color: var(--accent-color);
-      filter: drop-shadow(0 2px 3px rgba(111, 66, 193, 0.2));
+      filter: drop-shadow(0 2px 3px rgba(30, 23, 20, 0.2));
       position: relative;
       top: -1px;
     }
@@ -253,21 +253,21 @@
     .creator {
       text-align: center;
       flex: 0 0 200px;
-      background: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 246, 230, 0.6);
       padding: 30px 20px;
       border-radius: 20px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: 0 5px 20px rgba(30, 23, 20, 0.05);
+      border: 1px solid rgba(255, 246, 230, 0.7);
       transition: all 0.3s ease;
     }
 
     .creator:hover {
       transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 15px 30px rgba(111, 66, 193, 0.15);
+      box-shadow: 0 15px 30px rgba(30, 23, 20, 0.15);
     }
 
     .creator:first-child:hover {
-      box-shadow: 0 15px 30px rgba(70, 174, 247, 0.2);
+      box-shadow: 0 15px 30px rgba(255, 176, 96, 0.2);
     }
 
     .creator-avatar {
@@ -277,16 +277,16 @@
       margin: 0 auto 15px;
       background: var(--primary-gradient);
       padding: 5px;
-      box-shadow: 0 8px 20px rgba(111, 66, 193, 0.2);
+      box-shadow: 0 8px 20px rgba(30, 23, 20, 0.2);
       transition: all 0.3s ease;
     }
 
     .creator:first-child .creator-avatar {
-      background: linear-gradient(135deg, rgba(70, 174, 247, 0.8), rgba(111, 66, 193, 0.6));
+      background: linear-gradient(135deg, rgba(255, 176, 96, 0.8), rgba(255, 130, 202, 0.6));
     }
 
     .creator:last-child .creator-avatar {
-      background: linear-gradient(135deg, rgba(247, 70, 180, 0.8), rgba(111, 66, 193, 0.6));
+      background: linear-gradient(135deg, rgba(247, 70, 180, 0.8), rgba(255, 130, 202, 0.6));
     }
 
     .creator-avatar img {
@@ -315,7 +315,7 @@
       align-items: center;
       font-size: 13px;
       color: var(--text-secondary);
-      background: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 246, 230, 0.6);
       padding: 4px 12px;
       border-radius: 30px;
       margin-top: 5px;
@@ -355,11 +355,11 @@
       font-weight: 600;
       color: var(--text-secondary);
       display: inline-block;
-      background: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 246, 230, 0.6);
       padding: 14px 30px;
       border-radius: 50px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 5px 20px rgba(30, 23, 20, 0.05);
+      border: 1px solid rgba(255, 246, 230, 0.6);
       letter-spacing: -0.01em;
       position: relative;
       z-index: 1;
@@ -384,7 +384,7 @@
     .made-with:hover {
       color: white;
       transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(111, 66, 193, 0.25);
+      box-shadow: 0 8px 25px rgba(30, 23, 20, 0.25);
     }
     
     .made-with:hover::before {
@@ -392,7 +392,7 @@
     }
     
     .made-with:hover .heart {
-      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+      filter: drop-shadow(0 0 10px rgba(255, 246, 230, 0.8));
     }
 
     .city {
@@ -420,14 +420,14 @@
       font-weight: 500;
       display: flex;
       align-items: center;
-      box-shadow: 0 5px 15px rgba(111, 66, 193, 0.2);
+      box-shadow: 0 5px 15px rgba(30, 23, 20, 0.2);
       transition: all 0.3s ease;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 246, 230, 0.2);
     }
 
     .link-button:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(111, 66, 193, 0.3);
+      box-shadow: 0 8px 25px rgba(30, 23, 20, 0.3);
       background: var(--hover-gradient);
     }
 
@@ -442,13 +442,13 @@
       margin-top: 40px;
       color: var(--text-secondary);
       font-size: 14px;
-      background: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 246, 230, 0.4);
       padding: 20px;
       border-radius: 15px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 5px 20px rgba(30, 23, 20, 0.03);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(255, 246, 230, 0.5);
       position: relative;
       overflow: hidden;
     }
@@ -476,8 +476,8 @@
       font-weight: 700;
       margin-left: 10px;
       letter-spacing: 0.03em;
-      box-shadow: 0 2px 8px rgba(111, 66, 193, 0.15);
-      border: 1px solid rgba(111, 66, 193, 0.1);
+      box-shadow: 0 2px 8px rgba(30, 23, 20, 0.15);
+      border: 1px solid rgba(255, 130, 202, 0.1);
       position: relative;
       top: -1px;
     }
@@ -546,7 +546,7 @@
           </svg>
           Smart Mode
         </h3>
-        <p>Seamlessly integrates with text fields across <span style="border-bottom: 1px dashed rgba(111, 66, 193, 0.3);">any website</span>. Works perfectly with Gmail, Google Docs, and anywhere else you need to type.</p>
+        <p>Seamlessly integrates with text fields across <span style="border-bottom: 1px dashed rgba(255, 130, 202, 0.3);">any website</span>. Works perfectly with Gmail, Google Docs, and anywhere else you need to type.</p>
       </div>
       
       <div class="feature">
@@ -556,7 +556,7 @@
           </svg>
           Freaky Good Transcription
         </h3>
-        <p>Powered by <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.9em; background: rgba(111, 66, 193, 0.1); padding: 2px 5px; border-radius: 4px;">Gemini API</span> for highly accurate speech recognition. Captures your words with precision, just the way you said them.</p>
+        <p>Powered by <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.9em; background: rgba(255, 130, 202, 0.1); padding: 2px 5px; border-radius: 4px;">Gemini API</span> for highly accurate speech recognition. Captures your words with precision, just the way you said them.</p>
       </div>
       
       <div class="feature">
@@ -566,7 +566,7 @@
           </svg>
           Chonky &amp; Charming
         </h3>
-        <p>Beautiful <span style="position:relative; z-index:1"><span style="position:absolute; display:block; top:-5px; left:-10px; right:-10px; bottom:-5px; background:rgba(255,255,255,0.7); filter:blur(5px); z-index:-1; border-radius:5px"></span>glass UI</span> with responsive animations and automatic dark mode. Clean design that feels right at home in your browser.</p>
+        <p>Beautiful <span style="position:relative; z-index:1"><span style="position:absolute; display:block; top:-5px; left:-10px; right:-10px; bottom:-5px; background:rgba(255, 246, 230, 0.7); filter:blur(5px); z-index:-1; border-radius:5px"></span>glass UI</span> with responsive animations and automatic dark mode. Clean design that feels right at home in your browser.</p>
       </div>
       
       <div class="feature">
