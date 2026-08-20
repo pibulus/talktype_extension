@@ -483,9 +483,15 @@ class SettingsDialogManager {
       <div class="settings-content">
         <h3 style="justify-content: center;">Configure API Key</h3>
         <div style="position: relative; z-index: 2; padding: 0 5px; max-width: 100%; box-sizing: border-box;">
-          <p style="font-size: 14px; margin: 0 0 20px; opacity: 0.85; line-height: 1.5;">
-            Enter your Gemini API key to enable voice transcription
+          <p style="font-size: 14px; margin: 0 0 15px; opacity: 0.85; line-height: 1.5;">
+            TalkType needs a Gemini API key to turn your voice into text.
           </p>
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" style="display: flex; align-items: center; justify-content: center; background: rgba(111, 66, 193, 0.1); color: #6f42c1; text-decoration: none; padding: 10px 15px; border-radius: 8px; font-weight: 600; font-size: 13px; margin-bottom: 20px; border: 1.5px dashed rgba(111, 66, 193, 0.4); transition: all 0.2s ease;">
+            <svg style="width: 16px; height: 16px; margin-right: 8px;" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+            </svg>
+            Grab a free key (takes 5 secs) ↗
+          </a>
           <input type="text" id="api-key-field" placeholder="Enter your Gemini API key" spellcheck="false" autocomplete="off" style="width: 100%; box-sizing: border-box; max-width: 100%;" />
           <button id="save-api-key" class="save-button">
             <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 6px;">
