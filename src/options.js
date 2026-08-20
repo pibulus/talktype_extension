@@ -16,13 +16,21 @@ async function saveOptions() {
     
     // Save all settings at once
     await window.SettingsService.setMultiple({
-      apiKey,
       autoRecord,
       contextMenu,
       transcriptionEngine,
-      deepgramApiKey,
       offlineModel
     });
+    
+    // Save API keys to local storage (for security and to match main branch architecture)
+    if (window.TalkTypeStorage) {
+      await window.TalkTypeStorage.setApiKey(apiKey);
+      await window.TalkTypeStorage.setDeepgramApiKey(deepgramApiKey);
+    } else {
+      await window.SettingsService.set('apiKey', apiKey);
+      await window.SettingsService.set('deepgramApiKey', deepgramApiKey);
+    }
+
     
     // Update status to let user know options were saved
     const status = document.getElementById('status');
@@ -233,6 +241,14 @@ async function restoreOptions() {
     
     // Get all settings
     const settings = await window.SettingsService.getAll();
+    
+    // Load API keys securely
+    if (window.TalkTypeStorage) {
+      const secureApiKey = await window.TalkTypeStorage.getApiKey();
+      const secureDeepgramKey = await window.TalkTypeStorage.getDeepgramApiKey();
+      if (secureApiKey) settings.apiKey = secureApiKey;
+      if (secureDeepgramKey) settings.deepgramApiKey = secureDeepgramKey;
+    }
     
     // Apply settings to form
     document.getElementById('apiKey').value = settings.apiKey || '';

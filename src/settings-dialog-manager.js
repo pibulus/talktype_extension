@@ -502,12 +502,18 @@ class SettingsDialogManager {
     `;
     document.body.appendChild(this.apiKeyPopup);
     
-    // Fetch and populate current API key
-    chrome.storage.sync.get(['apiKey'], (result) => {
-      if (result.apiKey) {
-        document.getElementById('api-key-field').value = result.apiKey;
-      }
-    });
+    // Fetch and populate current API key securely
+    if (window.TalkTypeStorage) {
+      window.TalkTypeStorage.getApiKey().then(key => {
+        if (key) document.getElementById('api-key-field').value = key;
+      });
+    } else {
+      chrome.storage.sync.get(['apiKey'], (result) => {
+        if (result.apiKey) {
+          document.getElementById('api-key-field').value = result.apiKey;
+        }
+      });
+    }
     
     // Add event listener for save button
     document.getElementById('save-api-key').addEventListener('click', () => {
@@ -537,7 +543,11 @@ class SettingsDialogManager {
   saveApiKey() {
     const apiKey = document.getElementById('api-key-field').value.trim();
     if (apiKey) {
-      chrome.storage.sync.set({ apiKey }, () => {
+      const savePromise = window.TalkTypeStorage 
+        ? window.TalkTypeStorage.setApiKey(apiKey) 
+        : new Promise(r => chrome.storage.sync.set({ apiKey }, r));
+        
+      savePromise.then(() => {
         // Show success message with animation
         const successMsg = document.querySelector('.api-key-success');
         successMsg.classList.add('show');

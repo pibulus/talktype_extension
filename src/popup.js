@@ -22,11 +22,22 @@ const ICON_STATE = {
 
 // Check if API key is set
 async function checkApiKey() {
-  const apiKey = await window.SettingsService.getApiKey();
+  let apiKey = '';
+  if (window.TalkTypeStorage) {
+    apiKey = await window.TalkTypeStorage.getApiKey();
+  } else {
+    apiKey = await window.SettingsService.getApiKey();
+  }
+  
+  const engine = await window.SettingsService.get('transcriptionEngine');
+  
   const apiKeyError = document.getElementById("apiKeyError");
   const recordButton = document.getElementById("startRecording");
 
-  if (!apiKey) {
+  // Only require API key if using cloud (Gemini)
+  const needsApiKey = (!engine || engine === 'cloud');
+
+  if (needsApiKey && !apiKey) {
     apiKeyError.style.display = "block";
     recordButton.classList.add("disabled");
     recordButton.disabled = true;
