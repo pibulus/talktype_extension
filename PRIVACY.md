@@ -63,5 +63,5 @@ If you have any questions about this Privacy Policy, please contact the copyrigh
 
 ---
 
-© 2025 TalkType. Created by Pablo Alvarado and Dennis.
+© 2025-2026 TalkType. Created by Pablo Alvarado.
 Made with ❤️ in Melbourne and Sydney, Australia.

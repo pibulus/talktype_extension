@@ -1,10 +1,9 @@
 # TalkType Software License Agreement
 
-Copyright (c) 2025 Pablo Alvarado and Dennis (TalkType)
+Copyright (c) 2025-2026 Pablo Alvarado (TalkType)
+All rights reserved.
 
-## Proprietary License
-
-This software and associated documentation files (the "Software") are the proprietary and confidential property of Pablo Alvarado and Dennis (collectively referred to as "TalkType"), based in Melbourne and Sydney, Australia. This License Agreement ("Agreement") governs the use of the TalkType Chrome extension and related software components.
+This software and associated documentation files (the "Software") are the proprietary and confidential property of Pablo Alvarado ("TalkType"), based in Melbourne, Australia. This License Agreement ("Agreement") governs the use of the TalkType Chrome extension and related software components.
 
 ## Terms and Conditions
 

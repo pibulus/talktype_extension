@@ -92,6 +92,6 @@ This software is licensed under a [proprietary license](LICENSE.md) that protect
 
 ## About the Creators
 
-TalkType is created by Pablo Alvarado and Dennis, made with ❤️ in Melbourne and Sydney, Australia (2025).
+TalkType is created by Pablo Alvarado, made with ❤️ in Melbourne, Australia (2025-2026).
 
 © 2025 TalkType. All rights reserved.

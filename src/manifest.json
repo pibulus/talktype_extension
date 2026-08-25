@@ -3,7 +3,7 @@
   "name": "TalkType - Voice to Text",
   "version": "1.4.0",
   "description": "Premium voice-to-text for any website. Speak naturally and see your words appear instantly with our beautiful interface.",
-  "author": "Pablo Alvarado and Dennis",
+  "author": "Pablo Alvarado",
   "short_name": "TalkType",
   "permissions": [
     "clipboard-read",
