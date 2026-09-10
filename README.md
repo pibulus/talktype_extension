@@ -55,6 +55,17 @@ cold blue-black. The ghost is a gradient-filled body with ink linework and eyes.
 
 Proprietary — see [LICENSE.md](LICENSE.md).
 
+## The TalkType family
+
+The extension is the free gateway to the rest of TalkType — and it comes free with
+either of the paid apps:
+
+- **[talktype.app](https://talktype.app)** — the full voice-to-text web app: offline
+  Whisper, cloud engines, style presets, history.
+- **TalkType for Mac** — native menu-bar dictation on the Mac App Store.
+
+Buy one, and the extension is your free companion everywhere you type.
+
 ## About
 
 Created by Pablo Alvarado, made with ❤️ in Melbourne (2025–2026).
