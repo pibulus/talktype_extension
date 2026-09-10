@@ -40,6 +40,16 @@ class AudioProcessingService {
     }
   }
 
+  notifyRecordingState(isRecording) {
+    try {
+      chrome.runtime
+        .sendMessage({ action: 'recordingStateChanged', isRecording })
+        .catch(() => {});
+    } catch {
+      // extension context invalidated — ignore
+    }
+  }
+
   /**
    * Start recording with a target input
    * @param {HTMLElement} targetInput - The input element to record for
@@ -211,6 +221,7 @@ class AudioProcessingService {
       // Update state - both instance and global
       this.isRecording = true;
       window.isRecording = true;
+      this.notifyRecordingState(true);
       // Set active input through the FocusTrackingService if available
       if (window.FocusTrackingService) {
         window.FocusTrackingService.setActiveInput(targetInput);
@@ -298,6 +309,7 @@ class AudioProcessingService {
       // Reset state - both instance and global
       this.isRecording = false;
       window.isRecording = false;
+      this.notifyRecordingState(false);
       // Clear active input through the FocusTrackingService if available
       if (window.FocusTrackingService) {
         window.FocusTrackingService.clearActiveInput();
@@ -561,6 +573,7 @@ class AudioProcessingService {
       // Reset recording state to recover from errors
       this.isRecording = false;
       window.isRecording = false;
+      this.notifyRecordingState(false);
       return;
     }
 
@@ -571,6 +584,7 @@ class AudioProcessingService {
       // Reset recording state
       this.isRecording = false;
       window.isRecording = false;
+      this.notifyRecordingState(false);
       return;
     }
 
@@ -616,6 +630,7 @@ class AudioProcessingService {
       // Update recording state immediately - both instance and global
       this.isRecording = false;
       window.isRecording = false;
+      this.notifyRecordingState(false);
 
       // Get the active input from FocusTrackingService if available
       const currentInput = window.FocusTrackingService ? 

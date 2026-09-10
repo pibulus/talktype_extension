@@ -1,6 +1,17 @@
 // Background service worker for TalkType extension
 importScripts('storage-service.js', 'gemini-service.js', 'deepgram-live.js');
 
+// "Ghost is alive" signal — a pink dot on the toolbar icon while recording,
+// matching the live state in the webapp and Mac app.
+function setRecordingBadge(active) {
+  if (active) {
+    chrome.action.setBadgeText({ text: '●' });
+    chrome.action.setBadgeBackgroundColor({ color: '#ff82ca' });
+  } else {
+    chrome.action.setBadgeText({ text: '' });
+  }
+}
+
 // Initialize extension when installed
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('TalkType extension installed');
@@ -112,6 +123,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Validate sender is our own extension
   if (sender.id !== chrome.runtime.id) return;
+
+  if (message.action === 'recordingStateChanged') {
+    setRecordingBadge(!!message.isRecording);
+    sendResponse({ success: true });
+    return;
+  }
 
   if (message.action === 'transcribeAudio') {
     // All batch transcription routes through here: keys stay in this worker,
