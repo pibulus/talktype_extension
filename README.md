@@ -1,97 +1,60 @@
 # TalkType Browser Extension
 
-A sleek, modern browser extension that adds voice-to-text functionality to any text input field with a beautiful glass morphism UI.
+Voice-to-text for any text field, in the TalkType house style — a peach ghost, warm cream
+paper, and ink, never `#fff` or `#000`.
 
-![TalkType Logo](src/icons/icon_white/android-icon-192x192.png)
+![TalkType Ghost](src/icons/icon_white/android-icon-192x192.png)
 
 ## Features
 
-- **Modern Glass UI**: Beautiful transparent interface with subtle animations
-- **Adaptive Icons**: Automatically switches between light and dark mode icons based on system theme
-- **Smart Microphone**: Click once to start recording, with visual feedback
-- **Instant Transcription**: Using the powerful Gemini API for accurate speech recognition
-- **Clipboard Integration**: Automatically copies transcriptions to clipboard
-- **Context Menu Integration**: Easy access to transcription via right-click menu on any text field
-- **Theme Options**: Toggle between light and dark themes
-- **Responsive Design**: Works across devices and screen sizes
-- **Dynamic Content Support**: Works with dynamically loaded content on any website
+- **Three engines, one ghost** — Gemini (cloud batch), Deepgram (live streaming), and a
+  fully offline Whisper model that runs on-device via WebAssembly/WebGPU.
+- **Dictate into anything** — Gmail, Slack, Discord, docs, any `contenteditable` or input.
+- **Typing simulator** — text lands in the field like you typed it, not just on the clipboard.
+- **Right-click to transcribe** — context menu on any editable field.
+- **Global shortcut** — `Alt+Shift+D` toggles dictation in the focused field (configurable).
+- **Privacy-first** — bring your own keys; nothing is stored or sent except to the engine
+  you pick, and offline mode never leaves the device.
 
-## Installation
+## Install (from source)
 
-### From Source
-
-1. Clone this repository or download it as a ZIP file
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" in the top-right corner
-4. Click "Load unpacked" and select the `src` folder from this repository
-5. The extension should now be installed and visible in your browser toolbar
+1. Open `chrome://extensions/`
+2. Enable **Developer mode** (top right)
+3. Click **Load unpacked** and select the `src/` folder
 
 ## Usage
 
-1. Click on the extension icon in the browser toolbar to access the popup
-2. Go to Settings and enter your Gemini API key
-   - You can get a Gemini API key from [Google AI Studio](https://ai.google.dev/)
-3. Navigate to any website with text inputs
-4. Right-click in any text field and select "Transcribe with TalkType" from the context menu
-5. Speak your text and click anywhere to stop recording
-6. Your transcription will be automatically inserted into the text field
+1. Click the extension icon → **Settings**, enter your Gemini and/or Deepgram API key
+   (get a Gemini key at [Google AI Studio](https://aistudio.google.com/)).
+2. Right-click any text field → **"Transcribe with TalkType"**, or press `Alt+Shift+D`.
+3. Speak; the text is inserted where you were typing.
 
-## Key Features in Detail
+## Engines
 
-### Glass Morphism UI
-TalkType features a modern design with subtle transparency effects, giving it a premium look and feel. The interface includes delicate animations and visual feedback during recording and transcription.
+| Engine | Needs | Notes |
+|---|---|---|
+| Gemini | Your Gemini key | Cloud batch transcription, style presets |
+| Deepgram | Your Deepgram key | Live streaming, realtime text |
+| Offline Whisper | Nothing | On-device; first run downloads the model, then works offline |
 
-### Direct Recording
-Simply click the "Record & Transcribe" button to immediately start recording. A visual indicator shows recording status, and the transcription appears in a sleek container.
+## Design
 
-### Adaptive Theming
-The extension icon automatically adapts to your system's light or dark theme, ensuring good visibility in both modes. You can also toggle between light and dark themes within the extension.
-
-### Context Menu Transcription
-Right-click on any text field and select "Transcribe with TalkType" from the context menu. A sleek recording indicator appears to show recording status, and clicking anywhere stops recording and inserts your transcription.
-
-## Development
-
-### Project Structure
-
-- `manifest.json` - Extension configuration
-- `content.js` - Content script that runs on web pages
-- `background.js` - Background script for extension functionality
-- `api-service.js` - Service for communicating with the Gemini API
-- `audio-service.js` - Service for audio recording functionality
-- `options.html/js` - Options page for extension configuration
-- `popup.html/js` - Popup UI when clicking the extension icon
-- `styles.css` - Styles for the extension UI elements
-- `icons/` - Icons for the extension (including light/dark variants)
-
-### Building for Production
-
-1. Ensure you have the latest versions of all files
-2. Update the version number in `manifest.json`
-3. Zip the contents of the `src` directory
-4. The extension is now ready to be distributed
+One palette, three surfaces — the extension, [talktype.app](https://talktype.app), and the
+TalkType Mac app share a single system: cream `#fff6e6`, warm ink `#1e1714`, and the
+pink `#ff82ca` → tangerine `#ffb060` brand duo. Dark mode inverts to warm near-black — never
+cold blue-black. The ghost is a gradient-filled body with ink linework and eyes.
 
 ## Privacy
 
-TalkType takes your privacy seriously:
-- Microphone access is only activated when you explicitly choose to record
-- Recording starts only after you select "Transcribe with TalkType" from the context menu
-- Audio is only sent to the Gemini API for transcription
-- No audio data or transcriptions are stored
-- Uses your personal Gemini API key which you control
-- All processing happens in your browser or via the API
+- Microphone activates only when you start recording.
+- Audio is sent only to the engine you selected, using a key you control.
+- No audio or transcripts are stored.
+- Offline mode runs entirely on your device.
 
 ## License
 
-This software is licensed under a [proprietary license](LICENSE.md) that protects the intellectual property rights of the creators while allowing users to benefit from the functionality. Please review the license terms before use.
+Proprietary — see [LICENSE.md](LICENSE.md).
 
-## Acknowledgements
+## About
 
-- Uses the [Gemini API](https://ai.google.dev/) for speech transcription
-- Icons based on Material Design principles
-
-## About the Creators
-
-TalkType is created by Pablo Alvarado, made with ❤️ in Melbourne, Australia (2025-2026).
-
-© 2025 TalkType. All rights reserved.
+Created by Pablo Alvarado, made with ❤️ in Melbourne (2025–2026).

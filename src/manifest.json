@@ -8,17 +8,17 @@
   "permissions": [
     "clipboard-read",
     "unlimitedStorage",
-    "scripting",
     "contextMenus",
     "storage",
     "notifications",
     "clipboard-write",
     "offscreen",
-    "activeTab",
-    "tabCapture"
+    "activeTab"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.deepgram.com/*",
+    "https://huggingface.co/*"
   ],
   "action": {
     "default_icon": {
