@@ -106,10 +106,6 @@
         "about.html",
         "LICENSE.md",
         "PRIVACY.md",
-        "robots.txt",
-        "test-context-menu.html",
-        "test-context-menu.js",
-        "test-notification.html",
         "offscreen.html",
         "offscreen.js",
         "vendor/*"
