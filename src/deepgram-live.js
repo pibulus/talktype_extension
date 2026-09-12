@@ -10,7 +10,10 @@ const MAX_BUFFERED_AUDIO_CHUNKS = 120; // ~30s of 250ms chunks awaiting socket o
 function buildDeepgramLiveUrl() {
   const params = new URLSearchParams({
     model: 'nova-3',
-    language: 'en-US',
+    // language:multi — 'en-US' force-transcribed Spanish speech as English.
+    // Same fix as the web app's transcriptionStore.js; Nova-3 multilingual
+    // covers English at least as well. Keeping endpointing=600 for dictation.
+    language: 'multi',
     smart_format: 'true',
     interim_results: 'true',
     punctuate: 'true',
