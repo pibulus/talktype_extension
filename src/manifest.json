@@ -1,29 +1,41 @@
 {
   "manifest_version": 3,
-  "name": "TalkType",
-  "version": "1.7",
-  "description": "Voice-to-text for any text input with personality-driven transcription styles",
-  "permissions": ["storage", "offscreen", "unlimitedStorage"],
-  "host_permissions": ["https://generativelanguage.googleapis.com/*"],
+  "name": "TalkType — Voice to Text Anywhere",
+  "short_name": "TalkType",
+  "version": "1.8.0",
+  "description": "Talk into any text box on the web. Cloud, live, or fully offline transcription — your mic, your key, your words.",
+  "homepage_url": "https://talktype.app",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "storage",
+    "offscreen",
+    "unlimitedStorage",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.deepgram.com/*"
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   },
   "action": {
     "default_icon": {
-      "16": "icons/icon_white/favicon-16x16.png",
-      "32": "icons/icon_white/favicon-32x32.png",
-      "48": "icons/icon_white/android-icon-48x48.png",
-      "96": "icons/icon_white/favicon-96x96.png",
-      "128": "icons/icon_white/android-icon-192x192.png",
-      "144": "icons/icon_white/android-icon-144x144.png",
-      "192": "icons/icon_white/android-icon-192x192.png"
+      "16": "icons/ghost/ghost-16.png",
+      "32": "icons/ghost/ghost-32.png",
+      "48": "icons/ghost/ghost-48.png",
+      "128": "icons/ghost/ghost-128.png"
     },
-    "default_title": "TalkType",
+    "default_title": "TalkType — click into a text box, then talk",
     "default_popup": "popup.html"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "<all_urls>"
+      ],
       "js": [
         "storage-service.js",
         "sound-service.js",
@@ -32,7 +44,9 @@
         "live-service.js",
         "content.js"
       ],
-      "css": ["styles.css"],
+      "css": [
+        "styles.css"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -40,14 +54,12 @@
     "service_worker": "background.js"
   },
   "icons": {
-    "16": "icons/icon_white/favicon-16x16.png",
-    "32": "icons/icon_white/favicon-32x32.png",
-    "48": "icons/icon_white/android-icon-48x48.png",
-    "72": "icons/icon_white/android-icon-72x72.png",
-    "96": "icons/icon_white/favicon-96x96.png",
-    "128": "icons/icon_white/android-icon-192x192.png",
-    "144": "icons/icon_white/android-icon-144x144.png",
-    "192": "icons/icon_white/android-icon-192x192.png"
+    "16": "icons/ghost/ghost-16.png",
+    "32": "icons/ghost/ghost-32.png",
+    "48": "icons/ghost/ghost-48.png",
+    "128": "icons/ghost/ghost-128.png",
+    "256": "icons/ghost/ghost-256.png",
+    "512": "icons/ghost/ghost-512.png"
   },
   "options_ui": {
     "page": "options.html",
@@ -56,7 +68,8 @@
   "commands": {
     "toggle-recording": {
       "suggested_key": {
-        "default": "Alt+Shift+D"
+        "default": "Alt+Shift+D",
+        "mac": "Alt+Shift+D"
       },
       "description": "Start or stop dictation in the focused text field"
     }
@@ -67,7 +80,9 @@
         "icons/mic.svg",
         "styles.css"
       ],
-      "matches": ["<all_urls>"],
+      "matches": [
+        "<all_urls>"
+      ],
       "use_dynamic_url": true
     }
   ]

@@ -1,377 +1,98 @@
-// Options page script
-const GEMINI_KEY_URL = 'https://aistudio.google.com/app/apikey';
+// Options page — every control writes to storage the moment it changes.
 
-// Style preview descriptions
-const STYLE_PREVIEWS = {
-  standard: 'Removes filler words and stutters. Just the clean goods.',
-  surlyPirate: 'Arr! Yer words be rewritten in the tongue of a salty sea dog.',
-  leetSpeak: 'Y0ur w0rd5 g3t c0nv3rt3d 1nt0 h4ck3r sp34k. 1337!',
-  sparklePop: 'OMG your words become TOTALLY bubbly and sparkly!!! Like, SO extra!!!',
-  codeWhisperer: 'Restructures your speech into clean, technical language for coding prompts.',
-  quillAndInk: 'Your words are rendered in the most elegant Victorian prose, dear reader.',
-};
+(function () {
+  const S = window.TalkTypeSetup;
 
-// Save API key to local Chrome extension storage
-function saveOptions() {
-  const apiKey = document.getElementById('apiKey').value.trim();
+  const STYLES = [
+    { id: 'standard', name: 'Clean & Accurate', blurb: 'Straight transcription. Filler words gone.' },
+    { id: 'surlyPirate', name: 'Surly Pirate', blurb: 'Arr! Yer words, saltier.' },
+    { id: 'leetSpeak', name: 'L33t Sp34k', blurb: 'Y0ur w0rd5 1n h4ck3r sp34k.' },
+    { id: 'sparklePop', name: 'Sparkle Pop', blurb: 'OMG so bubbly!!! Emojis everywhere!!!' },
+    { id: 'codeWhisperer', name: 'Code Whisperer', blurb: 'Rambling in, tidy technical prompt out.' },
+    { id: 'quillAndInk', name: 'Quill & Ink', blurb: 'Victorian prose, dear reader.' }
+  ];
 
-  window.TalkTypeStorage.setApiKey(apiKey)
-    .then((savedKey) => {
-      const status = document.getElementById('status');
-      status.textContent = savedKey ? 'API key saved.' : 'API key removed.';
-      status.className = 'status success';
-      status.style.display = 'block';
+  async function mountStyles() {
+    const grid = document.getElementById('style-grid');
+    const { transcriptionStyle } = await chrome.storage.sync.get({ transcriptionStyle: 'standard' });
 
-      setTimeout(() => {
-        status.style.display = 'none';
-      }, 2000);
-    })
-    .catch(() => {
-      const status = document.getElementById('status');
-      status.textContent = 'Could not save API key.';
-      status.className = 'status error';
-      status.style.display = 'block';
+    const options = STYLES.map((style) => {
+      const input = S.el('input', { type: 'radio', name: 'style', value: style.id });
+      input.checked = style.id === transcriptionStyle;
+      const option = S.el('label', { class: `style-option${input.checked ? ' selected' : ''}` }, [
+        input,
+        S.el('div', {}, [
+          S.el('div', { class: 'style-name', text: style.name }),
+          S.el('div', { class: 'style-blurb', text: style.blurb })
+        ])
+      ]);
+      input.addEventListener('change', async () => {
+        if (!input.checked) return;
+        options.forEach((o) => o.classList.toggle('selected', o === option));
+        await chrome.storage.sync.set({ transcriptionStyle: style.id });
+        S.toast(`Style: ${style.name}`);
+      });
+      grid.appendChild(option);
+      return option;
     });
-}
+  }
 
-// Save transcription style
-function saveStyle() {
-  const style = document.getElementById('transcriptionStyle').value;
+  function reflectEngine(engineId) {
+    const keyField = document.getElementById('key-field');
+    const offline = document.getElementById('offline-model');
+    const styleCard = document.getElementById('style-card');
 
-  chrome.storage.sync.set(
-    { transcriptionStyle: style },
-    () => {
-      const status = document.getElementById('styleStatus');
-      status.textContent = 'Style saved! New transcriptions will use this style.';
-      status.className = 'status success';
-      status.style.display = 'block';
+    S.mountKeyField(keyField, engineId);
 
-      setTimeout(() => {
-        status.style.display = 'none';
-      }, 2500);
-    }
-  );
-}
-
-// Update the style preview text
-function updateStylePreview() {
-  const style = document.getElementById('transcriptionStyle').value;
-  const preview = document.getElementById('stylePreview');
-  preview.textContent = STYLE_PREVIEWS[style] || STYLE_PREVIEWS.standard;
-}
-
-// Check microphone permission status
-function checkMicrophonePermission() {
-  const permissionStatusElement = document.getElementById('permissionStatus');
-  
-  try {
-    // Simpler approach - we'll just show a message prompting the user to test
-    permissionStatusElement.textContent = 'Click the button below to test/request microphone access.';
-    permissionStatusElement.className = 'permission-status unknown';
-    
-    // Check storage for previous successful access
-    chrome.storage.sync.get(['microphonePermission'], (result) => {
-      if (result.microphonePermission === 'granted') {
-        permissionStatusElement.textContent = 'Microphone access was previously granted. Click the button to test again.';
-        permissionStatusElement.className = 'permission-status granted';
+    if (engineId === 'offline') {
+      offline.style.display = 'block';
+      if (!offline.dataset.mounted) {
+        S.mountOfflineModel(offline);
+        offline.dataset.mounted = 'true';
       }
-    });
-  } catch (error) {
-    console.error('Error checking permission:', error);
-    permissionStatusElement.textContent = 'Error checking permission. Please click the button below to try.';
-    permissionStatusElement.className = 'permission-status unknown';
-  }
-}
-
-// Request microphone permission
-function requestMicrophonePermission() {
-  const permissionStatusElement = document.getElementById('permissionStatus');
-  
-  permissionStatusElement.textContent = 'Testing microphone access...';
-  permissionStatusElement.className = 'permission-status unknown';
-  
-  // For all users, we want to see if Chrome's permission is already set correctly
-  const extensionId = chrome.runtime.id;
-  
-  permissionStatusElement.innerHTML = `
-    <p>Testing access to your microphone...</p>
-    <p style="font-size: 12px; margin-top: 5px;">This will trigger Chrome's permission prompt if access isn't already granted.</p>
-  `;
-  
-  // Add a message about the current extension ID to help users identify it in Chrome settings
-  const idMessage = document.createElement('div');
-  idMessage.style.marginTop = '10px';
-  idMessage.style.padding = '6px';
-  idMessage.style.backgroundColor = '#fff3cd';
-  idMessage.style.borderRadius = '4px';
-  idMessage.style.fontSize = '12px';
-  idMessage.innerHTML = `<strong>Your extension ID:</strong> ${extensionId}<br>Look for this ID in Chrome settings.`;
-  permissionStatusElement.appendChild(idMessage);
-  
-  // Standard approach for other platforms
-  // First try with newer method if available
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(handleStreamSuccess)
-      .catch(handleStreamError);
-  } 
-  // Fall back to older API versions for compatibility
-  else if (navigator.getUserMedia) {
-    navigator.getUserMedia({ audio: true }, handleStreamSuccess, handleStreamError);
-  }
-  else if (navigator.webkitGetUserMedia) {
-    navigator.webkitGetUserMedia({ audio: true }, handleStreamSuccess, handleStreamError);
-  }
-  else if (navigator.mozGetUserMedia) {
-    navigator.mozGetUserMedia({ audio: true }, handleStreamSuccess, handleStreamError);
-  }
-  else {
-    // No getUserMedia support
-    permissionStatusElement.textContent = 'Your browser does not support microphone access.';
-    permissionStatusElement.className = 'permission-status denied';
-  }
-  
-  // Success handler
-  function handleStreamSuccess(stream) {
-    // Permission granted
-    permissionStatusElement.innerHTML = `
-      <p style="color: #155724; font-weight: bold;">✓ Microphone access granted successfully!</p>
-      <p style="margin-top: 10px;">Chrome permission is set correctly to "Allow". Your extension can now use the microphone.</p>
-      <p style="margin-top: 10px; font-size: 13px;">Note: This setting has been stored in both Chrome's settings and the extension's storage.</p>
-    `;
-    permissionStatusElement.className = 'permission-status granted';
-    
-    // Store permission status
-    chrome.storage.sync.set({ microphonePermission: 'granted' });
-    
-    // Record the permission and settings URLs to help users find them later
-    const settingsLink = document.createElement('div');
-    settingsLink.style.marginTop = '15px';
-    settingsLink.innerHTML = `
-      <button id="checkSettings" style="font-size: 12px; padding: 4px 8px;">
-        Verify Chrome Settings
-      </button>
-    `;
-    permissionStatusElement.appendChild(settingsLink);
-    
-    // Add click handler for the settings verification
-    setTimeout(() => {
-      const checkButton = document.getElementById('checkSettings');
-      if (checkButton) {
-        checkButton.addEventListener('click', openChromeSettings);
-      }
-    }, 100);
-    
-    // Stop all tracks
-    try {
-      stream.getTracks().forEach(track => track.stop());
-    } catch (e) {
-      console.log('Error stopping tracks:', e);
-      // Older API might not have getTracks
-      if (stream.stop) {
-        stream.stop();
-      }
-    }
-  }
-  
-  // Error handler
-  function handleStreamError(error) {
-    console.error('Microphone access error:', error);
-    
-    // Get extension ID to help user identify it in settings
-    const extensionId = chrome.runtime.id;
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    
-    // Handle different error types
-    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError' || error === 'PERMISSION_DENIED') {
-      // User denied permission or it's set to "Block" in Chrome
-      permissionStatusElement.innerHTML = `
-        <p style="color: #721c24; font-weight: bold;">❌ Microphone access denied</p>
-        <p style="margin-top: 10px;">You need to change Chrome's permission settings for this extension to "Allow".</p>
-        
-        <div style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
-          <p><strong>To fix this:</strong></p>
-          <ol style="margin-left: 20px; margin-top: 5px;">
-            <li>Click "Open Chrome Microphone Settings" button below</li>
-            <li>Find <code>chrome-extension://${extensionId}</code> in the list</li>
-            <li>Change its setting from "Block" to "Allow"</li>
-            <li>Return to this page and click "Test Microphone Access" again</li>
-          </ol>
-          ${isMac ? `
-          <p style="margin-top: 10px;"><strong>Mac users:</strong> Also check System Preferences > Security & Privacy > Privacy > Microphone</p>
-          ` : ''}
-        </div>
-      `;
-      
-      // Add direct link to Chrome settings
-      const fixButton = document.createElement('button');
-      fixButton.textContent = 'Open Chrome Microphone Settings';
-      fixButton.style.marginTop = '15px';
-      fixButton.style.padding = '8px 12px';
-      fixButton.addEventListener('click', openChromeSettings);
-      permissionStatusElement.appendChild(fixButton);
-      
-      // Mark as denied in storage
-      chrome.storage.sync.set({ microphonePermission: 'denied' });
-    } else if (error.name === 'NotFoundError' || error === 'NO_DEVICES_FOUND') {
-      permissionStatusElement.innerHTML = `
-        <p style="color: #721c24; font-weight: bold;">❌ No microphone found</p>
-        <p style="margin-top: 10px;">Your device doesn't have a microphone, or it's not properly connected.</p>
-        <p style="margin-top: 5px;">Please connect a microphone and try again.</p>
-      `;
     } else {
-      permissionStatusElement.innerHTML = `
-        <p style="color: #721c24; font-weight: bold;">❌ Error accessing microphone</p>
-        <p style="margin-top: 10px;">${error.message || 'Unknown error accessing microphone'}</p>
-        <p style="margin-top: 10px;">Try refreshing the page or restarting your browser.</p>
-      `;
+      offline.style.display = 'none';
     }
-    
-    permissionStatusElement.className = 'permission-status denied';
-  }
-}
 
-// Restore options from Chrome storage
-function restoreOptions() {
-  Promise.all([
-    window.TalkTypeStorage.getApiKey(),
-    window.TalkTypeStorage.getDeepgramApiKey(),
-    chrome.storage.sync.get({
-      transcriptionStyle: 'standard',
-      transcriptionEngine: 'cloud',
-      offlineModel: 'tiny',
+    const cloud = engineId === 'cloud';
+    styleCard.classList.toggle('muted', !cloud);
+    styleCard.querySelectorAll('input').forEach((i) => {
+      i.disabled = !cloud;
+    });
+  }
+
+  async function mountToggles() {
+    const prefs = await chrome.storage.sync.get({
+      smartModeEnabled: true,
       soundEffectsEnabled: true,
       historyEnabled: false
-    })
-  ]).then(([apiKey, deepgramKey, items]) => {
-    document.getElementById('apiKey').value = apiKey;
-    document.getElementById('deepgramApiKey').value = deepgramKey;
-    document.getElementById('transcriptionEngine').value = items.transcriptionEngine;
-    document.getElementById('offlineModel').value = items.offlineModel;
-    document.getElementById('transcriptionStyle').value = items.transcriptionStyle;
-    document.getElementById('soundEffects').checked = items.soundEffectsEnabled !== false;
-    document.getElementById('historyEnabled').checked = items.historyEnabled === true;
-    updateStylePreview();
-  });
-
-  // Check microphone permission
-  checkMicrophonePermission();
-}
-
-// Save transcription engine choice + Deepgram key
-function saveEngine() {
-  const engine = document.getElementById('transcriptionEngine').value;
-  const deepgramKey = document.getElementById('deepgramApiKey').value.trim();
-  const status = document.getElementById('engineStatus');
-
-  Promise.all([
-    chrome.storage.sync.set({ transcriptionEngine: engine }),
-    window.TalkTypeStorage.setDeepgramApiKey(deepgramKey)
-  ])
-    .then(([, savedKey]) => {
-      if (engine === 'live' && !savedKey) {
-        status.textContent = 'Engine saved — Live mode still needs a Deepgram key.';
-        status.className = 'status error';
-      } else if (engine === 'offline') {
-        status.textContent = 'Engine saved — Private mode downloads its model (~96MB, one time) on first use.';
-        status.className = 'status success';
-      } else {
-        status.textContent = 'Engine saved.';
-        status.className = 'status success';
-      }
-      status.style.display = 'block';
-      setTimeout(() => {
-        status.style.display = 'none';
-      }, 2500);
-    })
-    .catch(() => {
-      status.textContent = 'Could not save engine settings.';
-      status.className = 'status error';
-      status.style.display = 'block';
     });
-}
-
-// Kick off (or verify) the offline model download, with live progress
-function prepareOfflineModel() {
-  const status = document.getElementById('offlineModelStatus');
-  const button = document.getElementById('prepareOfflineModel');
-
-  status.style.display = 'block';
-  status.textContent = 'Starting offline model download (~96MB, one time)...';
-  button.disabled = true;
-
-  chrome.runtime.sendMessage({ action: 'prepareOfflineModel' })
-    .then((response) => {
-      if (response?.ready) {
-        status.textContent = '✓ Offline model ready — Private mode works fully offline now.';
-      } else {
-        status.textContent = response?.error || 'Offline model setup failed. Try again.';
-      }
-    })
-    .catch(() => {
-      status.textContent = 'Offline model setup failed. Try again.';
-    })
-    .finally(() => {
-      button.disabled = false;
+    const map = {
+      smartMode: ['smartModeEnabled', prefs.smartModeEnabled !== false],
+      soundEffects: ['soundEffectsEnabled', prefs.soundEffectsEnabled !== false],
+      historyEnabled: ['historyEnabled', prefs.historyEnabled === true]
+    };
+    Object.entries(map).forEach(([id, [key, value]]) => {
+      const box = document.getElementById(id);
+      box.checked = value;
+      box.addEventListener('change', async () => {
+        await chrome.storage.sync.set({ [key]: box.checked });
+        S.toast(box.checked ? 'On' : 'Off');
+      });
     });
-}
-
-// Live download progress from the offscreen document
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.action !== 'offlineModelProgress') return;
-
-  const status = document.getElementById('offlineModelStatus');
-  if (!status) return;
-
-  status.style.display = 'block';
-  if (message.status === 'ready') {
-    status.textContent = '✓ Offline model ready — Private mode works fully offline now.';
-  } else if (message.status === 'progress' && message.file && message.progress !== null) {
-    status.textContent = `Downloading ${message.file} — ${message.progress}%`;
-  } else if (message.status === 'done' && message.file) {
-    status.textContent = `Downloaded ${message.file}`;
   }
-});
 
-// Extras toggles save instantly on change
-function saveExtras() {
-  const soundEffectsEnabled = document.getElementById('soundEffects').checked;
-  const historyEnabled = document.getElementById('historyEnabled').checked;
+  document.addEventListener('DOMContentLoaded', async () => {
+    await mountStyles();
+    await S.mountEnginePicker(document.getElementById('engine-picker'), { onChange: reflectEngine });
+    S.mountShortcut(document.getElementById('shortcut'));
+    S.mountMicTest(document.getElementById('mic-test'));
+    mountToggles();
 
-  chrome.storage.sync.set({ soundEffectsEnabled, historyEnabled }, () => {
-    const status = document.getElementById('extrasStatus');
-    if (!status) return;
-    status.textContent = 'Saved.';
-    status.className = 'status success';
-    status.style.display = 'block';
-    setTimeout(() => {
-      status.style.display = 'none';
-    }, 1500);
+    document.getElementById('version').textContent = `v${chrome.runtime.getManifest().version}`;
+    document.getElementById('show-tour').addEventListener('click', (e) => {
+      e.preventDefault();
+      chrome.runtime.sendMessage({ action: 'openOnboarding' });
+    });
   });
-}
-
-// Open Chrome's microphone settings
-function openChromeSettings() {
-  chrome.tabs.create({
-    url: 'chrome://settings/content/microphone'
-  });
-}
-
-// Initialize the page
-document.addEventListener('DOMContentLoaded', restoreOptions);
-document.getElementById('save').addEventListener('click', saveOptions);
-document.getElementById('saveStyle').addEventListener('click', saveStyle);
-document.getElementById('transcriptionStyle').addEventListener('change', updateStylePreview);
-document.getElementById('soundEffects').addEventListener('change', saveExtras);
-document.getElementById('historyEnabled').addEventListener('change', saveExtras);
-document.getElementById('saveEngine').addEventListener('click', saveEngine);
-document.getElementById('prepareOfflineModel').addEventListener('click', prepareOfflineModel);
-document.getElementById('offlineModel').addEventListener('change', () => {
-  // Saves instantly so the Download button always fetches the selected model
-  chrome.storage.sync.set({ offlineModel: document.getElementById('offlineModel').value });
-});
-document.getElementById('requestPermission').addEventListener('click', requestMicrophonePermission);
-document.getElementById('openChromeSettings').addEventListener('click', openChromeSettings);
-document.getElementById('openAiStudio').addEventListener('click', () => {
-  chrome.tabs.create({ url: GEMINI_KEY_URL });
-});
+})();

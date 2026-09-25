@@ -1,28 +1,83 @@
 // Background service worker for TalkType extension
 importScripts('storage-service.js', 'gemini-service.js', 'deepgram-live.js');
 
+const ONBOARDING_URL = 'onboarding.html';
+
 // Initialize extension when installed
 chrome.runtime.onInstalled.addListener(async (details) => {
-  console.log('TalkType extension installed');
   await globalThis.TalkTypeStorage.migrateApiKeyToLocal();
 
   if (details.reason === 'install') {
     await chrome.storage.sync.set({
       smartModeEnabled: true,
-      transcriptionStyle: 'standard'
+      transcriptionStyle: 'standard',
+      transcriptionEngine: 'cloud'
     });
 
-    chrome.runtime.openOptionsPage();
+    chrome.tabs.create({ url: chrome.runtime.getURL(ONBOARDING_URL) });
     return;
   }
 
   // Ensure newer settings exist for upgrades without treating a missing API key as a reinstall.
-  const settings = await chrome.storage.sync.get(['smartModeEnabled', 'transcriptionStyle']);
+  const settings = await chrome.storage.sync.get(['smartModeEnabled', 'transcriptionStyle', 'transcriptionEngine']);
   const updates = {};
   if (settings.smartModeEnabled === undefined) updates.smartModeEnabled = true;
   if (settings.transcriptionStyle === undefined) updates.transcriptionStyle = 'standard';
+  if (settings.transcriptionEngine === undefined) updates.transcriptionEngine = 'cloud';
   if (Object.keys(updates).length) await chrome.storage.sync.set(updates);
 });
+
+// ===================================================================
+// KEYBOARD SHORTCUT — the actual binding, not the suggested one
+// Chrome silently leaves a command unbound when the suggested key clashes
+// with another extension, so everything user-facing asks for the real value.
+// ===================================================================
+
+async function getShortcutBinding() {
+  try {
+    const commands = await chrome.commands.getAll();
+    const toggle = commands.find((c) => c.name === 'toggle-recording');
+    return toggle?.shortcut || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+// ===================================================================
+// CONTENT SCRIPT ON DEMAND
+// Right after install/update, tabs that were already open have no content
+// script. Instead of asking people to reload every tab, inject it when the
+// shortcut or popup needs it (activeTab + scripting; no new install warning).
+// ===================================================================
+
+const CONTENT_SCRIPT_FILES = [
+  'storage-service.js',
+  'sound-service.js',
+  'audio-service.js',
+  'api-service.js',
+  'live-service.js',
+  'content.js'
+];
+
+async function sendToTab(tabId, message) {
+  try {
+    return await chrome.tabs.sendMessage(tabId, message);
+  } catch (firstError) {
+    // No listener — try injecting, then one retry. chrome://, the Web Store
+    // and other restricted pages reject executeScript; we give up quietly.
+    try {
+      await chrome.scripting.insertCSS({ target: { tabId }, files: ['styles.css'] });
+      await chrome.scripting.executeScript({ target: { tabId }, files: CONTENT_SCRIPT_FILES });
+    } catch (injectError) {
+      return null;
+    }
+    try {
+      return await chrome.tabs.sendMessage(tabId, message);
+    } catch (secondError) {
+      return null;
+    }
+  }
+}
 
 // ===================================================================
 // ENGINE ROUTER + OFFSCREEN DOCUMENT (offline model host)
@@ -85,21 +140,25 @@ async function routeTranscription(message) {
     return response.text;
   }
 
-  // 'cloud' and 'live' both land here for batch requests (the popup always
-  // records in batch mode, so live falls back to Gemini for it)
+  if (transcriptionEngine === 'live') {
+    // Batch requests (the popup, or a page where streaming isn't possible)
+    // still use the Deepgram key, via its prerecorded endpoint — so the Live
+    // engine never needs a second key.
+    return globalThis.TalkTypeDeepgram.transcribePrerecorded(message);
+  }
+
   return globalThis.TalkTypeGemini.transcribe(message);
 }
 
 // Keyboard shortcut (Alt+Shift+D by default) → toggle dictation in the active tab
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands.onCommand.addListener(async (command) => {
   if (command !== 'toggle-recording') return;
 
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (!tabs[0]?.id) return;
-    chrome.tabs.sendMessage(tabs[0].id, { action: 'toggleRecording' }).catch(() => {
-      // No content script on this page (chrome://, web store) — nothing to toggle.
-    });
-  });
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+
+  const shortcut = await getShortcutBinding();
+  await sendToTab(tab.id, { action: 'toggleRecording', shortcut });
 });
 
 // Handle messages from content scripts and popup
@@ -109,7 +168,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === 'transcribeAudio') {
     // All batch transcription routes through here: keys stay in this worker,
-    // and the engine setting decides Gemini (cloud) vs the offscreen model.
+    // and the engine setting decides Gemini (cloud) vs Deepgram vs the
+    // offscreen model.
     routeTranscription(message)
       .then((text) => sendResponse({ text }))
       .catch((error) => sendResponse({ error: error.message || 'Transcription failed.' }));
@@ -132,15 +192,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === 'getSetupState') {
-    // Lets content scripts show setup hints without ever touching the key itself.
+    // Lets content scripts and extension pages show setup hints without ever
+    // touching the keys themselves.
     Promise.all([
       globalThis.TalkTypeStorage.getApiKey(),
-      globalThis.TalkTypeStorage.getDeepgramApiKey()
+      globalThis.TalkTypeStorage.getDeepgramApiKey(),
+      chrome.storage.sync.get({ transcriptionEngine: 'cloud' }),
+      getShortcutBinding()
     ])
-      .then(([geminiKey, deepgramKey]) =>
-        sendResponse({ hasApiKey: Boolean(geminiKey), hasDeepgramKey: Boolean(deepgramKey) })
-      )
-      .catch(() => sendResponse({ hasApiKey: false, hasDeepgramKey: false }));
+      .then(([geminiKey, deepgramKey, { transcriptionEngine }, shortcut]) => {
+        const engine = transcriptionEngine || 'cloud';
+        const engineReady =
+          engine === 'offline' ||
+          (engine === 'live' && Boolean(deepgramKey)) ||
+          (engine === 'cloud' && Boolean(geminiKey));
+        sendResponse({
+          engine,
+          engineReady,
+          hasApiKey: Boolean(geminiKey),
+          hasDeepgramKey: Boolean(deepgramKey),
+          shortcut
+        });
+      })
+      .catch(() =>
+        sendResponse({ engine: 'cloud', engineReady: false, hasApiKey: false, hasDeepgramKey: false, shortcut: '' })
+      );
+    return true;
+  }
+
+  if (message.action === 'sendToActiveTab') {
+    // Popup → content script, injecting the script first if the tab predates
+    // the install. Returns null when the page can't host it (chrome:// etc).
+    chrome.tabs
+      .query({ active: true, currentWindow: true })
+      .then(([tab]) => (tab?.id ? sendToTab(tab.id, message.payload) : null))
+      .then((response) => sendResponse(response ?? null))
+      .catch(() => sendResponse(null));
     return true;
   }
 
@@ -161,7 +248,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       url: chrome.runtime.getURL('permission-fix.html'),
       type: 'popup',
       width: 400,
-      height: 420
+      height: 460
     }, () => {
       sendResponse({ success: true });
     });
@@ -170,6 +257,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === 'openOptions') {
     chrome.runtime.openOptionsPage(() => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
+  if (message.action === 'openOnboarding') {
+    chrome.tabs.create({ url: chrome.runtime.getURL(ONBOARDING_URL) }, () => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
+  if (message.action === 'openShortcutSettings') {
+    // chrome:// URLs can't be opened by web pages, only from extension contexts
+    chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }, () => {
       sendResponse({ success: true });
     });
     return true;

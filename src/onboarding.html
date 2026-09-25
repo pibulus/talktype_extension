@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome to TalkType</title>
+  <link rel="icon" href="icons/ghost/ghost-32.png">
+  <link rel="stylesheet" href="brand.css">
+  <style>
+    .hero { text-align: center; padding: 24px 0 8px; }
+    .hero .ghost { width: 112px; height: 112px; animation: bob 3.2s ease-in-out infinite; filter: drop-shadow(0 14px 24px rgba(255, 92, 159, 0.28)); }
+    @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-8px) rotate(2deg); } }
+    .hero h1 { font-size: 34px; margin-top: 12px; }
+    .hero .tagline { font-size: 17px; margin-top: 6px; }
+    .hero .sub { margin: 10px auto 0; max-width: 460px; font-size: 14px; color: var(--ink-soft); }
+    .card.locked { opacity: 0.45; pointer-events: none; filter: saturate(0.6); }
+    .try-box { position: relative; }
+    .try-box textarea { min-height: 120px; padding-right: 52px; font-size: 16px; }
+    .done-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 8px; }
+    .sites { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .sites .chip { font-weight: 600; }
+    .wink { color: var(--pink-deep); font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <img class="ghost" src="icons/ghost/ghost-256.png" alt="TalkType ghost">
+      <h1>Hey. I'm TalkType.</h1>
+      <p class="tagline">Talk into any text box on the web.</p>
+      <p class="sub">A mic appears next to every text field. Click it, say your thing, it lands where your cursor is. No account. No server in the middle. Your mic, your key, your words.</p>
+    </div>
+
+    <section class="card">
+      <h2><span class="step">1</span> Pick how your voice becomes text</h2>
+      <p>You can switch any time in Settings. Most people start with Cloud.</p>
+      <div id="engine-picker"></div>
+    </section>
+
+    <section class="card" id="step-key">
+      <h2><span class="step">2</span> <span id="step-key-title">Plug in your key</span></h2>
+      <div id="key-field"></div>
+      <div id="offline-model" style="display: none;"></div>
+    </section>
+
+    <section class="card locked" id="step-try">
+      <h2><span class="step">3</span> Try it right here</h2>
+      <p>That little ghost in the corner of the box is the real thing — the same one you'll see on every site. Click it and say hello. <span class="wink">Chrome will ask for your mic once per site.</span></p>
+      <div class="try-box">
+        <textarea id="try-area" placeholder="Click the ghost, then talk…"></textarea>
+      </div>
+      <div class="sites">
+        <span class="chip">Gmail</span><span class="chip">Slack</span><span class="chip">Notion</span><span class="chip">Discord</span><span class="chip">Google Docs comments</span><span class="chip">ChatGPT</span><span class="chip">Reddit</span><span class="chip">…any text box</span>
+      </div>
+    </section>
+
+    <section class="card" id="step-keys">
+      <h2><span class="step">4</span> Hands on the keyboard?</h2>
+      <div id="shortcut"></div>
+    </section>
+
+    <section class="card" style="text-align: center;">
+      <h2 style="justify-content: center;">That's it. Go talk.</h2>
+      <p>Pin TalkType to your toolbar (puzzle-piece icon → pin) so the popup is one click away.</p>
+      <div class="done-row">
+        <button id="open-settings" class="secondary" type="button">All settings</button>
+        <a class="button" href="https://talktype.app" target="_blank" rel="noopener">talktype.app ↗</a>
+      </div>
+    </section>
+
+    <div class="footer">
+      <a href="https://talktype.app/extension/privacy" target="_blank" rel="noopener">Privacy</a>
+      <a href="https://github.com/pibulus/talktype_extension" target="_blank" rel="noopener">Source</a>
+      <span>· Made by Pablo. Talk easy.</span>
+    </div>
+  </div>
+
+  <script src="storage-service.js"></script>
+  <script src="setup-shared.js"></script>
+  <script src="onboarding.js"></script>
+  <!-- The real content script, so the try-it box gets the real mic button -->
+  <script src="sound-service.js"></script>
+  <script src="audio-service.js"></script>
+  <script src="api-service.js"></script>
+  <script src="live-service.js"></script>
+  <script src="content.js"></script>
+</body>
+</html>

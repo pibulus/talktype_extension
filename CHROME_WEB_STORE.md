@@ -1,100 +1,99 @@
-# Chrome Web Store Readiness
+# Chrome Web Store — Submission Kit
 
-## Current State
+Everything needed for the developer dashboard, in the order the form asks for it. Copy-paste.
 
-The extension is close, but not "submit blind and hope" ready yet.
+## Package
 
-What is already good:
+```
+./scripts/package.sh          # → dist/talktype-extension-<version>.zip
+```
 
-- clear product purpose
-- real popup UI
-- real options/setup page
-- first-run settings page opens on install
-- direct Gemini transcription flow works without app-side middleware
-- content script insertion model is coherent
-- README/setup instructions are current
-- temporary manual install zip is linked from the TalkType web app
+The zip contains only `src/` (manifest at the root of the zip, as the store requires). Test it fresh: `chrome://extensions` → Developer mode → drag the zip in.
 
-## Biggest Remaining Gaps
+## Store listing
 
-1. Store install surface
+**Name** (45 max): `TalkType — Voice to Text Anywhere`
 
-- There is no Chrome Web Store listing yet.
-- The TalkType web app now has a temporary manual install page and downloadable zip.
+**Summary** (132 max):
+`Talk into any text box on the web. Cloud, live, or fully offline transcription — your mic, your key, your words.`
 
-2. Store assets
+**Category:** Productivity → Tools
+**Language:** English
 
-You still need the usual Chrome Web Store package:
+**Description:**
 
-- 128x128 icon
-- at least one screenshot, ideally 3-5
-- small promo tile if you want better presentation
-- short description
-- full description
-- privacy policy URL: `https://talktype.app/extension/privacy`
+```
+TalkType puts a tiny mic next to every text box on the web. Click it, say your thing, and the words land right where your cursor is. Gmail, Slack, Notion, Discord, Reddit, ChatGPT, forms, comment boxes — anything you can type in, you can talk into.
 
-3. Privacy policy page
+THREE WAYS TO TRANSCRIBE — YOU PICK
+☁️ Cloud — Google Gemini transcribes after you stop, with six personality styles (Clean & Accurate, Surly Pirate, L33t Sp34k, Sparkle Pop, Code Whisperer, Quill & Ink). Uses your own free Gemini API key.
+⚡ Live — Deepgram streams your words into the field while you talk. Uses your own Deepgram key (signup includes ~$200 of free credit).
+🔒 Private — a Whisper model runs inside Chrome. One-time model download, then your voice never leaves your machine. No key, no internet needed.
 
-The extension privacy policy is intended to live at:
+BUILT TO STAY OUT OF YOUR WAY
+• Inserts at the cursor without overwriting what's already there
+• Auto-copies every transcript to your clipboard as a backup
+• Keyboard shortcut (Alt+Shift+D by default) starts and stops dictation in the focused field; Esc discards
+• Little sound chirps on start/stop/success (optional)
+• Optional on-device history of your last 20 transcripts
+• Works in rich editors too: Gmail compose, Notion, Slack, Google Docs comments, ProseMirror/Quill/Draft/Lexical/Slate editors
 
-- `https://talktype.app/extension/privacy`
+NO ACCOUNT. NO SERVER IN THE MIDDLE.
+TalkType has no backend. Your API key is stored locally in Chrome and only ever sent to the provider it belongs to. No analytics, no telemetry, no tracking. Pick Private mode and nothing leaves your device at all.
 
-The Web Store listing and privacy dashboard still need to point at that URL. It should explain:
+Made in Melbourne by Pablo. Talk easy.
+https://talktype.app
+```
 
-- what audio is sent to Google
-- that the user provides their own Gemini key
-- that TalkType does not run its own transcription server for the extension
-- that the API key is stored locally in Chrome extension storage
-- what preferences are stored in `chrome.storage.sync`
+**Icon:** `src/icons/ghost/ghost-128.png`
+**Small promo tile (440×280):** `store/promo-small-440x280.png`
+**Screenshots (1280×800):** `store/screenshot-*.png` — regenerate with `node scripts/screenshots.mjs` (see below).
 
-4. Repo and public identity
+## Privacy tab
 
-The extension should live under the same public identity as the main app:
+**Single purpose description:**
+`Dictate into any text field on the web: records your voice when you ask, transcribes it with the engine you choose, and inserts the text at your cursor.`
 
-- `https://github.com/pibulus/talktype_extension`
+**Permission justifications:**
 
-## Suggested Store Positioning
+| Permission | Justification |
+|---|---|
+| `storage` | Store preferences, the user's own API keys (local only), and optional transcript history. |
+| `unlimitedStorage` | The Private engine caches a 96–251MB Whisper model in the browser cache so it works offline. |
+| `offscreen` | Hosts the offline Whisper model (WASM) in an offscreen document, since service workers cannot run it. |
+| `scripting` + `activeTab` | After install or update, tabs that were already open have no content script. When the user presses the keyboard shortcut or uses the popup on such a tab, we inject the content script so it works without a reload. Only on the active tab, only on a user gesture. |
+| Host `<all_urls>` (content script) | The mic button must appear next to text fields on any site the user chooses to dictate into. |
+| Host `generativelanguage.googleapis.com` | Cloud engine: sends audio to Gemini with the user's own key. |
+| Host `api.deepgram.com` | Live engine: streams audio to Deepgram with the user's own key. |
 
-### Short Description
+**Remote code:** No. All code ships in the package. Model weights for the Private engine are data files downloaded from the Hugging Face hub, not executable code.
 
-Voice-to-text for any text box on the web. Click, speak, done.
+**Data usage disclosures (tick):**
+- Audio or voice data — collected? *Yes, transmitted to the user-chosen provider (Google or Deepgram) or processed locally.* Not sold, not used for unrelated purposes, not for creditworthiness.
+- Authentication information — *the user's own API keys, stored locally only.*
+- Website content — *text is inserted into text fields; page content is not collected.*
 
-### Longer Description
+**Privacy policy URL:** `https://talktype.app/extension/privacy` — publish the contents of `PRIVACY.md` there before submitting.
 
-TalkType adds voice typing to the websites you already use. Click the mic, speak naturally, and your words land right where your cursor is. Works in text inputs, textareas, and rich editors across the web.
+## Distribution
 
-Why people like it:
+- Visibility: Public
+- Regions: All
+- Pricing: Free (the providers' own pricing applies to the user's keys; TalkType charges nothing)
 
-- works in Gmail, Notion, chat apps, docs, and forms
-- keeps existing text and inserts at the cursor
-- includes multiple transcription styles
-- uses your own Gemini API key
-- no TalkType account required
+## Pre-flight checklist
 
-### Good Listing Angles
+- [ ] `PRIVACY.md` is live at talktype.app/extension/privacy
+- [ ] talktype.app/extension links to the Web Store listing (replace the manual zip once approved)
+- [ ] Fresh-profile test of the zip: install → onboarding opens → paste key → mic on a real site → Alt+Shift+D works
+- [ ] Test on a tab that was open *before* install: shortcut injects and works
+- [ ] Test all three engines once
+- [ ] Bump `version` in `src/manifest.json` for every resubmission
 
-- "Voice-to-text anywhere on the web"
-- "Works in any text box"
-- "Use your own Gemini key"
-- "No accounts, no server middleman"
+## Positioning notes
 
-## Submission Checklist
-
-- rename or verify repo/brand URLs to match TalkType
-- publish a privacy policy page on the TalkType site
-- add a proper TalkType extension landing page
-- capture 3-5 screenshots:
-  - popup ready state
-  - popup recording state
-  - options page
-  - inline mic button beside a real text field
-  - successful insertion into a web app
-- export store copy from this file into the listing
-- package and test the extension fresh in Chrome before submission
-
-## My Read
-
-This is close enough to treat as a real public-side project now.
-
-The product itself is not the problem.
-The missing pieces are mostly packaging, trust, and install surface.
+Angles that land:
+- "Talk into any text box" (the promise, in five words)
+- "Three engines, your choice" — cloud/live/offline is the differentiator nobody else offers in one extension
+- "No account, no server in the middle" — trust angle; Private mode makes it literal
+- Personality styles are the fun hook for social posts, not the lead

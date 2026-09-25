@@ -158,3 +158,66 @@ chrome.runtime.onConnect.addListener((port) => {
 
   port.onDisconnect.addListener(cleanup);
 });
+
+// ===================================================================
+// PRERECORDED (batch) — used when the Live engine is selected but the
+// request is a whole clip (the popup records in batch mode). Same key, same
+// dictation tuning, no second provider to sign up for.
+// ===================================================================
+
+const DEEPGRAM_PRERECORDED_URL = 'https://api.deepgram.com/v1/listen';
+
+function base64ToBlob(base64, mimeType) {
+  return new Blob([base64ToArrayBuffer(base64)], { type: mimeType || 'audio/wav' });
+}
+
+async function transcribePrerecorded({ audioBase64, mimeType }) {
+  const apiKey = await globalThis.TalkTypeStorage.getDeepgramApiKey();
+  if (!apiKey) {
+    throw new Error('Missing Deepgram API key. Add it in the extension options first.');
+  }
+  if (!audioBase64 || typeof audioBase64 !== 'string') {
+    throw new Error('No audio received for transcription.');
+  }
+
+  const params = new URLSearchParams({
+    model: 'nova-3',
+    language: 'en-US',
+    smart_format: 'true',
+    punctuate: 'true',
+    numerals: 'true',
+    filler_words: 'false'
+  });
+
+  const response = await fetch(`${DEEPGRAM_PRERECORDED_URL}?${params.toString()}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Token ${apiKey}`,
+      'Content-Type': mimeType || 'audio/wav'
+    },
+    body: base64ToBlob(audioBase64, mimeType)
+  });
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Deepgram rejected the API key. Check it in extension settings.');
+    }
+    if (response.status === 402) {
+      throw new Error('Deepgram says this key is out of credit.');
+    }
+    if (response.status === 429) {
+      throw new Error('Deepgram is rate-limiting this key right now. Try again in a moment.');
+    }
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Deepgram transcription failed (${response.status})${detail ? ': ' + detail.slice(0, 120) : ''}`);
+  }
+
+  const data = await response.json();
+  const text = data?.results?.channels?.[0]?.alternatives?.[0]?.transcript?.trim();
+  if (!text) {
+    throw new Error('No speech detected.');
+  }
+  return text;
+}
+
+globalThis.TalkTypeDeepgram = { transcribePrerecorded };

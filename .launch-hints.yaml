@@ -1,32 +1,30 @@
 # Launch hints for Launch Arsenal.
-# Edit aggressively. These fields should pin the app's real audience, problem, and promise.
 name: TalkType
 slug: talktype-extension
 app_type: chrome-extension
-audience: people who talk faster than they type and want cleaner transcription
-problem: 'most transcription tools feel cold, slow, or built like subscription bait'
-promise: Six transcription styles with personality (see below)
-cta: Reply if you want the link.
+audience: people who talk faster than they type and are done with subscription dictation apps
+problem: 'dictation tools are either locked to one app, cold and corporate, or a monthly bill for something your browser can do'
+promise: Talk into any text box on the web. Cloud, live, or fully offline — your choice, your key, no account.
+cta: Install it, click the ghost, say hello.
 differentiators:
-  - Inserts text at cursor position without overwriting what's already there
-  - Glass morphism UI that adapts to light and dark mode
+  - Three engines in one extension — Gemini cloud, Deepgram live streaming, or Whisper running fully offline in Chrome
+  - No backend at all. Your key, stored locally, sent only to the provider you picked
+  - Inserts at the cursor without overwriting what's there; works in Gmail, Notion, Slack, Discord, rich editors
+  - Six personality styles — Surly Pirate, Quill & Ink, Code Whisperer…
 proof_points:
-  - >-
-    Adds a mic button to any text input on any website (including
-    contenteditable fields)
-  - Records audio and transcribes via Google Gemini 3.1 Flash-Lite Preview
-  - Inserts text at cursor position without overwriting what's already there
-  - Auto-copies transcription to clipboard
+  - Keyboard shortcut works on tabs that were open before install (injects on demand)
+  - Private mode never sends audio anywhere; one ~96MB download then offline forever
+  - Live mode signup includes ~$200 of Deepgram credit, roughly 400 hours of dictation
 objections:
-  - 'Still wants a human pass on audience, proof, and the sharpest angle.'
+  - 'Bring-your-own-key is a hurdle for non-technical folks — the onboarding tour and Private mode (no key) are the answer'
 keywords:
   seed:
     - TalkType
     - talktype extension
-    - chrome extension
+    - chrome extension voice to text
+    - offline dictation chrome
   audience: people who talk faster than they type and want cleaner transcription
   intent:
-    - launch faster
-    - clearer first draft
-manual_notes:
-  - Edit this aggressively. Keep only the lines that feel native to the app.
+    - dictate into gmail
+    - voice typing chrome extension
+    - offline speech to text browser
