@@ -60,7 +60,7 @@ src/
   gemini-service.js    Gemini backend (background-only — holds the API key)
   deepgram-live.js     Deepgram live WebSocket bridge + prerecorded fallback (background-only)
   offscreen.html/js    Offline Whisper engine (transformers.js in an offscreen doc)
-  vendor/              Vendored transformers.js + ONNX runtime WASM: asyncify build (used) + plain build (ort's own fallback)
+  vendor/              Vendored transformers.js + the one ONNX runtime WASM build offscreen.js uses
   content.js           Mic buttons, text insertion, in-page toasts
   api-service.js       Page-side client: audio prep + message to background
   live-service.js      Page-side live session: mic chunks over a Port

@@ -68,10 +68,9 @@ function configureEnv() {
       wasm: chrome.runtime.getURL('vendor/ort-wasm-simd-threaded.asyncify.wasm'),
       mjs: chrome.runtime.getURL('vendor/ort-wasm-simd-threaded.asyncify.mjs')
     };
-    // If the asyncify override ever fails to import under extension CSP,
-    // delete the wasmPaths override above — ort then falls back to the
-    // vendored plain ort-wasm-simd-threaded pair next to the bundle. (The
-    // jsep/WebGPU build is not shipped: nothing references it.)
+    // Only the asyncify build ships. The plain and jsep builds ort would
+    // otherwise resolve are unreachable with this override in place, so they
+    // were dropped to keep the package small. Re-vendor them if you remove it.
     wasmBackend.numThreads = 1;
   }
 
