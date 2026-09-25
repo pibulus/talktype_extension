@@ -60,7 +60,7 @@ src/
   gemini-service.js    Gemini backend (background-only — holds the API key)
   deepgram-live.js     Deepgram live WebSocket bridge + prerecorded fallback (background-only)
   offscreen.html/js    Offline Whisper engine (transformers.js in an offscreen doc)
-  vendor/              Vendored transformers.js + ONNX runtime WASM (no build step)
+  vendor/              Vendored transformers.js + ONNX runtime WASM: asyncify build (used) + plain build (ort's own fallback)
   content.js           Mic buttons, text insertion, in-page toasts
   api-service.js       Page-side client: audio prep + message to background
   live-service.js      Page-side live session: mic chunks over a Port
@@ -96,7 +96,8 @@ No build step. No bundler. Vanilla JS all the way through.
 
 - Load `src` unpacked and iterate; there's no build
 - `./scripts/package.sh` produces `dist/talktype-extension-<version>.zip`
-- No automated test suite yet; validation is manual in Chrome (the smoke path: install → onboarding → key → try-it box → a real site → Alt+Shift+D → popup insert)
+- `node scripts/e2e.mjs` drives the extension in headless Chromium with a fake mic and a stubbed provider: shortcut start/stop, Esc discard, inline mic click, popup insert. Needs Playwright.
+- The providers themselves (Gemini, Deepgram, the offline model download) still need a manual pass in real Chrome with a real key
 
 ## License
 

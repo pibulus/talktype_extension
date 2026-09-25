@@ -75,7 +75,7 @@ https://talktype.app
 - Authentication information — *the user's own API keys, stored locally only.*
 - Website content — *text is inserted into text fields; page content is not collected.*
 
-**Privacy policy URL:** `https://talktype.app/extension/privacy` — publish the contents of `PRIVACY.md` there before submitting.
+**Privacy policy URL:** `https://talktype.app/extension/privacy` — publish the contents of `PRIVACY.md` there. Until that page is live, the store accepts the GitHub-rendered copy: `https://github.com/pibulus/talktype_extension/blob/main/PRIVACY.md`.
 
 ## Distribution
 
@@ -85,7 +85,7 @@ https://talktype.app
 
 ## Pre-flight checklist
 
-- [ ] `PRIVACY.md` is live at talktype.app/extension/privacy
+- [ ] `PRIVACY.md` is live at talktype.app/extension/privacy (or use the GitHub URL above for the first submission)
 - [ ] talktype.app/extension links to the Web Store listing (replace the manual zip once approved)
 - [ ] Fresh-profile test of the zip: install → onboarding opens → paste key → mic on a real site → Alt+Shift+D works
 - [ ] Test on a tab that was open *before* install: shortcut injects and works
