@@ -4,7 +4,7 @@ Talk into any text box on the web. Click the ghost, say your thing, done.
 
 TalkType is a Chrome extension that drops a mic button next to every text field it finds — Gmail, Slack, Notion, Discord, Reddit, ChatGPT, whatever. Hit record, speak, and the words land right where your cursor is. No overwriting, no account, no server in the middle.
 
-<img src="src/icons/ghost/ghost-128.png" width="96" alt="TalkType ghost">
+<img src="store/screenshot-1-inline.png" width="800" alt="A mail compose window with the TalkType ghost button beside each text field and a listening toast in the corner.">
 
 ## Four engines, your call
 
@@ -43,7 +43,7 @@ Keys live only in Chrome's local storage on your device and are sent only to the
 
 ## Install
 
-**From the Chrome Web Store:** coming soon — see [talktype.app](https://talktype.app).
+**From the Chrome Web Store:** coming soon — see [talktype.app/extension](https://talktype.app/extension).
 
 **From source:**
 
@@ -77,7 +77,7 @@ src/
   styles.css           Injected styles for the mic button
   icons/ghost/         Toolbar + store icons
 scripts/package.sh     Zip src/ for the Web Store
-store/                 Promo tile + screenshots
+store/                 Store screenshots, promo tiles, OG image, website kit
 PRIVACY.md             Privacy policy text for talktype.app/extension/privacy
 CHROME_WEB_STORE.md    Listing copy, permission justifications, submission checklist
 ```
@@ -97,6 +97,7 @@ No build step. No bundler. Vanilla JS all the way through.
 
 - Load `src` unpacked and iterate; there's no build
 - `./scripts/package.sh` produces `dist/talktype-extension-<version>.zip`
+- `node scripts/screenshots.mjs` regenerates every image in `store/` from the live UI (needs Playwright)
 - `node scripts/e2e.mjs` drives the extension in headless Chromium with a fake mic and a stubbed provider: shortcut start/stop, Esc discard, inline mic click, popup insert. Needs Playwright.
 - The providers themselves (Gemini, Deepgram, the offline model download) still need a manual pass in real Chrome with a real key
 

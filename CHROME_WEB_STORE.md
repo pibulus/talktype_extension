@@ -49,8 +49,16 @@ https://talktype.app
 ```
 
 **Icon:** `src/icons/ghost/ghost-128.png`
-**Small promo tile (440×280):** `store/promo-small-440x280.png`
-**Screenshots (1280×800):** `store/screenshot-*.png` — regenerate with `node scripts/screenshots.mjs` (see below).
+**Small promo tile (440×280):** `store/promo-small.png`
+**Marquee promo tile (1400×560):** `store/promo-marquee.png`
+**Screenshots (1280×800), in this order:**
+1. `store/screenshot-1-inline.png` — Talk into any text box
+2. `store/screenshot-2-popup.png` — One button
+3. `store/screenshot-3-engines.png` — Four engines
+4. `store/screenshot-4-styles.png` — Six personalities
+5. `store/screenshot-5-private.png` — No account, no server
+
+Regenerate everything with `node scripts/screenshots.mjs`. Web assets (OG image, GitHub social preview, meta tags, landing copy) are in `store/WEBSITE_KIT.md`.
 
 ## Privacy tab
 
