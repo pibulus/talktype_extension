@@ -7,22 +7,15 @@
   <link rel="icon" href="icons/ghost/ghost-32.png">
   <link rel="stylesheet" href="brand.css">
   <style>
-    .style-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
-    .style-option { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer;
-      background: rgba(255,255,255,0.7); border: 2px solid var(--glass-border); transition: border-color .15s, background .15s; }
-    .style-option:hover { background: #fff; }
-    .style-option.selected { border-color: var(--pink); background: #fff; }
-    .style-option input { accent-color: var(--pink); width: 18px; height: 18px; margin: 0; flex: 0 0 auto; }
-    .style-option .style-name { font-weight: 700; font-size: 14px; }
-    .style-option .style-blurb { font-size: 12.5px; color: var(--ink-soft); }
-    .card.muted { opacity: 0.6; }
+    .card.muted { opacity: 0.55; }
+    #custom-style { margin-top: 12px; display: none; }
     .links { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="brand-row">
-      <span class="brand-mark"><img src="icons/ghost/ghost-128.png" alt=""></span>
+      <span class="brand-mark"><img src="icons/ghost/ghost-128.png" alt="" data-vibe-ghost="128"></span>
       <div>
         <h1>TalkType Settings</h1>
         <p class="tagline">Everything saves as you change it. No save buttons, no drama.</p>
@@ -37,10 +30,27 @@
       <div id="offline-model" style="margin-top: 16px; display: none;"></div>
     </section>
 
+    <section class="card">
+      <h2>Vibe</h2>
+      <p>What colour is your ghost? Changes the mic button, the popup and the toolbar icon.</p>
+      <div id="vibe-picker"></div>
+    </section>
+
     <section class="card" id="style-card">
-      <h2>Style</h2>
+      <h2>Output style</h2>
       <p id="style-note">Pick a voice. Cloud only — Live and Private always give you the clean version.</p>
-      <div class="style-grid" id="style-grid"></div>
+      <div class="tile-grid" id="style-grid"></div>
+      <div id="custom-style">
+        <label for="custom-prompt">Your instructions</label>
+        <textarea id="custom-prompt" rows="3" data-talktype-ignore placeholder="e.g. Translate into Spanish. / Make it a haiku. / Bullet points, no fluff."></textarea>
+        <div class="field-note" id="custom-note">Applied after transcription. Keep it short and bossy.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Your words</h2>
+      <p>Names, brands, slang — anything the models keep getting wrong.</p>
+      <div id="words"></div>
     </section>
 
     <section class="card">

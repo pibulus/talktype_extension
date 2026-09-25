@@ -106,8 +106,36 @@ function cleanTranscriptionText(text) {
   return cleaned;
 }
 
-async function transcribeWithModel(modelId, apiKey, audioBase64, mimeType, style) {
-  const prompt = TRANSCRIPTION_PROMPTS[style] || TRANSCRIPTION_PROMPTS.standard;
+// Build the prompt: base style (or the user's own BYO instructions), plus
+// any custom vocabulary so names and brands come out spelled their way.
+function buildPrompt(style, { customStylePrompt = '', customVocabulary = '' } = {}) {
+  let prompt;
+  if (style === 'custom' && customStylePrompt.trim()) {
+    prompt =
+      'Transcribe the speech in this audio accurately, then apply these instructions to the result: ' +
+      customStylePrompt.trim() +
+      ' Return only the final text with no preamble, labels, markdown, or commentary.';
+  } else {
+    prompt = TRANSCRIPTION_PROMPTS[style] || TRANSCRIPTION_PROMPTS.standard;
+  }
+
+  const words = parseVocabulary(customVocabulary);
+  if (words.length) {
+    prompt += ` The speaker may use these names and terms; spell them exactly like this when they occur: ${words.join(', ')}.`;
+  }
+  return prompt;
+}
+
+function parseVocabulary(text) {
+  return String(text || '')
+    .split(/[\n,]/)
+    .map((w) => w.trim())
+    .filter((w) => w.length > 0 && w.length <= 60)
+    .slice(0, 100);
+}
+
+async function transcribeWithModel(modelId, apiKey, audioBase64, mimeType, style, extras) {
+  const prompt = buildPrompt(style, extras);
 
   const response = await fetch(getGenerateEndpoint(modelId), {
     method: 'POST',
@@ -171,10 +199,12 @@ async function transcribe({ audioBase64, mimeType, style = 'standard' }) {
     throw new Error('No audio received for transcription.');
   }
 
+  const extras = await chrome.storage.sync.get({ customStylePrompt: '', customVocabulary: '' });
+
   let lastError = null;
   for (const [index, modelId] of GEMINI_TRANSCRIPTION_MODELS.entries()) {
     try {
-      return await transcribeWithModel(modelId, apiKey, audioBase64, mimeType, style);
+      return await transcribeWithModel(modelId, apiKey, audioBase64, mimeType, style, extras);
     } catch (error) {
       lastError = error;
       if (error.status === 429) {
@@ -190,4 +220,4 @@ async function transcribe({ audioBase64, mimeType, style = 'standard' }) {
   throw lastError || new Error('Transcription failed.');
 }
 
-globalThis.TalkTypeGemini = { transcribe };
+globalThis.TalkTypeGemini = { transcribe, parseVocabulary };

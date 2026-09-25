@@ -31,6 +31,8 @@ THREE WAYS TO TRANSCRIBE — YOU PICK
 🔒 Private — a Whisper model runs inside Chrome. One-time model download, then your voice never leaves your machine. No key, no internet needed.
 
 BUILT TO STAY OUT OF YOUR WAY
+• Teach it your words — names, brands, slang — spelled your way
+• BYO style: your own instructions applied after transcription
 • Inserts at the cursor without overwriting what's already there
 • Auto-copies every transcript to your clipboard as a backup
 • Keyboard shortcut (Alt+Shift+D by default) starts and stops dictation in the focused field; Esc discards

@@ -7,7 +7,13 @@ const DEEPGRAM_LIVE_URL = 'wss://api.deepgram.com/v1/listen';
 const KEEPALIVE_INTERVAL_MS = 8000; // Deepgram closes idle sockets after ~10s
 const MAX_BUFFERED_AUDIO_CHUNKS = 120; // ~30s of 250ms chunks awaiting socket open
 
-function buildDeepgramLiveUrl() {
+// nova-3 keyterm prompting: the user's own words, spelled their way
+function appendKeyterms(params, customVocabulary) {
+  globalThis.TalkTypeGemini.parseVocabulary(customVocabulary).forEach((word) => params.append('keyterm', word));
+  return params;
+}
+
+function buildDeepgramLiveUrl(customVocabulary = '') {
   const params = new URLSearchParams({
     model: 'nova-3',
     language: 'en-US',
@@ -22,6 +28,7 @@ function buildDeepgramLiveUrl() {
     numerals: 'true',
     filler_words: 'false'
   });
+  appendKeyterms(params, customVocabulary);
 
   return `${DEEPGRAM_LIVE_URL}?${params.toString()}`;
 }
@@ -77,9 +84,10 @@ chrome.runtime.onConnect.addListener((port) => {
         });
         return;
       }
+      const { customVocabulary } = await chrome.storage.sync.get({ customVocabulary: '' });
 
       try {
-        socket = new WebSocket(buildDeepgramLiveUrl(), ['token', apiKey]);
+        socket = new WebSocket(buildDeepgramLiveUrl(customVocabulary), ['token', apiKey]);
       } catch (e) {
         post({ type: 'error', message: 'Could not open the live transcription connection.' });
         return;
@@ -180,14 +188,18 @@ async function transcribePrerecorded({ audioBase64, mimeType }) {
     throw new Error('No audio received for transcription.');
   }
 
-  const params = new URLSearchParams({
-    model: 'nova-3',
-    language: 'en-US',
-    smart_format: 'true',
-    punctuate: 'true',
-    numerals: 'true',
-    filler_words: 'false'
-  });
+  const { customVocabulary } = await chrome.storage.sync.get({ customVocabulary: '' });
+  const params = appendKeyterms(
+    new URLSearchParams({
+      model: 'nova-3',
+      language: 'en-US',
+      smart_format: 'true',
+      punctuate: 'true',
+      numerals: 'true',
+      filler_words: 'false'
+    }),
+    customVocabulary
+  );
 
   const response = await fetch(`${DEEPGRAM_PRERECORDED_URL}?${params.toString()}`, {
     method: 'POST',

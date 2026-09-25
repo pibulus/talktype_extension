@@ -9,31 +9,54 @@
     { id: 'leetSpeak', name: 'L33t Sp34k', blurb: 'Y0ur w0rd5 1n h4ck3r sp34k.' },
     { id: 'sparklePop', name: 'Sparkle Pop', blurb: 'OMG so bubbly!!! Emojis everywhere!!!' },
     { id: 'codeWhisperer', name: 'Code Whisperer', blurb: 'Rambling in, tidy technical prompt out.' },
-    { id: 'quillAndInk', name: 'Quill & Ink', blurb: 'Victorian prose, dear reader.' }
+    { id: 'quillAndInk', name: 'Quill & Ink', blurb: 'Victorian prose, dear reader.' },
+    { id: 'custom', name: 'BYO', blurb: 'Your own instructions.' }
   ];
 
   async function mountStyles() {
     const grid = document.getElementById('style-grid');
     const { transcriptionStyle } = await chrome.storage.sync.get({ transcriptionStyle: 'standard' });
 
+    const customBox = document.getElementById('custom-style');
+    const reflect = (id) => {
+      customBox.style.display = id === 'custom' ? 'block' : 'none';
+    };
+
     const options = STYLES.map((style) => {
       const input = S.el('input', { type: 'radio', name: 'style', value: style.id });
       input.checked = style.id === transcriptionStyle;
-      const option = S.el('label', { class: `style-option${input.checked ? ' selected' : ''}` }, [
+      const option = S.el('label', { class: `tile${input.checked ? ' selected' : ''}` }, [
         input,
-        S.el('div', {}, [
-          S.el('div', { class: 'style-name', text: style.name }),
-          S.el('div', { class: 'style-blurb', text: style.blurb })
-        ])
+        S.el('span', { class: 'tile-check', text: '✓' }),
+        S.el('div', { class: 'tile-name', text: style.name }),
+        S.el('div', { class: 'tile-blurb', text: style.blurb })
       ]);
       input.addEventListener('change', async () => {
         if (!input.checked) return;
         options.forEach((o) => o.classList.toggle('selected', o === option));
+        reflect(style.id);
         await chrome.storage.sync.set({ transcriptionStyle: style.id });
         S.toast(`Style: ${style.name}`);
       });
       grid.appendChild(option);
       return option;
+    });
+    reflect(transcriptionStyle);
+
+    const prompt = document.getElementById('custom-prompt');
+    const note = document.getElementById('custom-note');
+    const { customStylePrompt } = await chrome.storage.sync.get({ customStylePrompt: '' });
+    prompt.value = customStylePrompt || '';
+    let timer = null;
+    prompt.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await chrome.storage.sync.set({ customStylePrompt: prompt.value.trim().slice(0, 1000) });
+        note.textContent = 'Saved.';
+        setTimeout(() => {
+          note.textContent = 'Applied after transcription. Keep it short and bossy.';
+        }, 1500);
+      }, 500);
     });
   }
 
@@ -85,6 +108,8 @@
   document.addEventListener('DOMContentLoaded', async () => {
     await mountStyles();
     await S.mountEnginePicker(document.getElementById('engine-picker'), { onChange: reflectEngine });
+    S.mountVibePicker(document.getElementById('vibe-picker'));
+    S.mountWords(document.getElementById('words'));
     S.mountShortcut(document.getElementById('shortcut'));
     S.mountMicTest(document.getElementById('mic-test'));
     mountToggles();
