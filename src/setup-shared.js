@@ -7,10 +7,17 @@
   const GEMINI_KEY_URL = 'https://aistudio.google.com/app/apikey';
   const DEEPGRAM_KEY_URL = 'https://console.deepgram.com/signup';
 
+  const ICONS = {
+    cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .6-8.96A6.5 6.5 0 0 0 5.6 8.9 4.5 4.5 0 0 0 6.5 19z"/></svg>',
+    live: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+    offline: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+    mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg>'
+  };
+
   const ENGINES = [
     {
       id: 'cloud',
-      emoji: '☁️',
+      emoji: 'cloud',
       name: 'Cloud',
       blurb: 'Gemini transcribes after you stop. Six personality styles.',
       cost: 'Free Gemini key',
@@ -20,7 +27,7 @@
     },
     {
       id: 'live',
-      emoji: '⚡',
+      emoji: 'live',
       name: 'Live',
       blurb: 'Deepgram streams words into the field while you talk.',
       cost: '$200 free credit',
@@ -30,7 +37,7 @@
     },
     {
       id: 'offline',
-      emoji: '🔒',
+      emoji: 'offline',
       name: 'Private',
       blurb: 'Whisper runs inside Chrome. Audio never leaves your machine.',
       cost: 'Free · no key · offline',
@@ -39,6 +46,13 @@
   ];
 
   const engineById = (id) => ENGINES.find((e) => e.id === id) || ENGINES[0];
+
+  function icon(name) {
+    const span = document.createElement('span');
+    span.className = 'engine-emoji';
+    span.innerHTML = ICONS[name] || '';
+    return span;
+  }
 
   function el(tag, attrs = {}, children = []) {
     const node = document.createElement(tag);
@@ -78,7 +92,7 @@
       const card = el('label', { class: 'engine-card' }, [
         input,
         el('span', { class: 'engine-check', text: '✓' }),
-        el('div', { class: 'engine-emoji', text: engine.emoji }),
+        icon(engine.emoji),
         el('div', { class: 'engine-name', text: engine.name }),
         el('div', { class: 'engine-blurb', text: engine.blurb }),
         el('div', { class: 'engine-cost', text: engine.cost })
@@ -88,7 +102,7 @@
         current = engine.id;
         cards.forEach((c) => c.classList.toggle('selected', c === card));
         await chrome.storage.sync.set({ transcriptionEngine: engine.id });
-        toast(`${engine.emoji} ${engine.name} engine saved`);
+        toast(`${engine.name} engine saved`);
         if (onChange) onChange(engine.id);
       });
       grid.appendChild(card);
@@ -306,7 +320,8 @@
   // ---------------------------------------------------------------
   function mountMicTest(container) {
     container.textContent = '';
-    const button = el('button', { type: 'button', text: '🎙 Test microphone' });
+    const button = el('button', { type: 'button', class: 'icon-btn' }, [icon('mic'), 'Test microphone']);
+    button.querySelector('.engine-emoji').removeAttribute('class');
     const status = el('div', { class: 'status' });
     const show = (text, kind) => {
       status.textContent = text;
@@ -351,6 +366,8 @@
 
   window.TalkTypeSetup = {
     ENGINES,
+    ICONS,
+    icon,
     engineById,
     el,
     toast,

@@ -27,10 +27,9 @@
       input.checked = style.id === transcriptionStyle;
       const option = S.el('label', { class: `style-option${input.checked ? ' selected' : ''}` }, [
         input,
-        S.el('div', {}, [
-          S.el('div', { class: 'style-name', text: style.name }),
-          S.el('div', { class: 'style-blurb', text: style.blurb })
-        ])
+        S.el('span', { class: 'engine-check', text: '✓' }),
+        S.el('div', { class: 'style-name', text: style.name }),
+        S.el('div', { class: 'style-blurb', text: style.blurb })
       ]);
       input.addEventListener('change', async () => {
         if (!input.checked) return;

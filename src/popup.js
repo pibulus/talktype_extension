@@ -4,7 +4,7 @@
 
 (function () {
   const MAX_RECORDING_MS = 2 * 60 * 1000;
-  const ENGINE_LABELS = { cloud: '☁️ Cloud', live: '⚡ Live', offline: '🔒 Private' };
+  const ENGINE_LABELS = { cloud: 'Cloud', live: 'Live', offline: 'Private' };
   const KEY_URLS = {
     cloud: 'https://aistudio.google.com/app/apikey',
     live: 'https://console.deepgram.com/signup'

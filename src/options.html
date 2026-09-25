@@ -7,17 +7,9 @@
   <link rel="icon" href="icons/ghost/ghost-32.png">
   <link rel="stylesheet" href="brand.css">
   <style>
-    .style-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
-    .style-option { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer;
-      background: rgba(255,255,255,0.7); border: 2px solid var(--glass-border); transition: border-color .15s, background .15s; }
-    .style-option:hover { background: #fff; }
-    .style-option.selected { border-color: var(--pink); background: #fff; }
-    .style-option input { accent-color: var(--pink); width: 18px; height: 18px; margin: 0; flex: 0 0 auto; }
-    .style-option .style-name { font-weight: 700; font-size: 14px; }
-    .style-option .style-blurb { font-size: 12.5px; color: var(--ink-soft); }
-    .card.muted { opacity: 0.6; }
+    .section.muted { opacity: 0.55; }
     #custom-style { margin-top: 12px; display: none; }
-    .links { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
+    .brand-row { margin-bottom: 6px; }
   </style>
 </head>
 <body>
@@ -30,68 +22,70 @@
       </div>
     </div>
 
-    <section class="card">
-      <h2>Engine</h2>
-      <p>How should your voice become text?</p>
-      <div id="engine-picker"></div>
-      <div id="key-field" style="margin-top: 16px;"></div>
-      <div id="offline-model" style="margin-top: 16px; display: none;"></div>
-    </section>
-
-    <section class="card" id="style-card">
-      <h2>Style</h2>
-      <p id="style-note">Pick a voice. Cloud only — Live and Private always give you the clean version.</p>
-      <div class="style-grid" id="style-grid"></div>
-      <div id="custom-style">
-        <textarea id="custom-prompt" rows="2" data-talktype-ignore placeholder="Your instructions — e.g. translate into Spanish, or bullet points only"></textarea>
-        <div class="field-note" id="custom-note">Applied after transcription. Short and bossy works best.</div>
+    <div class="card panel">
+      <div class="section">
+        <div class="kicker">Engine</div>
+        <p>How should your voice become text?</p>
+        <div id="engine-picker"></div>
+        <div id="key-field" style="margin-top: 16px;"></div>
+        <div id="offline-model" style="margin-top: 16px; display: none;"></div>
       </div>
-    </section>
 
-    <section class="card">
-      <h2>Your words</h2>
-      <p>Names, brands, slang — anything the models keep getting wrong. Spelled your way, every time.</p>
-      <div id="words"></div>
-    </section>
-
-    <section class="card">
-      <h2>Keyboard</h2>
-      <div id="shortcut"></div>
-    </section>
-
-    <section class="card">
-      <h2>Extras</h2>
-      <div class="toggle-row">
-        <label for="smartMode">Insert into the field you clicked<small>When you record from the toolbar popup, drop the text where your cursor was. Off = clipboard only.</small></label>
-        <input type="checkbox" id="smartMode">
+      <div class="section" id="style-card">
+        <div class="kicker">Output style</div>
+        <p id="style-note">Pick a voice. Cloud only — Live and Private always give you the clean version.</p>
+        <div class="style-grid" id="style-grid"></div>
+        <div id="custom-style">
+          <textarea id="custom-prompt" rows="2" data-talktype-ignore placeholder="Your instructions — e.g. translate into Spanish, or bullet points only"></textarea>
+          <div class="field-note" id="custom-note">Applied after transcription. Short and bossy works best.</div>
+        </div>
       </div>
-      <div class="toggle-row">
-        <label for="soundEffects">Sound chirps<small>Little tones on start, stop and success.</small></label>
-        <input type="checkbox" id="soundEffects">
-      </div>
-      <div class="toggle-row">
-        <label for="historyEnabled">Keep recent transcripts<small>Last 20, only on this device, clearable from the popup.</small></label>
-        <input type="checkbox" id="historyEnabled">
-      </div>
-    </section>
 
-    <section class="card">
-      <h2>Microphone</h2>
-      <p>Chrome asks for the mic per site the first time you dictate there. This just checks your hardware and Chrome's own permission for TalkType.</p>
-      <div id="mic-test"></div>
-    </section>
-
-    <section class="card">
-      <h2>About</h2>
-      <p>No account, no analytics, no server in the middle. Your mic, your key, your words.</p>
-      <div class="links">
-        <a href="https://talktype.app" target="_blank" rel="noopener">talktype.app ↗</a>
-        <a href="https://talktype.app/extension/privacy" target="_blank" rel="noopener">Privacy ↗</a>
-        <a href="https://github.com/pibulus/talktype_extension" target="_blank" rel="noopener">Source ↗</a>
-        <a href="#" id="show-tour">Show the welcome tour</a>
+      <div class="section">
+        <div class="kicker">Your words</div>
+        <p>Names, brands, slang — anything the models keep getting wrong. Spelled your way, every time.</p>
+        <div id="words"></div>
       </div>
-      <p class="field-note" style="margin-top: 12px;">TalkType <span id="version"></span> · Made by Pablo. Talk easy.</p>
-    </section>
+
+      <div class="section">
+        <div class="kicker">Keyboard</div>
+        <div id="shortcut"></div>
+      </div>
+
+      <div class="section">
+        <div class="kicker">Extras</div>
+        <div class="toggle-row">
+          <label for="smartMode">Insert into the field you clicked<small>Recording from the popup drops text where your cursor was. Off = clipboard only.</small></label>
+          <span class="switch"><input type="checkbox" id="smartMode"><span class="knob"></span></span>
+        </div>
+        <div class="toggle-row">
+          <label for="soundEffects">Sound chirps<small>Little tones on start, stop and success.</small></label>
+          <span class="switch"><input type="checkbox" id="soundEffects"><span class="knob"></span></span>
+        </div>
+        <div class="toggle-row">
+          <label for="historyEnabled">Keep recent transcripts<small>Last 20, only on this device, clearable from the popup.</small></label>
+          <span class="switch"><input type="checkbox" id="historyEnabled"><span class="knob"></span></span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="kicker">Microphone</div>
+        <p>Chrome asks per site the first time you dictate there. This checks your hardware and Chrome's own permission for TalkType.</p>
+        <div id="mic-test"></div>
+      </div>
+
+      <div class="section">
+        <div class="kicker">About</div>
+        <p>No account, no analytics, no server in the middle. Your mic, your key, your words.</p>
+        <div class="links">
+          <a href="https://talktype.app" target="_blank" rel="noopener">talktype.app ↗</a>
+          <a href="https://talktype.app/extension/privacy" target="_blank" rel="noopener">Privacy ↗</a>
+          <a href="https://github.com/pibulus/talktype_extension" target="_blank" rel="noopener">Source ↗</a>
+          <a href="#" id="show-tour">Show the welcome tour</a>
+        </div>
+        <p class="field-note" style="margin: 12px 0 0;">TalkType <span id="version"></span> · Made by Pablo. Talk easy.</p>
+      </div>
+    </div>
   </div>
 
   <script src="storage-service.js"></script>
