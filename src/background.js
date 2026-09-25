@@ -8,10 +8,12 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   await globalThis.TalkTypeStorage.migrateApiKeyToLocal();
 
   if (details.reason === 'install') {
+    // Quick (Chrome's built-in recognition) needs no key, so a fresh install
+    // works before anyone reads a word of the tour.
     await chrome.storage.sync.set({
       smartModeEnabled: true,
       transcriptionStyle: 'standard',
-      transcriptionEngine: 'cloud'
+      transcriptionEngine: 'browser'
     });
 
     chrome.tabs.create({ url: chrome.runtime.getURL(ONBOARDING_URL) });
@@ -140,6 +142,10 @@ async function routeTranscription(message) {
     return response.text;
   }
 
+  if (transcriptionEngine === 'browser') {
+    throw new Error('The Quick engine transcribes in the page itself. Switch engines in settings to use batch transcription.');
+  }
+
   if (transcriptionEngine === 'live') {
     // Batch requests (the popup, or a page where streaming isn't possible)
     // still use the Deepgram key, via its prerecorded endpoint — so the Live
@@ -203,6 +209,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(([geminiKey, deepgramKey, { transcriptionEngine }, shortcut]) => {
         const engine = transcriptionEngine || 'cloud';
         const engineReady =
+          engine === 'browser' ||
           engine === 'offline' ||
           (engine === 'live' && Boolean(deepgramKey)) ||
           (engine === 'cloud' && Boolean(geminiKey));

@@ -6,10 +6,11 @@ TalkType is a Chrome extension that drops a mic button next to every text field 
 
 <img src="src/icons/ghost/ghost-128.png" width="96" alt="TalkType ghost">
 
-## Three engines, your call
+## Four engines, your call
 
 | Engine | What happens | What it costs you |
 |---|---|---|
+| ⚡ **Quick** | Chrome's built-in recognition. Zero setup, the install default. Chrome sends audio to Google. | Nothing |
 | ☁️ **Cloud** | Gemini transcribes after you stop. Six personality styles. | A free Gemini API key |
 | ⚡ **Live** | Deepgram streams words into the field while you talk. | A Deepgram key (signup comes with ~$200 credit, roughly 400 hours) |
 | 🔒 **Private** | Whisper runs inside Chrome. Audio never leaves your machine. | Nothing. One ~96MB model download, then fully offline. |
@@ -49,7 +50,7 @@ Keys live only in Chrome's local storage on your device and are sent only to the
 1. Clone this repo (or grab the zip from [talktype.app/downloads/talktype-extension.zip](https://talktype.app/downloads/talktype-extension.zip))
 2. Open `chrome://extensions/`, toggle **Developer mode**
 3. **Load unpacked** → select the `src` folder
-4. The welcome tour opens. Pick an engine, paste a key (or choose Private), say hello in the try-it box.
+4. The welcome tour opens. It already works (Quick engine). Paste a Gemini key for the styles, or choose Private to keep audio on-device. Say hello in the try-it box.
 
 ## Project structure
 

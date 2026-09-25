@@ -1199,7 +1199,11 @@ async function cancelRecording() {
     maxRecordingTimer = null;
   }
 
-  if (liveSession) {
+  if (quickSession) {
+    const current = quickSession;
+    quickSession = null;
+    current.cancel();
+  } else if (liveSession) {
     const current = liveSession;
     liveSession = null;
     try {
@@ -1218,6 +1222,212 @@ async function cancelRecording() {
   resetRecordingIndicators();
   window.TalkTypeSounds?.play('stop');
   showStatusNotification('Recording discarded', 'info');
+}
+
+// ===================================================================
+// QUICK ENGINE — Chrome's built-in SpeechRecognition. Zero setup, no key.
+// Chrome streams the audio to Google's speech service; clean text only.
+// ===================================================================
+
+let quickSession = null;
+
+function getSpeechRecognitionCtor() {
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+async function startQuickRecording(targetInput, indicator) {
+  if (isRecording) return;
+
+  const Recognition = getSpeechRecognitionCtor();
+  if (!Recognition) {
+    resetRecordingIndicators();
+    showStatusNotification('This browser has no built-in speech recognition. Pick another engine.', 'error', {
+      action: { label: 'Open settings', onClick: () => chrome.runtime.sendMessage({ action: 'openOptions' }) }
+    });
+    return;
+  }
+
+  isRecording = true;
+  activeInput = targetInput;
+
+  if (indicator) {
+    indicator.style.display = 'block';
+    indicator.classList.add('pulse-animation');
+  }
+
+  const notification = showStatusNotification('Listening — words land as you talk', 'recording', {
+    hint: stopHint(),
+    caption: '…',
+    action: { label: 'Done', onClick: () => stopRecording() }
+  });
+  const updateInterim = (text) => {
+    const captionEl = notification?.querySelector('.talktype-notification-caption');
+    if (captionEl && text) {
+      captionEl.textContent = text.length > 140 ? '…' + text.slice(-140) : text;
+    }
+  };
+
+  let fullTranscript = '';
+  let stopping = false;
+  let started = false;
+  let resolveEnded = null;
+
+  const rec = new Recognition();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
+  rec.lang = navigator.language || 'en-US';
+
+  rec.onstart = () => {
+    if (!started) {
+      started = true;
+      window.TalkTypeSounds?.play('start');
+    }
+  };
+
+  rec.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      const result = event.results[i];
+      const text = (result[0]?.transcript || '').trim();
+      if (!text) continue;
+      if (result.isFinal) {
+        fullTranscript = fullTranscript ? `${fullTranscript} ${text}` : text;
+        const target = targetInput.isConnected ? targetInput : getActiveInput();
+        if (target) {
+          try {
+            insertTextIntoInput(target, text + ' ');
+          } catch (e) {
+            debugLog('TalkType: quick insert failed', e);
+          }
+        } else {
+          updateInterim('Text field lost — still listening, your words will be copied at the end');
+        }
+      } else {
+        interim += text + ' ';
+      }
+    }
+    if (interim) updateInterim(interim.trim());
+  };
+
+  rec.onerror = (event) => {
+    // Silence and our own abort are not errors worth a toast
+    if (event.error === 'no-speech' || event.error === 'aborted') return;
+    const message =
+      event.error === 'not-allowed' || event.error === 'service-not-allowed'
+        ? 'Microphone permission needed. Click the lock icon in your address bar and allow microphone access.'
+        : event.error === 'network'
+          ? "Chrome couldn't reach its speech service. Check your connection, or switch engines in settings."
+          : event.error === 'audio-capture'
+            ? 'No microphone found. Plug one in and try again.'
+            : `Speech recognition error: ${event.error}`;
+    window.TalkTypeSounds?.play('error');
+    showStatusNotification(message, 'error');
+    abortQuickSession();
+  };
+
+  rec.onend = () => {
+    if (!quickSession || quickSession.rec !== rec) return;
+    if (stopping) {
+      if (resolveEnded) resolveEnded();
+      return;
+    }
+    // Chrome ends recognition after a pause; keep the session alive until
+    // the user actually stops.
+    if (isRecording) {
+      try {
+        rec.start();
+      } catch (e) {
+        // Already starting — fine.
+      }
+    }
+  };
+
+  quickSession = {
+    rec,
+    targetInput,
+    getTranscript: () => fullTranscript,
+    stop: () =>
+      new Promise((resolve) => {
+        stopping = true;
+        resolveEnded = resolve;
+        setTimeout(resolve, 1500); // Bounded: the final result should flush well within this
+        try {
+          rec.stop();
+        } catch (e) {
+          resolve();
+        }
+      }),
+    cancel: () => {
+      stopping = true;
+      try {
+        rec.abort();
+      } catch (e) {
+        // Already gone.
+      }
+    }
+  };
+
+  try {
+    rec.start();
+    if (maxRecordingTimer) clearTimeout(maxRecordingTimer);
+    maxRecordingTimer = setTimeout(() => {
+      if (isRecording) {
+        showStatusNotification('Recording hit the 5 minute limit — wrapping up', 'info');
+        stopRecording();
+      }
+    }, MAX_RECORDING_MS);
+  } catch (error) {
+    console.error('TalkType: Failed to start quick recognition:', error);
+    showStatusNotification('Could not start speech recognition: ' + error.message, 'error');
+    abortQuickSession();
+  }
+}
+
+function abortQuickSession() {
+  const current = quickSession;
+  quickSession = null;
+  isRecording = false;
+  if (maxRecordingTimer) {
+    clearTimeout(maxRecordingTimer);
+    maxRecordingTimer = null;
+  }
+  if (current) current.cancel();
+  resetRecordingIndicators();
+}
+
+async function finishQuickRecording() {
+  const current = quickSession;
+  if (!current) return;
+
+  window.TalkTypeSounds?.play('stop');
+  showStatusNotification('Finishing up...', 'processing');
+
+  await current.stop();
+  quickSession = null;
+  resetRecordingIndicators();
+
+  const transcript = current.getTranscript();
+  if (transcript) {
+    window.TalkTypeSounds?.play('success');
+    if (current.targetInput && current.targetInput.isConnected) {
+      showStatusNotification('Transcription complete!', 'success');
+    } else {
+      try {
+        await navigator.clipboard.writeText(transcript);
+        showStatusNotification('Text field disappeared — transcript copied to clipboard', 'info');
+      } catch (clipError) {
+        showStatusNotification('Text field disappeared and clipboard copy failed', 'error');
+      }
+    }
+    window.TalkTypeStorage.appendTranscriptToHistory({
+      text: transcript,
+      style: 'standard',
+      host: location.hostname
+    }).catch(() => {});
+  } else {
+    showStatusNotification('No speech detected', 'info');
+  }
 }
 
 // ===================================================================
@@ -1621,10 +1831,14 @@ async function startRecording(targetInput, indicator) {
     return;
   }
 
-  // Live engine takes a completely different path: streaming instead of batch
+  // Live and Quick take completely different paths: streaming instead of batch
   const transcriptionEngine = setup?.engine || 'cloud';
   if (transcriptionEngine === 'live') {
     await startLiveRecording(targetInput, indicator);
+    return;
+  }
+  if (transcriptionEngine === 'browser') {
+    await startQuickRecording(targetInput, indicator);
     return;
   }
 
@@ -1845,7 +2059,11 @@ async function stopRecording() {
     maxRecordingTimer = null;
   }
 
-  // Live engine: flush the remaining finals and wrap up — no batch step
+  // Quick / Live engines: flush the remaining finals and wrap up — no batch step
+  if (quickSession) {
+    await finishQuickRecording();
+    return;
+  }
   if (liveSession) {
     await finishLiveRecording();
     return;

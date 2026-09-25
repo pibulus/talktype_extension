@@ -25,7 +25,8 @@ The zip contains only `src/` (manifest at the root of the zip, as the store requ
 ```
 TalkType puts a tiny mic next to every text box on the web. Click it, say your thing, and the words land right where your cursor is. Gmail, Slack, Notion, Discord, Reddit, ChatGPT, forms, comment boxes — anything you can type in, you can talk into.
 
-THREE WAYS TO TRANSCRIBE — YOU PICK
+FOUR WAYS TO TRANSCRIBE — YOU PICK
+⚡ Quick — Chrome's built-in recognition. Zero setup, works the moment you install. (Chrome sends audio to Google.)
 ☁️ Cloud — Google Gemini transcribes after you stop, with six personality styles (Clean & Accurate, Surly Pirate, L33t Sp34k, Sparkle Pop, Code Whisperer, Quill & Ink). Uses your own free Gemini API key.
 ⚡ Live — Deepgram streams your words into the field while you talk. Uses your own Deepgram key (signup includes ~$200 of free credit).
 🔒 Private — a Whisper model runs inside Chrome. One-time model download, then your voice never leaves your machine. No key, no internet needed.
@@ -71,7 +72,7 @@ https://talktype.app
 **Remote code:** No. All code ships in the package. Model weights for the Private engine are data files downloaded from the Hugging Face hub, not executable code.
 
 **Data usage disclosures (tick):**
-- Audio or voice data — collected? *Yes, transmitted to the user-chosen provider (Google or Deepgram) or processed locally.* Not sold, not used for unrelated purposes, not for creditworthiness.
+- Audio or voice data — collected? *Yes, transmitted to the user-chosen provider (Google via Chrome's speech service, Google Gemini, or Deepgram) or processed locally.* Not sold, not used for unrelated purposes, not for creditworthiness.
 - Authentication information — *the user's own API keys, stored locally only.*
 - Website content — *text is inserted into text fields; page content is not collected.*
 

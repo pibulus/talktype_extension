@@ -7,7 +7,7 @@ problem: 'dictation tools are either locked to one app, cold and corporate, or a
 promise: Talk into any text box on the web. Cloud, live, or fully offline — your choice, your key, no account.
 cta: Install it, click the ghost, say hello.
 differentiators:
-  - Three engines in one extension — Gemini cloud, Deepgram live streaming, or Whisper running fully offline in Chrome
+  - Four engines in one extension — Chrome built-in (zero setup), Gemini cloud, Deepgram live streaming, or Whisper running fully offline
   - No backend at all. Your key, stored locally, sent only to the provider you picked
   - Inserts at the cursor without overwriting what's there; works in Gmail, Notion, Slack, Discord, rich editors
   - Six personality styles — Surly Pirate, Quill & Ink, Code Whisperer…
@@ -16,7 +16,7 @@ proof_points:
   - Private mode never sends audio anywhere; one ~96MB download then offline forever
   - Live mode signup includes ~$200 of Deepgram credit, roughly 400 hours of dictation
 objections:
-  - 'Bring-your-own-key is a hurdle for non-technical folks — the onboarding tour and Private mode (no key) are the answer'
+  - 'Bring-your-own-key is a hurdle for non-technical folks — Quick mode (Chrome built-in, zero setup) is the install default, so keys are opt-in'
 keywords:
   seed:
     - TalkType

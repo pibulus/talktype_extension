@@ -9,12 +9,25 @@
 
   const ICONS = {
     cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .6-8.96A6.5 6.5 0 0 0 5.6 8.9 4.5 4.5 0 0 0 6.5 19z"/></svg>',
-    live: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+    quick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+    live: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h2M7 8v8M11 4v16M15 7v10M19 10v4M21 12h0"/></svg>',
     offline: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
     mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg>'
   };
 
+  const hasBuiltInRecognition = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+
   const ENGINES = [
+    {
+      id: 'browser',
+      emoji: 'quick',
+      name: 'Quick',
+      blurb: "Chrome's built-in recognition. Works the second you install.",
+      cost: hasBuiltInRecognition ? 'Free · no key · Google hears it' : 'Not in this browser',
+      available: hasBuiltInRecognition,
+      keyLabel: null,
+      note: "Nothing to set up. Chrome sends the audio to Google's speech service — pick Private if that matters to you."
+    },
     {
       id: 'cloud',
       emoji: 'cloud',
@@ -41,7 +54,8 @@
       name: 'Private',
       blurb: 'Whisper runs inside Chrome. Audio never leaves your machine.',
       cost: 'Free · no key · offline',
-      keyLabel: null
+      keyLabel: null,
+      note: 'No key needed. Private mode runs a Whisper model inside Chrome.'
     }
   ];
 
@@ -89,7 +103,8 @@
     const grid = el('div', { class: 'engine-grid', role: 'radiogroup', 'aria-label': 'Transcription engine' });
     const cards = ENGINES.map((engine) => {
       const input = el('input', { type: 'radio', name: 'engine', value: engine.id });
-      const card = el('label', { class: 'engine-card' }, [
+      if (engine.available === false) input.disabled = true;
+      const card = el('label', { class: `engine-card${engine.available === false ? ' unavailable' : ''}` }, [
         input,
         el('span', { class: 'engine-check', text: '✓' }),
         icon(engine.emoji),
@@ -160,9 +175,7 @@
     const engine = engineById(engineId);
     container.textContent = '';
     if (!engine.keyLabel) {
-      container.appendChild(
-        el('p', { class: 'field-note', text: 'No key needed. Private mode runs a Whisper model inside Chrome.' })
-      );
+      container.appendChild(el('p', { class: 'field-note', text: engine.note }));
       return;
     }
 

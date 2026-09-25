@@ -4,7 +4,7 @@
   const S = window.TalkTypeSetup;
 
   async function isEngineReady(engineId) {
-    if (engineId === 'offline') return true;
+    if (engineId === 'offline' || engineId === 'browser') return true;
     const key =
       engineId === 'live'
         ? await window.TalkTypeStorage.getDeepgramApiKey()
@@ -20,7 +20,10 @@
 
     S.mountKeyField(keyField, engineId);
 
-    if (engineId === 'offline') {
+    if (engineId === 'browser') {
+      title.textContent = 'Nothing to plug in';
+      offline.style.display = 'none';
+    } else if (engineId === 'offline') {
       title.textContent = 'Nothing to plug in';
       offline.style.display = 'block';
       if (!offline.dataset.mounted) {

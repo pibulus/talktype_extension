@@ -8,6 +8,7 @@ TalkType turns your voice into text inside any text box on the web. It has no ac
 
 - Your microphone is only on while you are recording. You start it, you stop it.
 - Where the audio goes depends on the engine **you** choose:
+  - **Quick** (the default) — Chrome's own speech recognition. Chrome sends the audio to Google's speech service; TalkType never sees it and no key is involved.
   - **Cloud** — audio is sent directly from your browser to Google's Gemini API using **your own** API key.
   - **Live** — audio is streamed directly from your browser to Deepgram using **your own** API key.
   - **Private** — audio never leaves your device. A Whisper model runs inside Chrome.
@@ -18,7 +19,7 @@ TalkType turns your voice into text inside any text box on the web. It has no ac
 
 | Data | Where it goes | Retained? |
 |---|---|---|
-| Microphone audio | Google (Cloud engine), Deepgram (Live engine), or nowhere (Private engine) | Not by TalkType. Provider retention is governed by the provider's own policy. |
+| Microphone audio | Google via Chrome's speech service (Quick engine), Google Gemini with your key (Cloud engine), Deepgram with your key (Live engine), or nowhere (Private engine) | Not by TalkType. Provider retention is governed by the provider's own policy. |
 | Transcribed text | Inserted into the page you are on and copied to your clipboard | Only if you turn on **Keep recent transcripts** (off by default): the last 20 stay in Chrome local storage on your device and can be cleared from the popup. |
 | Gemini / Deepgram API key | Chrome `storage.local` on this device | Until you remove it. Never synced, never sent to TalkType. |
 | Preferences (engine, style, sounds, history toggle, insert toggle, model choice) | Chrome `storage.sync` | Synced by Chrome to your other Chrome profiles if you have Chrome sync on. Contains no keys and no transcripts. |
@@ -26,6 +27,7 @@ TalkType turns your voice into text inside any text box on the web. It has no ac
 
 ## Third parties
 
+- **Google speech service via Chrome** — used by the Quick engine through the browser's Web Speech API. Governed by Google Chrome's privacy policy; TalkType adds nothing to it.
 - **Google Gemini API** (`generativelanguage.googleapis.com`) — used only with the Cloud engine and only with a key you provide. See Google's [Gemini API terms](https://ai.google.dev/gemini-api/terms) and privacy policy.
 - **Deepgram** (`api.deepgram.com`) — used only with the Live engine and only with a key you provide. See Deepgram's privacy policy.
 - **Hugging Face hub** — used only with the Private engine, only to download model weights the first time. No audio is ever sent there.

@@ -4,7 +4,7 @@
 
 (function () {
   const MAX_RECORDING_MS = 2 * 60 * 1000;
-  const ENGINE_LABELS = { cloud: 'Cloud', live: 'Live', offline: 'Private' };
+  const ENGINE_LABELS = { browser: 'Quick', cloud: 'Cloud', live: 'Live', offline: 'Private' };
   const KEY_URLS = {
     cloud: 'https://aistudio.google.com/app/apikey',
     live: 'https://console.deepgram.com/signup'
@@ -160,7 +160,11 @@
         throw new Error('This browser cannot record audio. Chrome or Edge, please.');
       }
 
-      await audioService.startRecording();
+      if (setup.engine === 'browser') {
+        await startQuick();
+      } else {
+        await audioService.startRecording();
+      }
       isRecording = true;
       startedAt = Date.now();
       window.TalkTypeSounds?.play('start');
@@ -207,12 +211,17 @@
     window.TalkTypeSounds?.play('stop');
 
     try {
-      const audioBlob = await audioService.stopRecording();
       const { transcriptionStyle } = await chrome.storage.sync.get({ transcriptionStyle: 'standard' });
 
-      const api = new GeminiApiService();
-      api.setStyle(transcriptionStyle);
-      const transcript = (await api.transcribeAudio(audioBlob)) || '';
+      let transcript = '';
+      if (quick) {
+        transcript = await stopQuick();
+      } else {
+        const audioBlob = await audioService.stopRecording();
+        const api = new GeminiApiService();
+        api.setStyle(transcriptionStyle);
+        transcript = (await api.transcribeAudio(audioBlob)) || '';
+      }
       lastTranscript = transcript.trim();
 
       if (!lastTranscript) {
@@ -262,6 +271,106 @@
     $('result').style.display = 'block';
     const insertButton = $('insert');
     insertButton.style.display = !inserted && pageTarget?.hasActiveInput ? 'inline-flex' : 'none';
+  }
+
+  // ---------------------------------------------------------------
+  // Quick engine — Chrome's built-in recognition, right here in the popup.
+  // Interim words show in the transcript card as you talk.
+  // ---------------------------------------------------------------
+  let quick = null;
+
+  function startQuick() {
+    return new Promise((resolve, reject) => {
+      const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!Recognition) {
+        reject(new Error('This browser has no built-in speech recognition. Pick another engine in Settings.'));
+        return;
+      }
+      const rec = new Recognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = navigator.language || 'en-US';
+
+      let finals = '';
+      let started = false;
+      let stopping = false;
+      let onDone = null;
+
+      rec.onstart = () => {
+        started = true;
+        resolve();
+      };
+      rec.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+          const result = event.results[i];
+          const text = (result[0]?.transcript || '').trim();
+          if (!text) continue;
+          if (result.isFinal) finals = finals ? `${finals} ${text}` : text;
+          else interim += text + ' ';
+        }
+        $('result').style.display = 'block';
+        $('result-text').textContent = `${finals} ${interim}`.trim();
+      };
+      rec.onerror = (event) => {
+        if (event.error === 'no-speech' || event.error === 'aborted') return;
+        const error = new Error(
+          event.error === 'network'
+            ? "Chrome couldn't reach its speech service. Check your connection."
+            : event.error === 'audio-capture'
+              ? 'No microphone found.'
+              : `Speech recognition error: ${event.error}`
+        );
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') error.name = 'NotAllowedError';
+        if (!started) reject(error);
+        else showError(error.message);
+      };
+      rec.onend = () => {
+        if (stopping) {
+          if (onDone) onDone(finals.trim());
+        } else if (isRecording) {
+          try {
+            rec.start(); // Chrome ends after a pause; keep going until the user stops
+          } catch (e) {
+            // Already starting.
+          }
+        }
+      };
+
+      quick = {
+        stop: () =>
+          new Promise((done) => {
+            stopping = true;
+            onDone = done;
+            setTimeout(() => done(finals.trim()), 1500);
+            try {
+              rec.stop();
+            } catch (e) {
+              done(finals.trim());
+            }
+          }),
+        abort: () => {
+          stopping = true;
+          try {
+            rec.abort();
+          } catch (e) {
+            // Already gone.
+          }
+        }
+      };
+
+      try {
+        rec.start();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  async function stopQuick() {
+    const current = quick;
+    quick = null;
+    return current ? current.stop() : '';
   }
 
   // ---------------------------------------------------------------
@@ -375,5 +484,6 @@
   // instead of abandoning a live stream.
   window.addEventListener('pagehide', () => {
     audioService.stopStreamTracks();
+    if (quick) quick.abort();
   });
 })();
