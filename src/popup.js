@@ -161,6 +161,15 @@
       }
 
       if (setup.engine === 'browser') {
+        // A popup can't show Chrome's mic prompt. The other engines route
+        // through audioService, which opens the permission window when it
+        // has to; Quick needs the same door before recognition starts.
+        const allowed = await audioService.requestMicrophonePermission();
+        if (!allowed) {
+          const error = new Error('Allow the microphone in the window that just opened, then hit Start talking again.');
+          error.name = 'NeedsPermission';
+          throw error;
+        }
         await startQuick();
       } else {
         await audioService.startRecording();
@@ -190,7 +199,9 @@
   function handleStartError(error) {
     window.TalkTypeSounds?.play('error');
     setStatus('error', 'Mic issue');
-    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError' || /permission/i.test(error.message)) {
+    if (error.name === 'NeedsPermission') {
+      showError(error.message);
+    } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError' || /permission/i.test(error.message)) {
       showError('Chrome blocked the mic for TalkType. Open Settings → Microphone to fix it.');
     } else if (error.name === 'NotFoundError') {
       showError('No microphone found.');
@@ -266,6 +277,18 @@
     }
   }
 
+  // A recording died mid-flight: reset everything and say why
+  function failRecording(error) {
+    isRecording = false;
+    clearTimeout(autoStopTimer);
+    clearInterval(tickTimer);
+    $('listening').classList.remove('show');
+    setRecordButton('idle');
+    window.TalkTypeSounds?.play('error');
+    setStatus('error', 'Stopped');
+    showError(error.message || 'Recording stopped.');
+  }
+
   function showResult(text, inserted) {
     $('result-text').textContent = text;
     $('result').style.display = 'block';
@@ -322,8 +345,20 @@
               : `Speech recognition error: ${event.error}`
         );
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') error.name = 'NotAllowedError';
-        if (!started) reject(error);
-        else showError(error.message);
+        if (!started) {
+          reject(error);
+          return;
+        }
+        // Mid-session failure: stop for good instead of letting onend
+        // restart recognition into the same error forever.
+        stopping = true;
+        try {
+          rec.abort();
+        } catch (e) {
+          // Already gone.
+        }
+        quick = null;
+        failRecording(error);
       };
       rec.onend = () => {
         if (stopping) {

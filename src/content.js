@@ -29,7 +29,26 @@ function getActiveInput() {
 
 // Initialize - document_idle guarantees DOM is ready
 debugLog('TalkType content script loading...');
+adoptOrphanedButtons();
 initializeExtensionCore();
+
+// After an extension update, tabs that were already open keep the old copy
+// of this script in a dead context: its mic buttons throw "Extension context
+// invalidated" when clicked. When a fresh copy is injected on demand, sweep
+// the old buttons away and clear the markers so this copy re-attaches its own.
+function adoptOrphanedButtons() {
+  document.querySelectorAll('.talktype-button-wrapper').forEach((wrapper) => wrapper.remove());
+  document.querySelectorAll('[data-has-mic-button]').forEach((el) => {
+    delete el.dataset.hasMicButton;
+  });
+}
+
+// Settings changes reach open tabs without a reload
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync' && changes.smartModeEnabled) {
+    smartModeEnabled = changes.smartModeEnabled.newValue !== false;
+  }
+});
 
 
 // Core initialization logic, separated for clarity

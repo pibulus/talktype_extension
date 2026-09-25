@@ -47,6 +47,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
   let socket = null;
   let keepAliveTimer = null;
+  let ended = false; // Set on stop/cancel/disconnect — may arrive while 'start' is still awaiting storage
   const pendingChunks = []; // Audio that arrives before the socket opens
 
   const post = (message) => {
@@ -85,6 +86,10 @@ chrome.runtime.onConnect.addListener((port) => {
         return;
       }
       const { customVocabulary } = await chrome.storage.sync.get({ customVocabulary: '' });
+
+      // The user stopped, cancelled or closed the tab while we were reading
+      // storage — opening a socket now would leak it.
+      if (ended) return;
 
       try {
         socket = new WebSocket(buildDeepgramLiveUrl(customVocabulary), ['token', apiKey]);
@@ -153,6 +158,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ type: 'CloseStream' }));
       } else {
+        ended = true;
         cleanup();
         post({ type: 'closed' });
       }
@@ -160,11 +166,15 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (msg.type === 'cancel') {
+      ended = true;
       cleanup();
     }
   });
 
-  port.onDisconnect.addListener(cleanup);
+  port.onDisconnect.addListener(() => {
+    ended = true;
+    cleanup();
+  });
 });
 
 // ===================================================================
