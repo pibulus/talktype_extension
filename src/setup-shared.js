@@ -23,10 +23,10 @@
       emoji: 'quick',
       name: 'Quick',
       blurb: "Chrome's built-in recognition. Works the second you install.",
-      cost: hasBuiltInRecognition ? 'Free · no key · Google hears it' : 'Not in this browser',
+      cost: hasBuiltInRecognition ? 'Free · no key · no setup' : 'Not in this browser',
       available: hasBuiltInRecognition,
       keyLabel: null,
-      note: "Nothing to set up. Chrome sends the audio to Google's speech service — pick Private if that matters to you."
+      note: 'Nothing to set up. Uses the speech recognition already built into Chrome.'
     },
     {
       id: 'cloud',

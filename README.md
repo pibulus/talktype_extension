@@ -10,7 +10,7 @@ TalkType is a Chrome extension that drops a mic button next to every text field 
 
 | Engine | What happens | What it costs you |
 |---|---|---|
-| ⚡ **Quick** | Chrome's built-in recognition. Zero setup, the install default. Chrome sends audio to Google. | Nothing |
+| ⚡ **Quick** | Chrome's built-in recognition. Zero setup, the install default. | Nothing |
 | ☁️ **Cloud** | Gemini transcribes after you stop. Six personality styles. | A free Gemini API key |
 | ⚡ **Live** | Deepgram streams words into the field while you talk. | A Deepgram key (signup comes with ~$200 credit, roughly 400 hours) |
 | 🔒 **Private** | Whisper runs inside Chrome. Audio never leaves your machine. | Nothing. One ~96MB model download, then fully offline. |
