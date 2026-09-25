@@ -90,7 +90,7 @@
     .target b { color: var(--ink); font-weight: 700; }
     .target .arrow { color: var(--pink-deep); font-weight: 800; }
 
-    .listening { display: none; align-items: center; justify-content: center; gap: 10px; margin: 6px 0 10px; }
+    .listening { display: none; align-items: center; justify-content: center; gap: 10px; margin: 6px 0 10px; height: 30px; } /* fixed: the wave animates bar heights, so an auto row would bounce the button below it */
     .listening.show { display: flex; }
     .listening .bar { width: 5px; border-radius: 3px; background: var(--gradient); animation: wave 0.9s ease-in-out infinite; height: 14px; }
     .listening .bar:nth-child(2) { animation-delay: 0.12s; } .listening .bar:nth-child(3) { animation-delay: 0.24s; }
