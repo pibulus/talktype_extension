@@ -10,7 +10,7 @@
     { id: 'sparklePop', name: 'Sparkle Pop', blurb: 'OMG so bubbly!!! Emojis everywhere!!!' },
     { id: 'codeWhisperer', name: 'Code Whisperer', blurb: 'Rambling in, tidy technical prompt out.' },
     { id: 'quillAndInk', name: 'Quill & Ink', blurb: 'Victorian prose, dear reader.' },
-    { id: 'custom', name: 'BYO', blurb: 'Your own instructions.' }
+    { id: 'custom', name: 'Bring your own', blurb: 'Tell it what to do with your words.' }
   ];
 
   async function mountStyles() {
@@ -25,11 +25,12 @@
     const options = STYLES.map((style) => {
       const input = S.el('input', { type: 'radio', name: 'style', value: style.id });
       input.checked = style.id === transcriptionStyle;
-      const option = S.el('label', { class: `tile${input.checked ? ' selected' : ''}` }, [
+      const option = S.el('label', { class: `style-option${input.checked ? ' selected' : ''}` }, [
         input,
-        S.el('span', { class: 'tile-check', text: '✓' }),
-        S.el('div', { class: 'tile-name', text: style.name }),
-        S.el('div', { class: 'tile-blurb', text: style.blurb })
+        S.el('div', {}, [
+          S.el('div', { class: 'style-name', text: style.name }),
+          S.el('div', { class: 'style-blurb', text: style.blurb })
+        ])
       ]);
       input.addEventListener('change', async () => {
         if (!input.checked) return;
@@ -54,7 +55,7 @@
         await chrome.storage.sync.set({ customStylePrompt: prompt.value.trim().slice(0, 1000) });
         note.textContent = 'Saved.';
         setTimeout(() => {
-          note.textContent = 'Applied after transcription. Keep it short and bossy.';
+          note.textContent = 'Applied after transcription. Short and bossy works best.';
         }, 1500);
       }, 500);
     });
@@ -108,7 +109,6 @@
   document.addEventListener('DOMContentLoaded', async () => {
     await mountStyles();
     await S.mountEnginePicker(document.getElementById('engine-picker'), { onChange: reflectEngine });
-    S.mountVibePicker(document.getElementById('vibe-picker'));
     S.mountWords(document.getElementById('words'));
     S.mountShortcut(document.getElementById('shortcut'));
     S.mountMicTest(document.getElementById('mic-test'));

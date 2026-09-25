@@ -28,33 +28,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 });
 
 // ===================================================================
-// VIBE — the toolbar ghost matches the colour picked in settings
-// ===================================================================
-
-const VIBE_IDS = ['peach', 'mint', 'bubblegum'];
-
-async function applyToolbarVibe(vibe) {
-  const id = VIBE_IDS.includes(vibe) ? vibe : 'peach';
-  try {
-    await chrome.action.setIcon({
-      path: {
-        16: `icons/ghost-${id}/ghost-16.png`,
-        32: `icons/ghost-${id}/ghost-32.png`,
-        48: `icons/ghost-${id}/ghost-48.png`,
-        128: `icons/ghost-${id}/ghost-128.png`
-      }
-    });
-  } catch (e) {
-    // Icon swap is cosmetic; never let it break anything.
-  }
-}
-
-chrome.storage.sync.get({ vibe: 'peach' }).then(({ vibe }) => applyToolbarVibe(vibe));
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes.vibe) applyToolbarVibe(changes.vibe.newValue);
-});
-
-// ===================================================================
 // KEYBOARD SHORTCUT — the actual binding, not the suggested one
 // Chrome silently leaves a command unbound when the suggested key clashes
 // with another extension, so everything user-facing asks for the real value.

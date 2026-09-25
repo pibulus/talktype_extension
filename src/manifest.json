@@ -78,9 +78,6 @@
     {
       "resources": [
         "icons/mic.svg",
-        "icons/mic-peach.svg",
-        "icons/mic-mint.svg",
-        "icons/mic-bubblegum.svg",
         "styles.css"
       ],
       "matches": [

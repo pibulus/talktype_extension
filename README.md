@@ -24,7 +24,6 @@ Keys live only in Chrome's local storage on your device and are sent only to the
 - Works on tabs that were open before you installed it (the shortcut and popup inject the script on demand)
 - **Your words:** names, brands and slang the models keep mangling — Gemini gets them in the prompt, Deepgram nova-3 as keyterms
 - **BYO style:** your own post-transcription instructions (translate it, make it a haiku, bullet points only)
-- **Vibes:** Peach, Mint or Bubblegum ghost, applied to the mic button, popup, pages and toolbar icon
 - Little sound chirps on start/stop/success (optional)
 - Optional on-device history of your last 20 transcripts
 - Welcome tour on install with a try-it-here box that uses the real mic button

@@ -26,12 +26,6 @@
   // ---------------------------------------------------------------
   // UI helpers
   // ---------------------------------------------------------------
-  function applyVibe(vibe) {
-    const id = ['peach', 'mint', 'bubblegum'].includes(vibe) ? vibe : 'peach';
-    document.documentElement.dataset.vibe = id;
-    $('brand-ghost').src = `icons/ghost-${id}/ghost-128.png`;
-  }
-
   function setStatus(kind, text) {
     const pill = $('status');
     pill.className = `status-pill ${kind}`;
@@ -316,9 +310,8 @@
   // Wire up
   // ---------------------------------------------------------------
   document.addEventListener('DOMContentLoaded', async () => {
-    const prefs = await chrome.storage.sync.get({ smartModeEnabled: true, vibe: 'peach' });
+    const prefs = await chrome.storage.sync.get({ smartModeEnabled: true });
     smartModeEnabled = prefs.smartModeEnabled !== false;
-    applyVibe(prefs.vibe);
 
     refreshSetup();
     refreshPageTarget();
@@ -375,7 +368,6 @@
         refreshSetup();
       }
       if (changes.historyEnabled) renderHistory();
-      if (changes.vibe) applyVibe(changes.vibe.newValue);
     });
   });
 

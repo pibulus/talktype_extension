@@ -40,29 +40,6 @@
 
   const engineById = (id) => ENGINES.find((e) => e.id === id) || ENGINES[0];
 
-  // Ghost colours, mirroring talktype.app's Vibe picker
-  const VIBES = [
-    { id: 'peach', name: 'Peach' },
-    { id: 'mint', name: 'Mint' },
-    { id: 'bubblegum', name: 'Bubblegum' }
-  ];
-  const vibeById = (id) => VIBES.find((v) => v.id === id) || VIBES[0];
-
-  function applyVibe(vibeId) {
-    const vibe = vibeById(vibeId);
-    document.documentElement.dataset.vibe = vibe.id;
-    document.querySelectorAll('img[data-vibe-ghost]').forEach((img) => {
-      img.src = `icons/ghost-${vibe.id}/ghost-${img.dataset.vibeGhost}.png`;
-    });
-    return vibe.id;
-  }
-
-  // Apply the stored vibe as early as possible, and follow changes live
-  chrome.storage.sync.get({ vibe: 'peach' }).then(({ vibe }) => applyVibe(vibe));
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync' && changes.vibe) applyVibe(changes.vibe.newValue);
-  });
-
   function el(tag, attrs = {}, children = []) {
     const node = document.createElement(tag);
     Object.entries(attrs).forEach(([k, v]) => {
@@ -95,16 +72,16 @@
     const { transcriptionEngine } = await chrome.storage.sync.get({ transcriptionEngine: 'cloud' });
     let current = engineById(transcriptionEngine).id;
 
-    const grid = el('div', { class: 'tile-grid', role: 'radiogroup', 'aria-label': 'Transcription engine' });
+    const grid = el('div', { class: 'engine-grid', role: 'radiogroup', 'aria-label': 'Transcription engine' });
     const cards = ENGINES.map((engine) => {
       const input = el('input', { type: 'radio', name: 'engine', value: engine.id });
-      const card = el('label', { class: 'tile' }, [
+      const card = el('label', { class: 'engine-card' }, [
         input,
-        el('span', { class: 'tile-check', text: '✓' }),
-        el('div', { class: 'tile-emoji', text: engine.emoji }),
-        el('div', { class: 'tile-name', text: engine.name }),
-        el('div', { class: 'tile-blurb', text: engine.blurb }),
-        el('div', { class: 'tile-cost', text: engine.cost })
+        el('span', { class: 'engine-check', text: '✓' }),
+        el('div', { class: 'engine-emoji', text: engine.emoji }),
+        el('div', { class: 'engine-name', text: engine.name }),
+        el('div', { class: 'engine-blurb', text: engine.blurb }),
+        el('div', { class: 'engine-cost', text: engine.cost })
       ]);
       input.addEventListener('change', async () => {
         if (!input.checked) return;
@@ -130,47 +107,18 @@
   }
 
   // ---------------------------------------------------------------
-  // Vibe picker — ghost colour everywhere, including the toolbar icon
-  // ---------------------------------------------------------------
-  async function mountVibePicker(container) {
-    const { vibe } = await chrome.storage.sync.get({ vibe: 'peach' });
-    const grid = el('div', { class: 'tile-grid', role: 'radiogroup', 'aria-label': 'Vibe' });
-    const tiles = VIBES.map((v) => {
-      const input = el('input', { type: 'radio', name: 'vibe', value: v.id });
-      const img = el('img', { src: `icons/ghost-${v.id}/ghost-48.png`, alt: '' });
-      const tile = el('label', { class: 'tile compact' }, [
-        input,
-        el('span', { class: 'tile-check', text: '✓' }),
-        el('div', { class: 'tile-emoji' }, [img]),
-        el('div', { class: 'tile-name', text: v.name })
-      ]);
-      input.checked = v.id === vibe;
-      tile.classList.toggle('selected', input.checked);
-      input.addEventListener('change', async () => {
-        if (!input.checked) return;
-        tiles.forEach((t) => t.classList.toggle('selected', t === tile));
-        applyVibe(v.id);
-        await chrome.storage.sync.set({ vibe: v.id });
-        toast(`${v.name} vibe`);
-      });
-      grid.appendChild(tile);
-      return tile;
-    });
-    container.appendChild(grid);
-  }
-
-  // ---------------------------------------------------------------
-  // Your Words — names and terms the models should spell your way.
+  // Your words — names and terms the models should spell your way.
   // Gemini gets them in the prompt, Deepgram nova-3 as keyterms.
   // ---------------------------------------------------------------
   function mountWords(container) {
+    const HINT = 'Commas or new lines. Cloud and Live engines only.';
     const area = el('textarea', {
       placeholder: 'Svelte, Obsidian, Brunswick, Mesa Cosa',
       'aria-label': 'Your words',
       'data-talktype-ignore': '',
-      rows: '3'
+      rows: '2'
     });
-    const note = el('div', { class: 'field-note', text: 'Commas or new lines — the ghost spells them your way. Cloud and Live engines only.' });
+    const note = el('div', { class: 'field-note', text: HINT });
     chrome.storage.sync.get({ customVocabulary: '' }).then(({ customVocabulary }) => {
       area.value = customVocabulary || '';
     });
@@ -182,7 +130,7 @@
         note.textContent = 'Saved.';
         note.classList.add('saved');
         setTimeout(() => {
-          note.textContent = 'Commas or new lines — the ghost spells them your way. Cloud and Live engines only.';
+          note.textContent = HINT;
           note.classList.remove('saved');
         }, 1500);
       }, 500);
@@ -404,15 +352,11 @@
   window.TalkTypeSetup = {
     ENGINES,
     engineById,
-    VIBES,
-    vibeById,
-    applyVibe,
-    mountVibePicker,
-    mountWords,
     el,
     toast,
     mountEnginePicker,
     mountKeyField,
+    mountWords,
     mountOfflineModel,
     mountShortcut,
     mountMicTest,

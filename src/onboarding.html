@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="brand.css">
   <style>
     .hero { text-align: center; padding: 24px 0 8px; }
-    .hero .ghost { width: 112px; height: 112px; image-rendering: auto; animation: bob 3.2s ease-in-out infinite; filter: drop-shadow(0 14px 24px rgba(255, 92, 159, 0.28)); }
+    .hero .ghost { width: 112px; height: 112px; animation: bob 3.2s ease-in-out infinite; filter: drop-shadow(0 14px 24px rgba(255, 92, 159, 0.28)); }
     @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-8px) rotate(2deg); } }
     .hero h1 { font-size: 34px; margin-top: 12px; }
     .hero .tagline { font-size: 17px; margin-top: 6px; }
@@ -25,7 +25,7 @@
 <body>
   <div class="container">
     <div class="hero">
-      <img class="ghost" src="icons/ghost/ghost-256.png" alt="TalkType ghost" data-vibe-ghost="128">
+      <img class="ghost" src="icons/ghost/ghost-256.png" alt="TalkType ghost">
       <h1>Hey. I'm TalkType.</h1>
       <p class="tagline">Say it messy, get it clean. In any text box on the web.</p>
       <p class="sub">A mic appears next to every text field. Click it, say your thing, it lands where your cursor is. No account. No server in the middle. Your mic, your key, your words.</p>
@@ -57,12 +57,6 @@
     <section class="card" id="step-keys">
       <h2><span class="step">4</span> Hands on the keyboard?</h2>
       <div id="shortcut"></div>
-    </section>
-
-    <section class="card">
-      <h2><span class="step">5</span> Pick your ghost</h2>
-      <p>Purely cosmetic. Purely important.</p>
-      <div id="vibe-picker"></div>
     </section>
 
     <section class="card" style="text-align: center;">

@@ -12,21 +12,6 @@ let activeInput = null;
 let smartModeEnabled = true; // Default to enabled
 let liveSession = null; // Active TalkTypeLiveSession when the live engine is recording
 let lastKnownShortcut = ''; // Real binding reported by the background worker ('' if unbound)
-let currentVibe = 'peach'; // Ghost colour from settings; drives the mic svg + accent var
-
-const VIBE_ACCENTS = { peach: '255, 92, 159', mint: '45, 212, 191', bubblegum: '168, 85, 247' };
-
-function applyVibe(vibe) {
-  currentVibe = VIBE_ACCENTS[vibe] ? vibe : 'peach';
-  document.documentElement.style.setProperty('--tt-accent', VIBE_ACCENTS[currentVibe]);
-  document.querySelectorAll('.audio-to-text-mic-button img').forEach((img) => {
-    img.src = chrome.runtime.getURL(`icons/mic-${currentVibe}.svg`);
-  });
-}
-
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes.vibe) applyVibe(changes.vibe.newValue);
-});
 const MAX_RECORDING_MS = 5 * 60 * 1000; // Auto-stop long recordings before the inline Gemini payload gets too big
 const TALKTYPE_DEBUG = false;
 const debugLog = (...args) => {
@@ -72,8 +57,7 @@ function initializeExtensionCore() {
 
   // Preferences come from sync storage; the API key stays in the background
   // worker and never enters this content-script world.
-  chrome.storage.sync.get(['smartModeEnabled', 'transcriptionStyle', 'transcriptionEngine', 'vibe']).then(function(result) {
-    applyVibe(result.vibe || 'peach');
+  chrome.storage.sync.get(['smartModeEnabled', 'transcriptionStyle', 'transcriptionEngine']).then(function(result) {
     // Get smart mode setting if available
     if (result.smartModeEnabled !== undefined) {
       smartModeEnabled = result.smartModeEnabled;
@@ -368,7 +352,7 @@ function createProgressNotification(message) {
         font-weight: 500;
         color: white;
         background: linear-gradient(135deg, #ff5c9f 0%, #ff8f70 55%, #f6b43d 100%);
-        box-shadow: 0 5px 20px rgba(var(--tt-accent, 255, 92, 159), 0.3);
+        box-shadow: 0 5px 20px rgba(255, 92, 159, 0.3);
         z-index: 999999;
         display: flex;
         flex-direction: column;
@@ -741,7 +725,7 @@ function addMicrophoneToInput(inputElement) {
   const micEmoji = "🎤";
 
   // Try to get the SVG icon URL
-  let micIconUrl = chrome.runtime.getURL(`icons/mic-${currentVibe}.svg`);
+  let micIconUrl = chrome.runtime.getURL('icons/mic.svg');
   debugLog('TalkType: Microphone icon URL:', micIconUrl);
 
   // Whether we have a valid icon URL
@@ -759,12 +743,12 @@ function addMicrophoneToInput(inputElement) {
 
   // Set background based on dark mode
   if (isDarkMode) {
-    micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.2)'; // Slightly more visible in dark mode
-    micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.4)';
+    micButton.style.background = 'rgba(255, 92, 159, 0.2)'; // Slightly more visible in dark mode
+    micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
     micButton.dataset.darkMode = 'true'; // Mark as dark mode for later reference
   } else {
-    micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.15)';
-    micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+    micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+    micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
   }
 
   micButton.style.borderRadius = '50%';
@@ -775,7 +759,7 @@ function addMicrophoneToInput(inputElement) {
   micButton.style.opacity = '1'; // Fully visible
   micButton.style.transform = 'scale(1)';
   micButton.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s ease, background 0.2s ease, box-shadow 0.2s ease';
-  micButton.style.boxShadow = '0 1px 3px rgba(var(--tt-accent, 255, 92, 159), 0.3)'; // More subtle shadow
+  micButton.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)'; // More subtle shadow
   micButton.style.backdropFilter = 'blur(2px)';
   micButton.style.webkitBackdropFilter = 'blur(2px)';
   micButton.style.display = 'block'; // Always visible
@@ -792,15 +776,15 @@ function addMicrophoneToInput(inputElement) {
     styleEl.id = 'talk-type-animations';
     styleEl.textContent = `
       @keyframes gentle-pulse {
-        0% { transform: scale(1); box-shadow: 0 2px 6px rgba(var(--tt-accent, 255, 92, 159), 0.4); }
-        50% { transform: scale(1.05); box-shadow: 0 2px 10px rgba(var(--tt-accent, 255, 92, 159), 0.6); }
-        100% { transform: scale(1); box-shadow: 0 2px 6px rgba(var(--tt-accent, 255, 92, 159), 0.4); }
+        0% { transform: scale(1); box-shadow: 0 2px 6px rgba(255, 92, 159, 0.4); }
+        50% { transform: scale(1.05); box-shadow: 0 2px 10px rgba(255, 92, 159, 0.6); }
+        100% { transform: scale(1); box-shadow: 0 2px 6px rgba(255, 92, 159, 0.4); }
       }
 
       @keyframes subtle-glow {
-        0% { box-shadow: 0 0 3px rgba(var(--tt-accent, 255, 92, 159), 0.3); }
-        50% { box-shadow: 0 0 5px rgba(var(--tt-accent, 255, 92, 159), 0.4); }
-        100% { box-shadow: 0 0 3px rgba(var(--tt-accent, 255, 92, 159), 0.3); }
+        0% { box-shadow: 0 0 3px rgba(255, 92, 159, 0.3); }
+        50% { box-shadow: 0 0 5px rgba(255, 92, 159, 0.4); }
+        100% { box-shadow: 0 0 3px rgba(255, 92, 159, 0.3); }
       }
     `;
     document.head.appendChild(styleEl);
@@ -859,7 +843,7 @@ function addMicrophoneToInput(inputElement) {
   recordingIndicator.style.position = 'absolute';
   recordingIndicator.style.top = '-2px';
   recordingIndicator.style.right = '-2px';
-  recordingIndicator.style.boxShadow = '0 0 3px rgba(var(--tt-accent, 255, 92, 159), 0.5)'; // Softer glow
+  recordingIndicator.style.boxShadow = '0 0 3px rgba(255, 92, 138, 0.5)'; // Softer glow
   // Don't set animation directly to avoid CSP issues
   recordingIndicator.style.border = '1px solid rgba(255, 255, 255, 0.2)';
 
@@ -888,14 +872,14 @@ function addMicrophoneToInput(inputElement) {
     micButton.style.animation = 'subtle-glow 2s infinite';
 
     if (isDarkMode) {
-      micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.25)';
-      micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.5)';
+      micButton.style.background = 'rgba(255, 92, 159, 0.25)';
+      micButton.style.border = '1px solid rgba(255, 92, 159, 0.5)';
       // No glow effect for dark mode - it's too harsh
     } else {
-      micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.2)';
-      micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.4)';
+      micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+      micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
       // Subtle glow for light mode only
-      micButton.style.boxShadow = '0 1px 4px rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+      micButton.style.boxShadow = '0 1px 4px rgba(255, 92, 159, 0.3)';
     }
   });
 
@@ -907,14 +891,14 @@ function addMicrophoneToInput(inputElement) {
       micButton.style.animation = 'none';
 
       if (isDarkMode) {
-        micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.2)';
-        micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.4)';
+        micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+        micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
       } else {
-        micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.15)';
-        micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+        micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+        micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
       }
 
-      micButton.style.boxShadow = '0 1px 3px rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+      micButton.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)';
       // We keep the button visible at all times
     }
   });
@@ -997,14 +981,14 @@ function addMicrophoneToInput(inputElement) {
         micButton.style.animation = 'subtle-glow 1.5s infinite';
 
         if (isDarkMode) {
-          micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.25)'; // Softer pink for dark mode
-          micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.4)';
+          micButton.style.background = 'rgba(255, 92, 138, 0.25)'; // Softer pink for dark mode
+          micButton.style.border = '1px solid rgba(255, 92, 138, 0.4)';
         } else {
-          micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.2)'; // Softer pink for light mode
-          micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.35)';
+          micButton.style.background = 'rgba(255, 92, 138, 0.2)'; // Softer pink for light mode
+          micButton.style.border = '1px solid rgba(255, 92, 138, 0.35)';
         }
 
-        micButton.style.boxShadow = '0 1px 4px rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+        micButton.style.boxShadow = '0 1px 4px rgba(255, 92, 138, 0.3)';
 
         // Get the recording indicator and show it
         const recordingIndicator = micButton.querySelector('.audio-to-text-recording-indicator');
@@ -1053,11 +1037,11 @@ function addMicrophoneToInput(inputElement) {
 
           // Reset button appearance
           if (micButton.dataset.darkMode === 'true') {
-            micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.2)';
-            micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.4)';
+            micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+            micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
           } else {
-            micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.15)';
-            micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+            micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+            micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
           }
 
           // Hide the recording indicator
@@ -1077,14 +1061,14 @@ function addMicrophoneToInput(inputElement) {
         micButton.style.animation = 'none';
 
         if (micButton.dataset.darkMode === 'true') {
-          micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.2)';
-          micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.4)';
+          micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+          micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
         } else {
-          micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.15)';
-          micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+          micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+          micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
         }
 
-        micButton.style.boxShadow = '0 1px 3px rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+        micButton.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)';
       }, 500);
     }
   };
@@ -1193,13 +1177,13 @@ function resetRecordingIndicators() {
       micButton.style.animation = 'none';
       micButton.style.transform = 'scale(1)';
       if (micButton.dataset.darkMode === 'true') {
-        micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.2)';
-        micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.4)';
+        micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+        micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
       } else {
-        micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.15)';
-        micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+        micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+        micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
       }
-      micButton.style.boxShadow = '0 1px 3px rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+      micButton.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)';
       micButton.style.filter = 'none';
     }
   });
@@ -1828,9 +1812,9 @@ async function startRecordingCore(targetInput, indicator) {
       if (micButton) {
         micButton.style.animation = '';
         micButton.style.opacity = '1';
-        micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.15)';
-        micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.3)';
-        micButton.style.boxShadow = '0 2px 6px rgba(var(--tt-accent, 255, 92, 159), 0.4)';
+        micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+        micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
+        micButton.style.boxShadow = '0 2px 6px rgba(255, 92, 159, 0.4)';
         micButton.style.filter = 'none';
       }
     }
@@ -1999,14 +1983,14 @@ async function stopRecording() {
       button.style.opacity = '1';
 
       if (button.dataset.darkMode === 'true') {
-        button.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.2)';
-        button.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.4)';
+        button.style.background = 'rgba(255, 92, 159, 0.2)';
+        button.style.border = '1px solid rgba(255, 92, 159, 0.4)';
       } else {
-        button.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.15)';
-        button.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+        button.style.background = 'rgba(255, 92, 159, 0.15)';
+        button.style.border = '1px solid rgba(255, 92, 159, 0.3)';
       }
 
-      button.style.boxShadow = '0 1px 3px rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+      button.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)';
       button.style.filter = 'none';
     });
 
@@ -2030,14 +2014,14 @@ async function stopRecording() {
         micButton.style.opacity = '1';
 
         if (micButton.dataset.darkMode === 'true') {
-          micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.2)';
-          micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.4)';
+          micButton.style.background = 'rgba(255, 92, 159, 0.2)';
+          micButton.style.border = '1px solid rgba(255, 92, 159, 0.4)';
         } else {
-          micButton.style.background = 'rgba(var(--tt-accent, 255, 92, 159), 0.15)';
-          micButton.style.border = '1px solid rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+          micButton.style.background = 'rgba(255, 92, 159, 0.15)';
+          micButton.style.border = '1px solid rgba(255, 92, 159, 0.3)';
         }
 
-        micButton.style.boxShadow = '0 1px 3px rgba(var(--tt-accent, 255, 92, 159), 0.3)';
+        micButton.style.boxShadow = '0 1px 3px rgba(255, 92, 159, 0.3)';
         micButton.style.filter = 'none';
       }
     });
@@ -2073,15 +2057,15 @@ function ensureNotificationStyles() {
       font: 600 15px/1.35 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: #202432; letter-spacing: 0;
       background: rgba(255, 250, 244, 0.94);
-      border: 2px solid rgba(var(--tt-accent, 255, 92, 159), 0.35);
-      box-shadow: 0 14px 40px rgba(var(--tt-accent, 255, 92, 159), 0.22), 0 0 0 4px rgba(255, 255, 255, 0.5);
+      border: 2px solid rgba(255, 92, 159, 0.35);
+      box-shadow: 0 14px 40px rgba(255, 92, 159, 0.22), 0 0 0 4px rgba(255, 255, 255, 0.5);
       backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       opacity: 0; transform: translateY(-16px) scale(0.97);
       transition: opacity 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
       pointer-events: all; box-sizing: border-box; text-align: left;
     }
     .audio-to-text-notification.talktype-in { opacity: 1; transform: translateY(0) scale(1); }
-    .audio-to-text-notification-recording { border-color: rgba(var(--tt-accent, 255, 92, 159), 0.7); animation: talktype-listen-pulse 2s infinite; }
+    .audio-to-text-notification-recording { border-color: rgba(255, 92, 159, 0.7); animation: talktype-listen-pulse 2s infinite; }
     .audio-to-text-notification-success { border-color: rgba(84, 214, 187, 0.8); }
     .audio-to-text-notification-error { border-color: rgba(231, 76, 90, 0.7); }
     .audio-to-text-notification-processing { border-color: rgba(246, 164, 58, 0.8); }
@@ -2089,8 +2073,8 @@ function ensureNotificationStyles() {
       flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%;
       display: inline-flex; align-items: center; justify-content: center;
       font-size: 15px; color: #fff;
-      background: rgb(var(--tt-accent, 255, 92, 159));
-      box-shadow: 0 4px 10px rgba(var(--tt-accent, 255, 92, 159), 0.3);
+      background: linear-gradient(135deg, #ff5c9f 0%, #ff8f70 55%, #f6b43d 100%);
+      box-shadow: 0 4px 10px rgba(255, 92, 159, 0.3);
     }
     .audio-to-text-notification-success .talktype-notification-icon { background: linear-gradient(135deg, #54d6bb, #7ee8c9); }
     .audio-to-text-notification-error .talktype-notification-icon { background: linear-gradient(135deg, #e74c5a, #ff8f70); }
@@ -2102,14 +2086,14 @@ function ensureNotificationStyles() {
     .talktype-notification-caption {
       display: block; margin-top: 8px; padding: 8px 10px; border-radius: 10px;
       font-size: 13px; font-weight: 500; font-style: italic; color: #202432;
-      background: rgba(var(--tt-accent, 255, 92, 159), 0.08); border: 1px dashed rgba(var(--tt-accent, 255, 92, 159), 0.35);
+      background: rgba(255, 92, 159, 0.08); border: 1px dashed rgba(255, 92, 159, 0.35);
       max-height: 72px; overflow: hidden;
     }
     .talktype-notification-action {
       margin-top: 8px; padding: 6px 12px; border-radius: 999px; cursor: pointer;
       font: 700 12px/1 inherit; font-family: inherit; color: #fff; border: none;
-      background: rgb(var(--tt-accent, 255, 92, 159));
-      box-shadow: 0 4px 10px rgba(var(--tt-accent, 255, 92, 159), 0.28);
+      background: linear-gradient(135deg, #ff5c9f 0%, #ff8f70 55%, #f6b43d 100%);
+      box-shadow: 0 4px 10px rgba(255, 92, 159, 0.28);
     }
     .talktype-notification-action:hover { filter: brightness(1.05); transform: translateY(-1px); }
     .talktype-notification-close {
@@ -2117,17 +2101,17 @@ function ensureNotificationStyles() {
       width: 24px; height: 24px; margin: -2px -4px 0 0; padding: 0; border-radius: 50%;
       color: rgba(32, 36, 50, 0.55); font: 400 20px/24px inherit; font-family: inherit;
     }
-    .talktype-notification-close:hover { background: rgba(var(--tt-accent, 255, 92, 159), 0.12); color: rgb(var(--tt-accent, 255, 92, 159)); }
+    .talktype-notification-close:hover { background: rgba(255, 92, 159, 0.12); color: #d73374; }
     @keyframes talktype-listen-pulse {
-      0%, 100% { box-shadow: 0 14px 40px rgba(var(--tt-accent, 255, 92, 159), 0.22), 0 0 0 4px rgba(255, 255, 255, 0.5); }
-      50% { box-shadow: 0 14px 40px rgba(var(--tt-accent, 255, 92, 159), 0.38), 0 0 0 6px rgba(var(--tt-accent, 255, 92, 159), 0.12); }
+      0%, 100% { box-shadow: 0 14px 40px rgba(255, 92, 159, 0.22), 0 0 0 4px rgba(255, 255, 255, 0.5); }
+      50% { box-shadow: 0 14px 40px rgba(255, 92, 159, 0.38), 0 0 0 6px rgba(255, 92, 159, 0.12); }
     }
     @keyframes talktype-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
     @keyframes talktype-spin { to { transform: rotate(360deg); } }
     @media (prefers-color-scheme: dark) {
-      .audio-to-text-notification { background: rgba(32, 30, 40, 0.94); color: #fff5f9; border-color: rgba(var(--tt-accent, 255, 92, 159), 0.45); }
+      .audio-to-text-notification { background: rgba(32, 30, 40, 0.94); color: #fff5f9; border-color: rgba(255, 92, 159, 0.45); }
       .talktype-notification-hint { color: rgba(255, 245, 249, 0.68); }
-      .talktype-notification-caption { color: #fff5f9; background: rgba(var(--tt-accent, 255, 92, 159), 0.14); }
+      .talktype-notification-caption { color: #fff5f9; background: rgba(255, 92, 159, 0.14); }
       .talktype-notification-close { color: rgba(255, 245, 249, 0.6); }
     }
   `;

@@ -44,7 +44,6 @@
     });
 
     S.mountShortcut(document.getElementById('shortcut'));
-    S.mountVibePicker(document.getElementById('vibe-picker'));
 
     document.getElementById('open-settings').addEventListener('click', () => {
       chrome.runtime.openOptionsPage();
