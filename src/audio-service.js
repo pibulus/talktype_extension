@@ -1,5 +1,10 @@
 // Audio recording service
 
+const AUDIO_DEBUG = false;
+const audioLog = (...args) => {
+  if (AUDIO_DEBUG) console.log(...args);
+};
+
 class AudioRecordingService {
   constructor() {
     this.mediaRecorder = null;
@@ -34,7 +39,7 @@ class AudioRecordingService {
    * @returns {Promise<boolean>}
    */
   requestMicrophonePermission() {
-    console.log('TalkType AudioService: Requesting microphone permission');
+    audioLog('TalkType AudioService: Requesting microphone permission');
     
     return new Promise((resolve) => {
       // First check storage for existing permission
@@ -44,10 +49,10 @@ class AudioRecordingService {
           console.error('TalkType AudioService: Chrome storage error:', chrome.runtime.lastError);
         }
         
-        console.log('TalkType AudioService: Stored permission status:', result.microphonePermission);
+        audioLog('TalkType AudioService: Stored permission status:', result.microphonePermission);
         
         if (result && result.microphonePermission === 'granted') {
-          console.log('TalkType AudioService: Using stored permission: granted');
+          audioLog('TalkType AudioService: Using stored permission: granted');
           this.permissionGranted = true;
           resolve(true);
           return;
@@ -64,24 +69,24 @@ class AudioRecordingService {
         
         // No permission stored, try to request directly
         try {
-          console.log('TalkType AudioService: Requesting media access directly');
+          audioLog('TalkType AudioService: Requesting media access directly');
           
           // For maximum compatibility, use both API styles
           if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            console.log('TalkType AudioService: Using modern getUserMedia API');
+            audioLog('TalkType AudioService: Using modern getUserMedia API');
             
             navigator.mediaDevices.getUserMedia({ 
               audio: true,
               video: false // Explicitly exclude video to avoid confusion
             })
               .then((stream) => {
-                console.log('TalkType AudioService: Permission granted! Got stream with tracks:', 
+                audioLog('TalkType AudioService: Permission granted! Got stream with tracks:', 
                   stream.getTracks().length);
                 
                 // Stop the stream right away, we just needed permission
                 try {
                   stream.getTracks().forEach(track => {
-                    console.log('TalkType AudioService: Stopping track:', track.kind);
+                    audioLog('TalkType AudioService: Stopping track:', track.kind);
                     track.stop();
                   });
                 } catch (e) {
@@ -90,17 +95,18 @@ class AudioRecordingService {
                 }
                 
                 // Store permission status
-                console.log('TalkType AudioService: Storing permission as granted');
+                audioLog('TalkType AudioService: Storing permission as granted');
                 chrome.storage.sync.set({ microphonePermission: 'granted' });
                 this.permissionGranted = true;
                 resolve(true);
               })
               .catch((error) => {
                 console.error('TalkType AudioService: Permission request failed:', error.name, error.message);
+                this.lastPermissionError = error;
                 
                 // If permission denied, offer options page
                 if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                  console.log('TalkType AudioService: Permission denied, opening permission page');
+                  audioLog('TalkType AudioService: Permission denied, opening permission page');
                   this.openPermissionPage();
                 }
                 
@@ -109,21 +115,21 @@ class AudioRecordingService {
           } 
           // Try older APIs for compatibility
           else if (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) {
-            console.log('TalkType AudioService: Using legacy getUserMedia API');
+            audioLog('TalkType AudioService: Using legacy getUserMedia API');
             const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
             
             getUserMedia.call(navigator, 
               { audio: true, video: false }, 
               // Success
               (stream) => {
-                console.log('TalkType AudioService: Legacy API permission granted!');
+                audioLog('TalkType AudioService: Legacy API permission granted!');
                 // Stop the stream
                 if (stream.stop) {
-                  console.log('TalkType AudioService: Using legacy stream.stop()');
+                  audioLog('TalkType AudioService: Using legacy stream.stop()');
                   stream.stop();
                 }
                 else if (stream.getTracks) {
-                  console.log('TalkType AudioService: Using modern getTracks() with legacy API');
+                  audioLog('TalkType AudioService: Using modern getTracks() with legacy API');
                   stream.getTracks().forEach(track => track.stop());
                 }
                 
@@ -209,7 +215,9 @@ class AudioRecordingService {
       if (!hasPermission && !this.permissionGranted && !isMac) {
         const permissionGranted = await this.requestMicrophonePermission();
         if (!permissionGranted) {
-          throw new Error('Microphone permission denied');
+          // Surface the real reason (NotFoundError vs NotAllowedError) so the
+          // UI can say "no mic" instead of blaming permissions.
+          throw this.lastPermissionError || new Error('Microphone permission denied');
         }
       }
       
@@ -274,7 +282,7 @@ class AudioRecordingService {
       // Start recording with error handling
       try {
         this.mediaRecorder.start();
-        console.log('Recording started');
+        audioLog('Recording started');
       } catch (startError) {
         console.error('Error starting recording:', startError);
         
@@ -334,7 +342,7 @@ class AudioRecordingService {
           return;
         }
 
-        console.log('Recording stopped, audio blob created');
+        audioLog('Recording stopped, audio blob created');
         settle(resolve, audioBlob);
       };
 
@@ -369,7 +377,7 @@ class AudioRecordingService {
    * @returns {boolean} - Whether recording is supported
    */
   isRecordingSupported() {
-    console.log('TalkType AudioService: Checking recording support');
+    audioLog('TalkType AudioService: Checking recording support');
     
     // More thorough check for browser compatibility
     const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
@@ -379,9 +387,9 @@ class AudioRecordingService {
                             navigator.msGetUserMedia);
     const hasMediaRecorder = typeof MediaRecorder !== 'undefined';
     
-    console.log('TalkType AudioService: hasMediaDevices:', hasMediaDevices);
-    console.log('TalkType AudioService: hasGetUserMedia:', hasGetUserMedia);
-    console.log('TalkType AudioService: hasMediaRecorder:', hasMediaRecorder);
+    audioLog('TalkType AudioService: hasMediaDevices:', hasMediaDevices);
+    audioLog('TalkType AudioService: hasGetUserMedia:', hasGetUserMedia);
+    audioLog('TalkType AudioService: hasMediaRecorder:', hasMediaRecorder);
     
     return hasMediaDevices && hasMediaRecorder;
   }

@@ -11,6 +11,7 @@ let maxRecordingTimer = null;
 let activeInput = null;
 let smartModeEnabled = true; // Default to enabled
 let liveSession = null; // Active TalkTypeLiveSession when the live engine is recording
+let lastKnownShortcut = ''; // Real binding reported by the background worker ('' if unbound)
 const MAX_RECORDING_MS = 5 * 60 * 1000; // Auto-stop long recordings before the inline Gemini payload gets too big
 const TALKTYPE_DEBUG = false;
 const debugLog = (...args) => {
@@ -28,7 +29,26 @@ function getActiveInput() {
 
 // Initialize - document_idle guarantees DOM is ready
 debugLog('TalkType content script loading...');
+adoptOrphanedButtons();
 initializeExtensionCore();
+
+// After an extension update, tabs that were already open keep the old copy
+// of this script in a dead context: its mic buttons throw "Extension context
+// invalidated" when clicked. When a fresh copy is injected on demand, sweep
+// the old buttons away and clear the markers so this copy re-attaches its own.
+function adoptOrphanedButtons() {
+  document.querySelectorAll('.talktype-button-wrapper').forEach((wrapper) => wrapper.remove());
+  document.querySelectorAll('[data-has-mic-button]').forEach((el) => {
+    delete el.dataset.hasMicButton;
+  });
+}
+
+// Settings changes reach open tabs without a reload
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync' && changes.smartModeEnabled) {
+    smartModeEnabled = changes.smartModeEnabled.newValue !== false;
+  }
+});
 
 
 // Core initialization logic, separated for clarity
@@ -107,18 +127,12 @@ function initializeExtensionCore() {
         showStatusNotification('Your browser may not support recording. Chrome is recommended.', 'info');
       }
 
-      // If the Cloud engine needs a key and none is configured, show a setup
-      // prompt (the background worker checks — we only learn a boolean here,
-      // never the key). Live warns at record time; Private needs no key.
-      const engine = result.transcriptionEngine || 'cloud';
-      if (engine === 'cloud') {
-        chrome.runtime.sendMessage({ action: 'getSetupState' }).then((setup) => {
-          if (setup && !setup.hasApiKey) {
-            console.warn('TalkType: No API key configured.');
-            showStatusNotification('Please set your API key in the extension options.', 'warning');
-          }
-        }).catch(() => {});
-      }
+      // Learn the real keyboard binding so hints can quote it. Missing-key
+      // warnings wait until someone actually tries to record — nagging on
+      // every page load is how extensions get uninstalled.
+      chrome.runtime.sendMessage({ action: 'getSetupState' }).then((setup) => {
+        if (setup?.shortcut) lastKnownShortcut = setup.shortcut;
+      }).catch(() => {});
     } catch (initError) {
       console.error('TalkType: Error during service initialization:', initError);
       showStatusNotification('Error initializing speech services: ' + initError.message, 'error');
@@ -260,7 +274,7 @@ function initializeInputDetection() {
     .monaco-editor .view-lines
   `);
 
-  console.log(`TalkType: Found ${knownEditors.length} known rich text editors`);
+  debugLog(`TalkType: Found ${knownEditors.length} known rich text editors`);
 
   // Process specific known editors
   knownEditors.forEach(editor => {
@@ -303,7 +317,7 @@ function initializeInputDetection() {
     div[contenteditable="true"][role="textbox"][spellcheck="true"]
   `);
 
-  console.log(`TalkType: Found ${clearTextInputs.length} additional text inputs with specific attributes`);
+  debugLog(`TalkType: Found ${clearTextInputs.length} additional text inputs with specific attributes`);
 
   // Process these as well
   clearTextInputs.forEach(element => {
@@ -330,7 +344,7 @@ function initializeInputDetection() {
   });
 
   // Clean up log messages
-  console.log('TalkType: Input detection completed');
+  debugLog('TalkType: Input detection completed');
 }
 
 // Create a stylish progress notification
@@ -356,7 +370,7 @@ function createProgressNotification(message) {
         font-size: 14px;
         font-weight: 500;
         color: white;
-        background: linear-gradient(135deg, #ff5c9f, #7a5dcb);
+        background: linear-gradient(135deg, #ff5c9f 0%, #ff8f70 55%, #f6b43d 100%);
         box-shadow: 0 5px 20px rgba(255, 92, 159, 0.3);
         z-index: 999999;
         display: flex;
@@ -416,7 +430,7 @@ function createProgressNotification(message) {
       }
 
       .progress-complete {
-        background: linear-gradient(135deg, #52c41a, #85e255);
+        background: linear-gradient(135deg, #54d6bb, #7ee8c9);
       }
 
       .progress-complete .progress-bar {
@@ -534,7 +548,7 @@ function stopIndeterminateProgress(notification) {
 
 // Function to observe for dynamically added inputs
 function observeDynamicInputs() {
-  console.log('TalkType: Setting up MutationObserver...');
+  debugLog('TalkType: Setting up MutationObserver...');
 
   // Create a focused scan function that only looks for actual text inputs
   const scanAndAttachMic = (root) => {
@@ -622,7 +636,7 @@ function observeDynamicInputs() {
     // Only log if it took more than 50ms to avoid spam
     const duration = performance.now() - startTime;
     if (duration > 50) {
-      console.log(`TalkType: Scan completed in ${Math.round(duration)}ms`);
+      debugLog(`TalkType: Scan completed in ${Math.round(duration)}ms`);
     }
   };
 
@@ -935,15 +949,10 @@ function addMicrophoneToInput(inputElement) {
       return;
     }
 
-    const focusedElement = document.activeElement;
-    const inputHasFocus =
-      focusedElement === inputElement ||
-      (typeof inputElement.contains === 'function' && inputElement.contains(focusedElement));
-
-    if (!isRecording && !inputHasFocus) {
+    // The button knows which field it belongs to — clicking it is the intent.
+    // Focus the field ourselves instead of bouncing the user with a notice.
+    if (!isRecording && document.activeElement !== inputElement && !inputElement.contains(document.activeElement)) {
       inputElement.focus();
-      showStatusNotification('Click in the text field first, then record.', 'info');
-      return;
     }
 
     debugLog('TalkType: Mic button clicked, isRecording:', isRecording);
@@ -983,7 +992,6 @@ function addMicrophoneToInput(inputElement) {
       else {
         // Not recording, start a new recording
         debugLog('TalkType: Starting new recording...');
-        showStatusNotification('Recording... Click to stop', 'recording');
 
         // Set active input element as a global target
         activeInput = inputElement;
@@ -1210,7 +1218,11 @@ async function cancelRecording() {
     maxRecordingTimer = null;
   }
 
-  if (liveSession) {
+  if (quickSession) {
+    const current = quickSession;
+    quickSession = null;
+    current.cancel();
+  } else if (liveSession) {
     const current = liveSession;
     liveSession = null;
     try {
@@ -1232,21 +1244,25 @@ async function cancelRecording() {
 }
 
 // ===================================================================
-// LIVE ENGINE (Deepgram) - words land in the field while you talk.
-// Audio streams through the background worker, which holds the key.
+// QUICK ENGINE — Chrome's built-in SpeechRecognition. Zero setup, no key.
+// Chrome streams the audio to Google's speech service; clean text only.
 // ===================================================================
 
-async function startLiveRecording(targetInput, indicator) {
+let quickSession = null;
+
+function getSpeechRecognitionCtor() {
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+async function startQuickRecording(targetInput, indicator) {
   if (isRecording) return;
 
-  if (typeof window.TalkTypeLiveSession === 'undefined') {
-    showStatusNotification('Live mode failed to load. Try reloading the page.', 'error');
-    return;
-  }
-
-  const setup = await chrome.runtime.sendMessage({ action: 'getSetupState' }).catch(() => null);
-  if (!setup?.hasDeepgramKey) {
-    showStatusNotification('Live mode needs a Deepgram API key — add it in the extension options.', 'error');
+  const Recognition = getSpeechRecognitionCtor();
+  if (!Recognition) {
+    resetRecordingIndicators();
+    showStatusNotification('This browser has no built-in speech recognition. Pick another engine.', 'error', {
+      action: { label: 'Open settings', onClick: () => chrome.runtime.sendMessage({ action: 'openOptions' }) }
+    });
     return;
   }
 
@@ -1258,11 +1274,212 @@ async function startLiveRecording(targetInput, indicator) {
     indicator.classList.add('pulse-animation');
   }
 
-  const liveNotification = showStatusNotification('Listening — your words land as you talk', 'recording');
+  const notification = showStatusNotification('Listening — words land as you talk', 'recording', {
+    hint: stopHint(),
+    caption: '…',
+    action: { label: 'Done', onClick: () => stopRecording() }
+  });
   const updateInterim = (text) => {
-    const messageEl = liveNotification?.querySelector('.talktype-notification-message');
-    if (messageEl && text) {
-      messageEl.textContent = text.length > 90 ? '…' + text.slice(-90) : text;
+    const captionEl = notification?.querySelector('.talktype-notification-caption');
+    if (captionEl && text) {
+      captionEl.textContent = text.length > 140 ? '…' + text.slice(-140) : text;
+    }
+  };
+
+  let fullTranscript = '';
+  let stopping = false;
+  let started = false;
+  let resolveEnded = null;
+
+  const rec = new Recognition();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
+  rec.lang = navigator.language || 'en-US';
+
+  rec.onstart = () => {
+    if (!started) {
+      started = true;
+      window.TalkTypeSounds?.play('start');
+    }
+  };
+
+  rec.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      const result = event.results[i];
+      const text = (result[0]?.transcript || '').trim();
+      if (!text) continue;
+      if (result.isFinal) {
+        fullTranscript = fullTranscript ? `${fullTranscript} ${text}` : text;
+        const target = targetInput.isConnected ? targetInput : getActiveInput();
+        if (target) {
+          try {
+            insertTextIntoInput(target, text + ' ');
+          } catch (e) {
+            debugLog('TalkType: quick insert failed', e);
+          }
+        } else {
+          updateInterim('Text field lost — still listening, your words will be copied at the end');
+        }
+      } else {
+        interim += text + ' ';
+      }
+    }
+    if (interim) updateInterim(interim.trim());
+  };
+
+  rec.onerror = (event) => {
+    // Silence and our own abort are not errors worth a toast
+    if (event.error === 'no-speech' || event.error === 'aborted') return;
+    const message =
+      event.error === 'not-allowed' || event.error === 'service-not-allowed'
+        ? 'Microphone permission needed. Click the lock icon in your address bar and allow microphone access.'
+        : event.error === 'network'
+          ? "Chrome couldn't reach its speech service. Check your connection, or switch engines in settings."
+          : event.error === 'audio-capture'
+            ? 'No microphone found. Plug one in and try again.'
+            : `Speech recognition error: ${event.error}`;
+    window.TalkTypeSounds?.play('error');
+    showStatusNotification(message, 'error');
+    abortQuickSession();
+  };
+
+  rec.onend = () => {
+    if (!quickSession || quickSession.rec !== rec) return;
+    if (stopping) {
+      if (resolveEnded) resolveEnded();
+      return;
+    }
+    // Chrome ends recognition after a pause; keep the session alive until
+    // the user actually stops.
+    if (isRecording) {
+      try {
+        rec.start();
+      } catch (e) {
+        // Already starting — fine.
+      }
+    }
+  };
+
+  quickSession = {
+    rec,
+    targetInput,
+    getTranscript: () => fullTranscript,
+    stop: () =>
+      new Promise((resolve) => {
+        stopping = true;
+        resolveEnded = resolve;
+        setTimeout(resolve, 1500); // Bounded: the final result should flush well within this
+        try {
+          rec.stop();
+        } catch (e) {
+          resolve();
+        }
+      }),
+    cancel: () => {
+      stopping = true;
+      try {
+        rec.abort();
+      } catch (e) {
+        // Already gone.
+      }
+    }
+  };
+
+  try {
+    rec.start();
+    if (maxRecordingTimer) clearTimeout(maxRecordingTimer);
+    maxRecordingTimer = setTimeout(() => {
+      if (isRecording) {
+        showStatusNotification('Recording hit the 5 minute limit — wrapping up', 'info');
+        stopRecording();
+      }
+    }, MAX_RECORDING_MS);
+  } catch (error) {
+    console.error('TalkType: Failed to start quick recognition:', error);
+    showStatusNotification('Could not start speech recognition: ' + error.message, 'error');
+    abortQuickSession();
+  }
+}
+
+function abortQuickSession() {
+  const current = quickSession;
+  quickSession = null;
+  isRecording = false;
+  if (maxRecordingTimer) {
+    clearTimeout(maxRecordingTimer);
+    maxRecordingTimer = null;
+  }
+  if (current) current.cancel();
+  resetRecordingIndicators();
+}
+
+async function finishQuickRecording() {
+  const current = quickSession;
+  if (!current) return;
+
+  window.TalkTypeSounds?.play('stop');
+  showStatusNotification('Finishing up...', 'processing');
+
+  await current.stop();
+  quickSession = null;
+  resetRecordingIndicators();
+
+  const transcript = current.getTranscript();
+  if (transcript) {
+    window.TalkTypeSounds?.play('success');
+    if (current.targetInput && current.targetInput.isConnected) {
+      showStatusNotification('Transcription complete!', 'success');
+    } else {
+      try {
+        await navigator.clipboard.writeText(transcript);
+        showStatusNotification('Text field disappeared — transcript copied to clipboard', 'info');
+      } catch (clipError) {
+        showStatusNotification('Text field disappeared and clipboard copy failed', 'error');
+      }
+    }
+    window.TalkTypeStorage.appendTranscriptToHistory({
+      text: transcript,
+      style: 'standard',
+      host: location.hostname
+    }).catch(() => {});
+  } else {
+    showStatusNotification('No speech detected', 'info');
+  }
+}
+
+// ===================================================================
+// LIVE ENGINE (Deepgram) - words land in the field while you talk.
+// Audio streams through the background worker, which holds the key.
+// ===================================================================
+
+async function startLiveRecording(targetInput, indicator) {
+  if (isRecording) return;
+
+  if (typeof window.TalkTypeLiveSession === 'undefined') {
+    resetRecordingIndicators();
+    showStatusNotification('Live mode failed to load. Try reloading the page.', 'error');
+    return;
+  }
+
+  isRecording = true;
+  activeInput = targetInput;
+
+  if (indicator) {
+    indicator.style.display = 'block';
+    indicator.classList.add('pulse-animation');
+  }
+
+  const liveNotification = showStatusNotification('Listening — words land as you talk', 'recording', {
+    hint: stopHint(),
+    caption: '…',
+    action: { label: 'Done', onClick: () => stopRecording() }
+  });
+  const updateInterim = (text) => {
+    const captionEl = liveNotification?.querySelector('.talktype-notification-caption');
+    if (captionEl && text) {
+      captionEl.textContent = text.length > 140 ? '…' + text.slice(-140) : text;
     }
   };
 
@@ -1389,6 +1606,9 @@ async function finishLiveRecording() {
 // Helper function to strictly validate if an element is a proper text input
 function isValidTextInputElement(element) {
   if (!element) return false;
+
+  // Our own extension pages opt specific fields out (API key inputs, etc.)
+  if (element.dataset && element.dataset.talktypeIgnore !== undefined) return false;
 
   // Get the computed style to check actual visibility
   const computedStyle = window.getComputedStyle(element);
@@ -1615,12 +1835,29 @@ function positionMicButton(inputElement, micButton) {
 
 // Function to start recording
 async function startRecording(targetInput, indicator) {
-  console.log('TalkType: Starting recording with services:', !!audioService, !!apiService);
+  debugLog('TalkType: Starting recording with services:', !!audioService, !!apiService);
 
-  // Live engine takes a completely different path: streaming instead of batch
-  const { transcriptionEngine } = await chrome.storage.sync.get({ transcriptionEngine: 'cloud' });
+  // Is the chosen engine actually usable? The worker checks the keys — this
+  // side only learns a boolean, never the key.
+  const setup = await chrome.runtime.sendMessage({ action: 'getSetupState' }).catch(() => null);
+  if (setup?.shortcut) lastKnownShortcut = setup.shortcut;
+  if (setup && !setup.engineReady) {
+    resetRecordingIndicators();
+    const need = setup.engine === 'live' ? 'a Deepgram key' : 'a Gemini key';
+    showStatusNotification(`TalkType needs ${need} before it can transcribe.`, 'info', {
+      action: { label: 'Open settings', onClick: () => chrome.runtime.sendMessage({ action: 'openOptions' }) }
+    });
+    return;
+  }
+
+  // Live and Quick take completely different paths: streaming instead of batch
+  const transcriptionEngine = setup?.engine || 'cloud';
   if (transcriptionEngine === 'live') {
     await startLiveRecording(targetInput, indicator);
+    return;
+  }
+  if (transcriptionEngine === 'browser') {
+    await startQuickRecording(targetInput, indicator);
     return;
   }
 
@@ -1648,13 +1885,13 @@ async function startRecording(targetInput, indicator) {
 async function startRecordingCore(targetInput, indicator) {
   // Check if already recording
   if (isRecording) {
-    console.log('TalkType: Already recording, ignoring start request');
+    debugLog('TalkType: Already recording, ignoring start request');
     return;
   }
 
   try {
     // Comprehensive browser API debugging
-    console.log('TalkType: Checking browser API support...');
+    debugLog('TalkType: Checking browser API support...');
 
     if (!navigator.mediaDevices) {
       console.error('TalkType: navigator.mediaDevices not available!');
@@ -1662,9 +1899,9 @@ async function startRecordingCore(targetInput, indicator) {
       return;
     }
 
-    console.log('TalkType: mediaDevices API available:', !!navigator.mediaDevices);
-    console.log('TalkType: getUserMedia available:', !!navigator.mediaDevices.getUserMedia);
-    console.log('TalkType: MediaRecorder available:', typeof MediaRecorder !== 'undefined');
+    debugLog('TalkType: mediaDevices API available:', !!navigator.mediaDevices);
+    debugLog('TalkType: getUserMedia available:', !!navigator.mediaDevices.getUserMedia);
+    debugLog('TalkType: MediaRecorder available:', typeof MediaRecorder !== 'undefined');
 
     // Check if recording is supported by audioService
     if (!audioService.isRecordingSupported()) {
@@ -1674,18 +1911,18 @@ async function startRecordingCore(targetInput, indicator) {
     }
 
     // Check permissions directly
-    console.log('TalkType: Checking permissions...');
+    debugLog('TalkType: Checking permissions...');
     if (navigator.permissions && navigator.permissions.query) {
       try {
         const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-        console.log('TalkType: Microphone permission status:', permissionStatus.state);
+        debugLog('TalkType: Microphone permission status:', permissionStatus.state);
 
         if (permissionStatus.state === 'denied') {
           showStatusNotification('Microphone permission denied. Please enable in your browser settings.', 'error');
           return;
         }
       } catch (permError) {
-        console.log('TalkType: Permission check error (this is normal in some browsers):', permError);
+        debugLog('TalkType: Permission check error (this is normal in some browsers):', permError);
       }
     }
 
@@ -1696,7 +1933,7 @@ async function startRecordingCore(targetInput, indicator) {
 
     // Show recording indicator with animations using classes
     if (indicator) {
-      console.log('TalkType: Showing recording indicator');
+      debugLog('TalkType: Showing recording indicator');
       indicator.style.display = 'block';
 
       // Add pulse animation class
@@ -1727,11 +1964,14 @@ async function startRecordingCore(targetInput, indicator) {
       }
     }
 
-    // Show enhanced listening notification - shorter text
-    showStatusNotification('Recording... Click to stop', 'recording');
+    // Listening notice with a way to stop that doesn't require finding the mic again
+    showStatusNotification('Listening…', 'recording', {
+      hint: stopHint(),
+      action: { label: 'Done', onClick: () => stopRecording() }
+    });
 
     // Start recording with thorough error handling
-    console.log('TalkType: Calling audioService.startRecording()...');
+    debugLog('TalkType: Calling audioService.startRecording()...');
     try {
       await audioService.startRecording();
       debugLog('TalkType: Recording started successfully');
@@ -1758,7 +1998,7 @@ async function startRecordingCore(targetInput, indicator) {
 
     // Handle different error types with user-friendly notifications instead of alerts
     if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-      console.log('TalkType: Permission error detected:', error.name);
+      debugLog('TalkType: Permission error detected:', error.name);
 
       // Create a detailed but friendly notification
       showStatusNotification('Microphone permission needed. Click the lock icon in your address bar and allow microphone access.', 'error');
@@ -1767,16 +2007,16 @@ async function startRecordingCore(targetInput, indicator) {
       if (navigator.permissions && navigator.permissions.query) {
         navigator.permissions.query({ name: 'microphone' })
           .then(permStatus => {
-            console.log('TalkType: System permission status:', permStatus.state);
+            debugLog('TalkType: System permission status:', permStatus.state);
           })
           .catch(permErr => {
-            console.log('TalkType: System permission check failed:', permErr);
+            debugLog('TalkType: System permission check failed:', permErr);
           });
       }
 
       // On Mac, show a special notification
       if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
-        console.log('TalkType: Mac detected, showing special message');
+        debugLog('TalkType: Mac detected, showing special message');
         setTimeout(() => {
           showStatusNotification('Mac users: Also check System Preferences → Security & Privacy → Microphone', 'info');
         }, 3000);
@@ -1787,14 +2027,14 @@ async function startRecordingCore(targetInput, indicator) {
       showStatusNotification('Your browser doesn\'t support audio recording. Try using Chrome or Edge.', 'error');
     } else {
       // Generic error with more details
-      console.log('TalkType: General recording error:', error);
+      debugLog('TalkType: General recording error:', error);
       showStatusNotification(`Recording error: ${error.message}`, 'error');
     }
 
     // Reset state
     isRecording = false;
     activeInput = null;
-    console.log('TalkType: Reset recording state after error');
+    debugLog('TalkType: Reset recording state after error');
 
     // Hide recording indicator and update button state
     if (indicator) {
@@ -1838,7 +2078,11 @@ async function stopRecording() {
     maxRecordingTimer = null;
   }
 
-  // Live engine: flush the remaining finals and wrap up — no batch step
+  // Quick / Live engines: flush the remaining finals and wrap up — no batch step
+  if (quickSession) {
+    await finishQuickRecording();
+    return;
+  }
   if (liveSession) {
     await finishLiveRecording();
     return;
@@ -2029,222 +2273,167 @@ async function stopRecording() {
 }
 
 
-// Function to show status notifications with enhanced visual appeal
-function showStatusNotification(message, type = 'info') {
-  debugLog('TalkType: Showing notification', type);
+// Human hint for how to end a recording, quoting the real shortcut when bound
+function stopHint() {
+  const parts = ['click the mic'];
+  if (lastKnownShortcut) parts.push(`press ${lastKnownShortcut}`);
+  return `To finish: ${parts.join(' or ')} · Esc discards`;
+}
 
-
-  // Remove ALL existing notifications to avoid duplicates
-  const existingNotifications = document.querySelectorAll(`.audio-to-text-notification`);
-  existingNotifications.forEach(notification => {
-    if (document.body.contains(notification)) {
-      document.body.removeChild(notification);
+// Inject the notification stylesheet once. Palette is the TalkType brand
+// (pink → peach → mint) so the toast reads as ours on any site.
+function ensureNotificationStyles() {
+  if (document.getElementById('talktype-notification-styles')) return;
+  const styleEl = document.createElement('style');
+  styleEl.id = 'talktype-notification-styles';
+  styleEl.textContent = `
+    .audio-to-text-notification {
+      position: fixed; top: 20px; right: 20px; z-index: 2147483646;
+      display: flex; align-items: flex-start; gap: 10px;
+      max-width: 360px; padding: 14px 16px; border-radius: 18px;
+      font: 600 15px/1.35 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #202432; letter-spacing: 0;
+      background: rgba(255, 250, 244, 0.94);
+      border: 2px solid rgba(255, 92, 159, 0.35);
+      box-shadow: 0 14px 40px rgba(255, 92, 159, 0.22), 0 0 0 4px rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      opacity: 0; transform: translateY(-16px) scale(0.97);
+      transition: opacity 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+      pointer-events: all; box-sizing: border-box; text-align: left;
     }
-  });
+    .audio-to-text-notification.talktype-in { opacity: 1; transform: translateY(0) scale(1); }
+    .audio-to-text-notification-recording { border-color: rgba(255, 92, 159, 0.7); animation: talktype-listen-pulse 2s infinite; }
+    .audio-to-text-notification-success { border-color: rgba(84, 214, 187, 0.8); }
+    .audio-to-text-notification-error { border-color: rgba(231, 76, 90, 0.7); }
+    .audio-to-text-notification-processing { border-color: rgba(246, 164, 58, 0.8); }
+    .talktype-notification-icon {
+      flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 15px; color: #fff;
+      background: linear-gradient(135deg, #ff5c9f 0%, #ff8f70 55%, #f6b43d 100%);
+      box-shadow: 0 4px 10px rgba(255, 92, 159, 0.3);
+    }
+    .audio-to-text-notification-success .talktype-notification-icon { background: linear-gradient(135deg, #54d6bb, #7ee8c9); }
+    .audio-to-text-notification-error .talktype-notification-icon { background: linear-gradient(135deg, #e74c5a, #ff8f70); }
+    .audio-to-text-notification-processing .talktype-notification-icon { animation: talktype-spin 1.2s linear infinite; }
+    .audio-to-text-notification-recording .talktype-notification-icon { animation: talktype-breathe 1.4s ease-in-out infinite; }
+    .talktype-notification-body { flex: 1 1 auto; min-width: 0; }
+    .talktype-notification-message { display: block; }
+    .talktype-notification-hint { display: block; margin-top: 4px; font-size: 12px; font-weight: 500; color: rgba(56, 61, 77, 0.72); }
+    .talktype-notification-caption {
+      display: block; margin-top: 8px; padding: 8px 10px; border-radius: 10px;
+      font-size: 13px; font-weight: 500; font-style: italic; color: #202432;
+      background: rgba(255, 92, 159, 0.08); border: 1px dashed rgba(255, 92, 159, 0.35);
+      max-height: 72px; overflow: hidden;
+    }
+    .talktype-notification-action {
+      margin-top: 8px; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+      font: 700 12px/1 inherit; font-family: inherit; color: #fff; border: none;
+      background: linear-gradient(135deg, #ff5c9f 0%, #ff8f70 55%, #f6b43d 100%);
+      box-shadow: 0 4px 10px rgba(255, 92, 159, 0.28);
+    }
+    .talktype-notification-action:hover { filter: brightness(1.05); transform: translateY(-1px); }
+    .talktype-notification-close {
+      flex: 0 0 auto; background: transparent; border: none; cursor: pointer;
+      width: 24px; height: 24px; margin: -2px -4px 0 0; padding: 0; border-radius: 50%;
+      color: rgba(32, 36, 50, 0.55); font: 400 20px/24px inherit; font-family: inherit;
+    }
+    .talktype-notification-close:hover { background: rgba(255, 92, 159, 0.12); color: #d73374; }
+    @keyframes talktype-listen-pulse {
+      0%, 100% { box-shadow: 0 14px 40px rgba(255, 92, 159, 0.22), 0 0 0 4px rgba(255, 255, 255, 0.5); }
+      50% { box-shadow: 0 14px 40px rgba(255, 92, 159, 0.38), 0 0 0 6px rgba(255, 92, 159, 0.12); }
+    }
+    @keyframes talktype-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+    @keyframes talktype-spin { to { transform: rotate(360deg); } }
+    @media (prefers-color-scheme: dark) {
+      .audio-to-text-notification { background: rgba(32, 30, 40, 0.94); color: #fff5f9; border-color: rgba(255, 92, 159, 0.45); }
+      .talktype-notification-hint { color: rgba(255, 245, 249, 0.68); }
+      .talktype-notification-caption { color: #fff5f9; background: rgba(255, 92, 159, 0.14); }
+      .talktype-notification-close { color: rgba(255, 245, 249, 0.6); }
+    }
+  `;
+  (document.head || document.documentElement).appendChild(styleEl);
+}
 
-  // Create notification element with enhanced glass morphism style
+// Function to show status notifications.
+// options: { hint, caption, action: { label, onClick }, timeout }
+function showStatusNotification(message, type = 'info', options = {}) {
+  debugLog('TalkType: Showing notification', type);
+  ensureNotificationStyles();
+
+  // One toast at a time — a new one replaces whatever was showing
+  document.querySelectorAll('.audio-to-text-notification').forEach((existing) => existing.remove());
+
+  const ICONS = { error: '!', success: '✓', recording: '●', processing: '◌', info: 'ⓘ', warning: '!' };
+
   const notification = document.createElement('div');
   notification.className = `audio-to-text-notification audio-to-text-notification-${type}`;
-  notification.style.position = 'fixed';
-  notification.style.top = '20px';  // Changed from bottom to top
-  notification.style.right = '20px';
-  notification.style.padding = '16px 20px';
-  notification.style.borderRadius = '16px';
-  notification.style.boxShadow = '0 10px 40px rgba(31, 38, 135, 0.3)';
-  notification.style.zIndex = '99999'; // Very high z-index to ensure visibility
-  notification.style.fontSize = '16px';
-  notification.style.fontWeight = '600';
-  notification.style.maxWidth = '350px';
-  notification.style.opacity = '0';
-  notification.style.transform = 'translateY(-30px) scale(0.95)';
-  notification.style.transition = 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
-  notification.style.backdropFilter = 'blur(16px)';
-  notification.style.webkitBackdropFilter = 'blur(16px)';
-  notification.style.border = '2px solid rgba(255, 255, 255, 0.25)';
-  notification.style.pointerEvents = 'all';
+  notification.setAttribute('role', type === 'error' ? 'alert' : 'status');
 
-  // Create notification styles with animations if they don't exist yet
-  if (!document.getElementById('talktype-notification-styles')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'talktype-notification-styles';
-    styleEl.textContent = `
-      @keyframes talktype-gentle-pulse {
-        0% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
-        50% { box-shadow: 0 12px 40px rgba(255, 255, 255, 0.5); border-color: rgba(255, 255, 255, 0.5); }
-        100% { box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.3); }
-      }
-
-      @keyframes talktype-gradientBg {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-      }
-
-      @keyframes talktype-float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-5px); }
-        100% { transform: translateY(0px); }
-      }
-
-      @keyframes talktype-sparkle {
-        0%, 100% { opacity: 0; }
-        50% { opacity: 1; }
-      }
-
-      .talktype-gradient-notification {
-        background: linear-gradient(90deg, #4568DC, #7474BF, #348AC7, #54d6bb);
-        background-size: 300% 100%;
-        animation: talktype-gradientBg 3s ease infinite;
-      }
-
-      .talktype-recording-notification {
-        background: linear-gradient(135deg, rgba(255, 92, 159, 0.85), rgba(70, 174, 247, 0.8));
-        animation: talktype-gentle-pulse 2s infinite;
-      }
-
-      .talktype-success-notification {
-        background: linear-gradient(135deg, rgba(76, 175, 80, 0.85), rgba(105, 220, 155, 0.8));
-      }
-
-      .talktype-error-notification {
-        background: linear-gradient(135deg, rgba(244, 67, 54, 0.85), rgba(255, 87, 34, 0.8));
-      }
-
-      .talktype-notification-icon {
-        display: inline-block;
-        margin-right: 10px;
-        vertical-align: middle;
-        animation: talktype-float 2s ease-in-out infinite;
-      }
-
-      .talktype-sparkle {
-        position: absolute;
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background-color: white;
-        opacity: 0;
-      }
-    `;
-    document.head.appendChild(styleEl);
-  }
-
-  // Create notification content with icon and message
-  let notificationIcon = '';
-
-  // Set styles based on notification type with enhanced aesthetics
-  if (type === 'error') {
-    notification.classList.add('talktype-error-notification');
-    notificationIcon = '❌';
-  } else if (type === 'success') {
-    notification.classList.add('talktype-success-notification');
-    notificationIcon = '✓';
-  } else if (type === 'recording') {
-    notification.classList.add('talktype-recording-notification');
-    notificationIcon = '🎤';
-
-    // Add sparkle effects for recording
-    for (let i = 0; i < 3; i++) {
-      const sparkle = document.createElement('span');
-      sparkle.className = 'talktype-sparkle';
-      sparkle.style.top = `${Math.random() * 100}%`;
-      sparkle.style.left = `${Math.random() * 100}%`;
-      sparkle.style.animation = `talktype-sparkle ${1 + Math.random()}s ease-in-out infinite ${Math.random()}s`;
-      notification.appendChild(sparkle);
-    }
-  } else if (type === 'processing') {
-    notification.classList.add('talktype-gradient-notification');
-    notificationIcon = '⚙️';
-  } else {
-    notification.style.background = 'linear-gradient(135deg, rgba(33, 150, 243, 0.85), rgba(3, 169, 244, 0.8))';
-    notificationIcon = 'ℹ️';
-  }
-
-  // Create icon element
   const iconElement = document.createElement('span');
   iconElement.className = 'talktype-notification-icon';
-  iconElement.textContent = notificationIcon;
+  iconElement.textContent = ICONS[type] || ICONS.info;
+  notification.appendChild(iconElement);
 
-  // Create message text element (classed so live mode can update it in place)
+  const body = document.createElement('div');
+  body.className = 'talktype-notification-body';
+
   const messageElement = document.createElement('span');
   messageElement.className = 'talktype-notification-message';
   messageElement.textContent = message;
-  messageElement.style.verticalAlign = 'middle';
+  body.appendChild(messageElement);
 
-  // Add icon and message to notification
-  notification.appendChild(iconElement);
-  notification.appendChild(messageElement);
+  if (options.hint) {
+    const hintElement = document.createElement('span');
+    hintElement.className = 'talktype-notification-hint';
+    hintElement.textContent = options.hint;
+    body.appendChild(hintElement);
+  }
 
-  // Apply common styles
-  notification.style.color = 'white';
-  notification.style.display = 'flex';
-  notification.style.alignItems = 'center';
+  if (options.caption !== undefined) {
+    const captionElement = document.createElement('span');
+    captionElement.className = 'talktype-notification-caption';
+    captionElement.textContent = options.caption;
+    body.appendChild(captionElement);
+  }
 
-  // Add close button with improved styling
+  if (options.action) {
+    const actionButton = document.createElement('button');
+    actionButton.type = 'button';
+    actionButton.className = 'talktype-notification-action';
+    actionButton.textContent = options.action.label;
+    actionButton.addEventListener('mousedown', (e) => e.preventDefault()); // keep focus in the text field
+    actionButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      options.action.onClick();
+    });
+    body.appendChild(actionButton);
+  }
+
+  notification.appendChild(body);
+
+  const dismiss = () => {
+    if (!notification.isConnected) return;
+    notification.classList.remove('talktype-in');
+    setTimeout(() => notification.remove(), 350);
+  };
+
   const closeButton = document.createElement('button');
-  closeButton.innerHTML = '&times;';
-  closeButton.style.background = 'transparent';
-  closeButton.style.border = 'none';
-  closeButton.style.color = 'white';
-  closeButton.style.marginLeft = '15px';
-  closeButton.style.cursor = 'pointer';
-  closeButton.style.fontSize = '22px';
-  closeButton.style.lineHeight = '18px';
-  closeButton.style.opacity = '0.8';
-  closeButton.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-  closeButton.style.padding = '0 5px';
-  closeButton.style.borderRadius = '50%';
-
-  // Add hover effects to close button
-  closeButton.onmouseenter = () => {
-    closeButton.style.opacity = '1';
-    closeButton.style.transform = 'scale(1.1)';
-  };
-
-  closeButton.onmouseleave = () => {
-    closeButton.style.opacity = '0.8';
-    closeButton.style.transform = 'scale(1)';
-  };
-
-  closeButton.onclick = () => {
-    if (document.body.contains(notification)) {
-      notification.style.opacity = '0';
-      notification.style.transform = 'translateY(30px) scale(0.9)';
-
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 500);
-    }
-  };
-
+  closeButton.type = 'button';
+  closeButton.className = 'talktype-notification-close';
+  closeButton.setAttribute('aria-label', 'Dismiss');
+  closeButton.textContent = '×';
+  closeButton.addEventListener('mousedown', (e) => e.preventDefault());
+  closeButton.addEventListener('click', dismiss);
   notification.appendChild(closeButton);
 
-  // Add to DOM
   document.body.appendChild(notification);
+  requestAnimationFrame(() => notification.classList.add('talktype-in'));
 
-  // Trigger enhanced entrance animation (adjusted for top position)
-  setTimeout(() => {
-    notification.style.opacity = '1';
-    notification.style.transform = 'translateY(0) scale(1)';
-  }, 10);
-
-  // Auto-remove after timeout (except for recording notifications)
+  // Recording toasts stay until the recording ends; everything else fades
   if (type !== 'recording') {
-    setTimeout(() => {
-      if (document.body.contains(notification)) {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateY(-20px) scale(0.95)';
-
-        // Remove from DOM after transition
-        setTimeout(() => {
-          if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-          }
-        }, 500);
-      }
-    }, 6000);
+    setTimeout(dismiss, options.timeout || 6000);
   }
 
   return notification;
@@ -2261,7 +2450,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
       let response = {
         hasActiveInput: hasActiveInput,
-        inputInfo: null
+        inputInfo: null,
+        host: location.hostname.replace(/^www\./, '')
       };
 
       if (hasActiveInput) {
@@ -2285,7 +2475,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
     else if (request.action === 'toggleRecording') {
-      // Keyboard shortcut (Alt+Shift+D) relayed from the background worker
+      // Keyboard shortcut (Alt+Shift+D by default) relayed from the background worker
+      if (typeof request.shortcut === 'string') lastKnownShortcut = request.shortcut;
       if (isRecording) {
         stopRecording();
         sendResponse({ success: true, state: 'stopping' });
@@ -2297,7 +2488,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           getActiveInput() || (isValidTextInputElement(focused) ? focused : null);
 
         if (!target) {
-          showStatusNotification('Click into a text field first, then hit the shortcut.', 'info');
+          showStatusNotification('Click into a text field, then press the shortcut again.', 'info');
           sendResponse({ success: false, state: 'no-input' });
         } else {
           activeInput = target;

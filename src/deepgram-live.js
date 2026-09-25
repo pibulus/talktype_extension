@@ -7,7 +7,13 @@ const DEEPGRAM_LIVE_URL = 'wss://api.deepgram.com/v1/listen';
 const KEEPALIVE_INTERVAL_MS = 8000; // Deepgram closes idle sockets after ~10s
 const MAX_BUFFERED_AUDIO_CHUNKS = 120; // ~30s of 250ms chunks awaiting socket open
 
-function buildDeepgramLiveUrl() {
+// nova-3 keyterm prompting: the user's own words, spelled their way
+function appendKeyterms(params, customVocabulary) {
+  globalThis.TalkTypeGemini.parseVocabulary(customVocabulary).forEach((word) => params.append('keyterm', word));
+  return params;
+}
+
+function buildDeepgramLiveUrl(customVocabulary = '') {
   const params = new URLSearchParams({
     model: 'nova-3',
     language: 'en-US',
@@ -22,6 +28,7 @@ function buildDeepgramLiveUrl() {
     numerals: 'true',
     filler_words: 'false'
   });
+  appendKeyterms(params, customVocabulary);
 
   return `${DEEPGRAM_LIVE_URL}?${params.toString()}`;
 }
@@ -40,6 +47,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
   let socket = null;
   let keepAliveTimer = null;
+  let ended = false; // Set on stop/cancel/disconnect — may arrive while 'start' is still awaiting storage
   const pendingChunks = []; // Audio that arrives before the socket opens
 
   const post = (message) => {
@@ -77,9 +85,14 @@ chrome.runtime.onConnect.addListener((port) => {
         });
         return;
       }
+      const { customVocabulary } = await chrome.storage.sync.get({ customVocabulary: '' });
+
+      // The user stopped, cancelled or closed the tab while we were reading
+      // storage — opening a socket now would leak it.
+      if (ended) return;
 
       try {
-        socket = new WebSocket(buildDeepgramLiveUrl(), ['token', apiKey]);
+        socket = new WebSocket(buildDeepgramLiveUrl(customVocabulary), ['token', apiKey]);
       } catch (e) {
         post({ type: 'error', message: 'Could not open the live transcription connection.' });
         return;
@@ -145,6 +158,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ type: 'CloseStream' }));
       } else {
+        ended = true;
         cleanup();
         post({ type: 'closed' });
       }
@@ -152,9 +166,80 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (msg.type === 'cancel') {
+      ended = true;
       cleanup();
     }
   });
 
-  port.onDisconnect.addListener(cleanup);
+  port.onDisconnect.addListener(() => {
+    ended = true;
+    cleanup();
+  });
 });
+
+// ===================================================================
+// PRERECORDED (batch) — used when the Live engine is selected but the
+// request is a whole clip (the popup records in batch mode). Same key, same
+// dictation tuning, no second provider to sign up for.
+// ===================================================================
+
+const DEEPGRAM_PRERECORDED_URL = 'https://api.deepgram.com/v1/listen';
+
+function base64ToBlob(base64, mimeType) {
+  return new Blob([base64ToArrayBuffer(base64)], { type: mimeType || 'audio/wav' });
+}
+
+async function transcribePrerecorded({ audioBase64, mimeType }) {
+  const apiKey = await globalThis.TalkTypeStorage.getDeepgramApiKey();
+  if (!apiKey) {
+    throw new Error('Missing Deepgram API key. Add it in the extension options first.');
+  }
+  if (!audioBase64 || typeof audioBase64 !== 'string') {
+    throw new Error('No audio received for transcription.');
+  }
+
+  const { customVocabulary } = await chrome.storage.sync.get({ customVocabulary: '' });
+  const params = appendKeyterms(
+    new URLSearchParams({
+      model: 'nova-3',
+      language: 'en-US',
+      smart_format: 'true',
+      punctuate: 'true',
+      numerals: 'true',
+      filler_words: 'false'
+    }),
+    customVocabulary
+  );
+
+  const response = await fetch(`${DEEPGRAM_PRERECORDED_URL}?${params.toString()}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Token ${apiKey}`,
+      'Content-Type': mimeType || 'audio/wav'
+    },
+    body: base64ToBlob(audioBase64, mimeType)
+  });
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Deepgram rejected the API key. Check it in extension settings.');
+    }
+    if (response.status === 402) {
+      throw new Error('Deepgram says this key is out of credit.');
+    }
+    if (response.status === 429) {
+      throw new Error('Deepgram is rate-limiting this key right now. Try again in a moment.');
+    }
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Deepgram transcription failed (${response.status})${detail ? ': ' + detail.slice(0, 120) : ''}`);
+  }
+
+  const data = await response.json();
+  const text = data?.results?.channels?.[0]?.alternatives?.[0]?.transcript?.trim();
+  if (!text) {
+    throw new Error('No speech detected.');
+  }
+  return text;
+}
+
+globalThis.TalkTypeDeepgram = { transcribePrerecorded };

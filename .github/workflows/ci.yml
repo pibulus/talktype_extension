@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Syntax check every script
+        run: for f in src/*.js scripts/*.mjs; do node --check "$f"; done
+
+      - name: Manifest is valid JSON and points at real files
+        run: |
+          node -e '
+            const fs = require("fs");
+            const m = JSON.parse(fs.readFileSync("src/manifest.json", "utf8"));
+            const files = [
+              m.background.service_worker,
+              m.action.default_popup,
+              m.options_ui.page,
+              ...Object.values(m.icons),
+              ...Object.values(m.action.default_icon),
+              ...m.content_scripts.flatMap((c) => [...c.js, ...(c.css || [])]),
+              ...m.web_accessible_resources.flatMap((w) => w.resources)
+            ];
+            const missing = files.filter((f) => !fs.existsSync("src/" + f));
+            if (missing.length) { console.error("Missing:", missing); process.exit(1); }
+            console.log("manifest", m.version, "ok,", files.length, "files present");
+          '
+
+      - name: Package
+        run: ./scripts/package.sh
+
+      - name: Install Playwright + Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: End-to-end (fake mic, stubbed provider)
+        run: node scripts/e2e.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: talktype-extension-zip
+          path: dist/*.zip

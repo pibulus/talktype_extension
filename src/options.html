@@ -1,593 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>TalkType - Options</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TalkType Settings</title>
+  <link rel="icon" href="icons/ghost/ghost-32.png">
+  <link rel="stylesheet" href="brand.css">
   <style>
-    :root {
-      --brand-ink: #202432;
-      --brand-pink: #ff5c9f;
-      --brand-peach: #f6a43a;
-      --brand-mint: #54d6bb;
-      --primary-gradient: linear-gradient(135deg, #ff5c9f 0%, #ff8f70 55%, #f6b43d 100%);
-      --hover-gradient: linear-gradient(135deg, #ff4f96 0%, #ff8268 55%, #efa930 100%);
-      --glass-bg: rgba(255, 255, 255, 0.74);
-      --glass-border: rgba(255, 176, 210, 0.62);
-      --glass-shadow: 0 14px 38px rgba(255, 92, 159, 0.13);
-      --text-primary: rgba(32, 36, 50, 0.96);
-      --text-secondary: rgba(56, 61, 77, 0.76);
-      --accent: #ff5c9f;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-attachment: fixed;
-      background: radial-gradient(circle at 50% 0%, rgba(255, 213, 229, 0.9), transparent 34%),
-        linear-gradient(145deg, #fff8eb 0%, #fff1f7 48%, #fff9ec 100%);
-      color: var(--text-primary);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    @keyframes gradientBG {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    .container {
-      max-width: 600px;
-      width: 100%;
-      padding: 0 20px;
-      box-sizing: border-box;
-    }
-
-    h1 {
-      font-size: 28px;
-      font-weight: 600;
-      text-align: center;
-      margin: 40px 0 30px;
-      color: var(--brand-ink);
-      text-shadow: none;
-    }
-
-    .card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 14px;
-      border: 1.5px solid var(--glass-border);
-      box-shadow:
-        var(--glass-shadow),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-      padding: 25px;
-      margin-bottom: 20px;
-      transition: all 0.2s ease;
-    }
-
-    .card-header {
-      font-size: 17px;
-      font-weight: 600;
-      margin-bottom: 20px;
-      letter-spacing: 0.3px;
-      color: var(--brand-ink);
-      text-shadow: none;
-      display: flex;
-      align-items: center;
-    }
-
-    .card-header svg {
-      margin-right: 10px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: var(--brand-ink);
-    }
-
-    input[type="text"],
-    input[type="password"] {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid var(--glass-border);
-      background: rgba(255, 255, 255, 0.74);
-      color: var(--brand-ink);
-      font-size: 15px;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      box-sizing: border-box;
-      transition: all 0.2s ease;
-    }
-
-    input[type="text"]:focus,
-    input[type="password"]:focus {
-      outline: none;
-      border-color: rgba(255, 92, 159, 0.62);
-      background: rgba(255, 255, 255, 0.92);
-      box-shadow: 0 0 0 3px rgba(255, 92, 159, 0.12);
-    }
-
-    button {
-      background: var(--primary-gradient);
-      color: white;
-      padding: 12px 20px;
-      min-height: 44px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 700;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      font-size: 15px;
-      letter-spacing: 0.5px;
-      text-shadow: none;
-      position: relative;
-      overflow: hidden;
-    }
-
-    button::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: all 0.6s ease;
-    }
-
-    button:hover {
-      background: var(--hover-gradient);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
-    }
-
-    button:hover::before {
-      left: 100%;
-    }
-
-    button:active {
-      transform: translateY(1px);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-    }
-
-    .status {
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 15px;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      border: 1px solid var(--glass-border);
-      display: none;
-    }
-
-    .success {
-      background-color: rgba(76, 175, 80, 0.2);
-      color: var(--brand-ink);
-      border-color: rgba(76, 175, 80, 0.3);
-    }
-
-    .error {
-      background-color: rgba(244, 67, 54, 0.2);
-      color: var(--brand-ink);
-      border-color: rgba(244, 67, 54, 0.3);
-    }
-
-    .info {
-      background: var(--glass-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 12px;
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
-      padding: 20px;
-      margin-bottom: 40px;
-      font-size: 15px;
-      line-height: 1.5;
-    }
-
-    .info ol {
-      margin-left: 20px;
-      padding-left: 0;
-    }
-
-    .info li {
-      margin-bottom: 8px;
-    }
-
-    :focus:not(:focus-visible) {
-      outline: none;
-    }
-
-    :focus-visible {
-      outline: 2px solid rgba(255, 92, 159, 0.85);
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
-
-    .permission-status {
-      margin-top: 15px;
-      padding: 15px;
-      border-radius: 10px;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid var(--glass-border);
-    }
-
-    .granted {
-      background-color: rgba(76, 175, 80, 0.2);
-      color: var(--brand-ink);
-      border-color: rgba(76, 175, 80, 0.3);
-    }
-
-    .denied {
-      background-color: rgba(244, 67, 54, 0.2);
-      color: var(--brand-ink);
-      border-color: rgba(244, 67, 54, 0.3);
-    }
-
-    .unknown {
-      background-color: rgba(255, 152, 0, 0.2);
-      color: var(--brand-ink);
-      border-color: rgba(255, 152, 0, 0.3);
-    }
-
-    .note {
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border-radius: 8px;
-      border: 1px solid var(--glass-border);
-      padding: 12px;
-      margin-top: 15px;
-      font-size: 14px;
-      line-height: 1.5;
-      color: var(--text-secondary);
-      background: rgba(255, 255, 255, 0.56);
-    }
-
-    .footer {
-      text-align: center;
-      margin: 30px 0;
-      font-size: 14px;
-      color: var(--text-secondary);
-      opacity: 0.8;
-    }
-
-    /* Icon styles */
-    .icon {
-      display: inline-block;
-      vertical-align: middle;
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-      margin-right: 6px;
-    }
-
-    /* Select dropdown */
-    .select-wrapper {
-      position: relative;
-    }
-
-    .select-wrapper::after {
-      content: '';
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 0;
-      height: 0;
-      border-left: 5px solid transparent;
-      border-right: 5px solid transparent;
-      border-top: 6px solid rgba(32, 36, 50, 0.55);
-      pointer-events: none;
-    }
-
-    select option {
-      background: #fff8eb;
-      color: var(--brand-ink);
-      padding: 8px;
-    }
-
-    #stylePreview {
-      border-left: 3px solid rgba(255, 92, 159, 0.35);
-      padding-left: 16px;
-      font-style: italic;
-      color: var(--text-secondary);
-      transition: all 0.3s ease;
-    }
-
-    .btn-group {
-      display: flex;
-      gap: 12px;
-      margin-top: 15px;
-    }
-
-    .btn-group button {
-      flex: 1;
-    }
-
-    button {
-      border: 1.5px solid var(--glass-border);
-    }
-
-    .info {
-      border: 1.5px solid var(--glass-border);
-      border-radius: 14px;
-    }
-
-    .brand-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 42px;
-      height: 42px;
-      margin-right: 10px;
-      border-radius: 50%;
-      background: var(--primary-gradient);
-      box-shadow:
-        0 8px 20px rgba(255, 92, 159, 0.24),
-        0 0 0 4px rgba(255, 255, 255, 0.72);
-      vertical-align: middle;
-    }
-
-    .brand-badge img {
-      width: 30px;
-      height: 30px;
-      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.14));
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
+    .section.muted { opacity: 0.55; }
+    #custom-style { margin-top: 12px; display: none; }
+    .brand-row { margin-bottom: 6px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>
-      <span class="brand-badge">
-        <img src="icons/icon_black/favicon-32x32.png" alt="" aria-hidden="true">
-      </span>
-      TalkType Settings
-    </h1>
-
-    <div class="card">
-      <div class="card-header">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 2l2.3 4.66L19 7.27l-3.5 3.41.83 4.82L12 13.77 7.67 15.5l.83-4.82L5 7.27l4.7-.61z"/>
-        </svg>
-        First Run
-      </div>
-
-      <div class="note" style="margin-top: 0;">
-        <strong>Quick path:</strong> add your Gemini key, test the mic, then click into any text box and use TalkType from the extension popup or inline mic button.
-      </div>
-
-      <div class="btn-group">
-        <button id="openAiStudio">
-          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor" d="M14 3v2h3.59L7 15.59L8.41 17L19 6.41V10h2V3z"/>
-            <path fill="currentColor" d="M5 5h6v2H7v10h10v-4h2v6H5z"/>
-          </svg>
-          Open Gemini Key Page
-        </button>
+    <div class="brand-row">
+      <span class="brand-mark"><img src="icons/ghost/ghost-128.png" alt=""></span>
+      <div>
+        <h1>TalkType Settings</h1>
+        <p class="tagline">Everything saves as you change it. No save buttons, no drama.</p>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 10a2 2 0 0 1 2 2c0 .74-.4 1.38-1 1.72V16a1 1 0 0 1-2 0v-2.28c-.6-.34-1-.98-1-1.72a2 2 0 0 1 2-2zm10 2c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10zm-2 0c0-4.42-3.58-8-8-8s-8 3.58-8 8 3.58 8 8 8 8-3.58 8-8z"/>
-        </svg>
-        API Configuration
+    <div class="card panel">
+      <div class="section">
+        <div class="kicker">Engine</div>
+        <p>How should your voice become text?</p>
+        <div id="engine-picker"></div>
+        <div id="key-field" style="margin-top: 16px;"></div>
+        <div id="offline-model" style="margin-top: 16px; display: none;"></div>
       </div>
 
-      <div class="form-group">
-        <label for="apiKey">Gemini API Key</label>
-        <input type="password" id="apiKey" placeholder="Paste your Gemini API key here" spellcheck="false" autocomplete="off">
-      </div>
-
-      <div class="note">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1s1 .45 1 1v4c0 .55-.45 1-1 1zm1-8h-2V7h2v2z"/>
-        </svg>
-        <span>Get a free API key from <strong>aistudio.google.com</strong>. Your key stays in local Chrome extension storage on this device and is only sent directly to Google for transcription.</span>
-      </div>
-
-      <button id="save" class="primary">Save Settings</button>
-      <div id="status" class="status"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M7 2v11h3v9l7-12h-4l4-8z"/>
-        </svg>
-        Transcription Engine
-      </div>
-
-      <div class="form-group">
-        <label for="transcriptionEngine">How should TalkType transcribe?</label>
-        <div class="select-wrapper">
-          <select id="transcriptionEngine" style="width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1.5px solid var(--glass-border); background: rgba(255, 255, 255, 0.74); color: var(--brand-ink); font-size: 15px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-sizing: border-box; cursor: pointer; appearance: none; -webkit-appearance: none;">
-            <option value="cloud">☁️ Cloud (Gemini) — record, then transcribe with styles</option>
-            <option value="live">⚡ Live (Deepgram) — words land while you talk</option>
-            <option value="offline">🔒 Private (offline) — your voice never leaves this device</option>
-          </select>
+      <div class="section" id="style-card">
+        <div class="kicker">Output style</div>
+        <p id="style-note">Pick a voice. Cloud only — Live and Private always give you the clean version.</p>
+        <div class="style-grid" id="style-grid"></div>
+        <div id="custom-style">
+          <textarea id="custom-prompt" rows="2" data-talktype-ignore placeholder="Your instructions — e.g. translate into Spanish, or bullet points only"></textarea>
+          <div class="field-note" id="custom-note">Applied after transcription. Short and bossy works best.</div>
         </div>
       </div>
 
-      <div class="form-group" id="deepgramKeyGroup">
-        <label for="deepgramApiKey">Deepgram API Key (for Live mode)</label>
-        <input type="password" id="deepgramApiKey" placeholder="Paste your Deepgram API key here" spellcheck="false" autocomplete="off">
+      <div class="section">
+        <div class="kicker">Your words</div>
+        <p>Names, brands, slang — anything the models keep getting wrong. Spelled your way, every time.</p>
+        <div id="words"></div>
       </div>
 
-      <div class="note">
-        <strong>Live</strong> streams your voice to Deepgram as you speak and types
-        the words straight into the field. Grab a free key at
-        <strong>console.deepgram.com</strong> — signup includes about
-        <strong>$200 of free credit, roughly 400+ hours</strong> of live dictation
-        before you'd ever pay them a cent.
-        <strong>Private</strong> runs a Whisper model in your browser — a one-time
-        model download, then no audio ever leaves your machine and no key is needed.
-        Both are Clean &amp; Accurate only; personality styles need the Cloud engine.
-        The popup uses Cloud or Private (never Live).
+      <div class="section">
+        <div class="kicker">Keyboard</div>
+        <div id="shortcut"></div>
       </div>
 
-      <div class="form-group">
-        <label for="offlineModel">Private mode model</label>
-        <div class="select-wrapper">
-          <select id="offlineModel" style="width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1.5px solid var(--glass-border); background: rgba(255, 255, 255, 0.74); color: var(--brand-ink); font-size: 15px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-sizing: border-box; cursor: pointer; appearance: none; -webkit-appearance: none;">
-            <option value="tiny">Tiny English — fastest, 96MB, runs anywhere</option>
-            <option value="small">Distil-Small English — sharper, 251MB, uses your GPU when it can</option>
-          </select>
+      <div class="section">
+        <div class="kicker">Extras</div>
+        <div class="toggle-row">
+          <label for="smartMode">Insert into the field you clicked<small>Recording from the popup drops text where your cursor was. Off = clipboard only.</small></label>
+          <span class="switch"><input type="checkbox" id="smartMode"><span class="knob"></span></span>
+        </div>
+        <div class="toggle-row">
+          <label for="soundEffects">Sound chirps<small>Little tones on start, stop and success.</small></label>
+          <span class="switch"><input type="checkbox" id="soundEffects"><span class="knob"></span></span>
+        </div>
+        <div class="toggle-row">
+          <label for="historyEnabled">Keep recent transcripts<small>Last 20, only on this device, clearable from the popup.</small></label>
+          <span class="switch"><input type="checkbox" id="historyEnabled"><span class="knob"></span></span>
         </div>
       </div>
 
-      <div class="btn-group">
-        <button id="prepareOfflineModel">
-          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-          </svg>
-          Download Offline Model
-        </button>
-      </div>
-      <div id="offlineModelStatus" class="note" style="display: none;"></div>
-
-      <button id="saveEngine" class="primary">Save Engine</button>
-      <div id="engineStatus" class="status"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
-        </svg>
-        Transcription Style
+      <div class="section">
+        <div class="kicker">Microphone</div>
+        <p>Chrome asks per site the first time you dictate there. This checks your hardware and Chrome's own permission for TalkType.</p>
+        <div id="mic-test"></div>
       </div>
 
-      <div class="form-group">
-        <label for="transcriptionStyle">How should your voice sound as text?</label>
-        <div class="select-wrapper">
-          <select id="transcriptionStyle" style="width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1.5px solid var(--glass-border); background: rgba(255, 255, 255, 0.74); color: var(--brand-ink); font-size: 15px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-sizing: border-box; cursor: pointer; appearance: none; -webkit-appearance: none;">
-            <option value="standard">Clean & Accurate</option>
-            <option value="surlyPirate">Surly Pirate</option>
-            <option value="leetSpeak">L33t Sp34k</option>
-            <option value="sparklePop">Sparkle Pop</option>
-            <option value="codeWhisperer">Code Whisperer</option>
-            <option value="quillAndInk">Quill & Ink</option>
-          </select>
+      <div class="section">
+        <div class="kicker">About</div>
+        <p>No account, no analytics, no server in the middle. Your mic, your key, your words.</p>
+        <div class="links">
+          <a href="https://talktype.app" target="_blank" rel="noopener">talktype.app ↗</a>
+          <a href="https://talktype.app/extension/privacy" target="_blank" rel="noopener">Privacy ↗</a>
+          <a href="https://github.com/pibulus/talktype_extension" target="_blank" rel="noopener">Source ↗</a>
+          <a href="#" id="show-tour">Show the welcome tour</a>
         </div>
+        <p class="field-note" style="margin: 12px 0 0;">TalkType <span id="version"></span> · Made by Pablo. Talk easy.</p>
       </div>
-
-      <div id="stylePreview" class="note" style="min-height: 40px;">
-        Removes filler words and stutters. Just the clean goods.
-      </div>
-
-      <button id="saveStyle" class="primary">Save Style</button>
-      <div id="styleStatus" class="status"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-        </svg>
-        Extras
-      </div>
-
-      <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-        <label for="soundEffects" style="margin: 0;">Sound chirps on start, stop, and success</label>
-        <input type="checkbox" id="soundEffects" checked style="width: 18px; height: 18px; accent-color: #ff5c9f; cursor: pointer;">
-      </div>
-
-      <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-        <label for="historyEnabled" style="margin: 0;">Keep the last 20 transcripts on this device</label>
-        <input type="checkbox" id="historyEnabled" style="width: 18px; height: 18px; accent-color: #ff5c9f; cursor: pointer;">
-      </div>
-
-      <div class="note">
-        History never leaves this device and you can clear it anytime from the popup.
-        Keyboard: <strong>Alt+Shift+D</strong> starts/stops dictation in the focused text
-        field, <strong>Esc</strong> discards a recording. Change the shortcut at
-        <code>chrome://extensions/shortcuts</code>.
-      </div>
-      <div id="extrasStatus" class="status"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-          <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          <line x1="12" x2="12" y1="19" y2="23" stroke="currentColor" stroke-width="2"></line>
-          <line x1="8" x2="16" y1="23" y2="23" stroke="currentColor" stroke-width="2"></line>
-        </svg>
-        Microphone Access
-      </div>
-
-      <p>TalkType needs microphone access to convert your speech to text.</p>
-
-      <div id="permissionStatus" class="permission-status unknown">
-        Checking permission status...
-      </div>
-
-      <div class="btn-group">
-        <button id="requestPermission">
-          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-            <path fill="currentColor" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          </svg>
-          Test Microphone
-        </button>
-
-        <button id="openChromeSettings">
-          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
-          </svg>
-          Chrome Settings
-        </button>
-      </div>
-    </div>
-
-    <div class="info">
-      <div class="card-header" style="margin-bottom: 10px;">
-        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-4h2v2h-2zm1.61-9.96c-2.06-.3-3.88.97-4.43 2.79-.18.58.26 1.17.87 1.17.43 0 .82-.27.94-.68.32-1.03 1.37-1.74 2.49-1.54 1.31.26 2.21 1.73 1.87 3.03-.34 1.29-1.49 1.7-2.59 2.4-.3.19-.48.51-.48.85V16c0 .55.45 1 1 1s1-.45 1-1v-.35c1.3-.65 2.9-1.29 3.41-3.14.82-2.96-1.07-5.96-4.08-6.47z"/>
-        </svg>
-        How to Use TalkType
-      </div>
-
-      <ol>
-        <li>Enter your API key above and click <strong>Save Settings</strong></li>
-        <li>Grant microphone access by clicking <strong>Test Microphone</strong></li>
-        <li>Visit any website with text inputs</li>
-        <li>Click into a text box, then open the TalkType popup</li>
-        <li>Record, speak, and TalkType will place the text at your cursor</li>
-      </ol>
-    </div>
-
-    <div class="footer">
-      TalkType &copy; 2026
     </div>
   </div>
 
   <script src="storage-service.js"></script>
+  <script src="setup-shared.js"></script>
   <script src="options.js"></script>
 </body>
 </html>
