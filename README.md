@@ -57,14 +57,12 @@ Proprietary — see [LICENSE.md](LICENSE.md).
 
 ## The TalkType family
 
-The extension is the free gateway to the rest of TalkType — and it comes free with
-either of the paid apps:
+The extension is available standalone for **$3.99** (with 25 free dictations), or included free with either of the paid apps:
 
-- **[talktype.app](https://talktype.app)** — the full voice-to-text web app: offline
-  Whisper, cloud engines, style presets, history.
-- **TalkType for Mac** — native menu-bar dictation on the Mac App Store.
+- **[talktype.app](https://talktype.app)** — the full voice-to-text web studio: offline Whisper, cloud engines, style presets, history (Full Caboodle: $49 lifetime).
+- **TalkType for Mac** — native menu-bar dictation ($12.99 lifetime, 50 free dictations).
 
-Buy one, and the extension is your free companion everywhere you type.
+Own either Mac App or Caboodle, and the extension is your free companion everywhere you type.
 
 ## About
 
